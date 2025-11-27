@@ -8,4 +8,6 @@ export interface Invoice {
   amount: number
   payerId: PersonId
   participantIds: PersonId[]
+  divisionMethod?: 'equal' | 'consumption'
+  consumptions?: Record<PersonId, number>
 }

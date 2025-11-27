@@ -123,4 +123,32 @@ describe('Settlement service', () => {
     ])
     expect(suggestTransfers(balances)).toEqual([])
   })
+
+  it('calcula consumos individuales', () => {
+    const invoices: Invoice[] = [
+      {
+        id: 'i1',
+        description: 'Consumos',
+        amount: 100,
+        payerId: 'p1',
+        participantIds: ['p1', 'p2'],
+        divisionMethod: 'consumption',
+        consumptions: {
+          p1: 60,
+          p2: 40,
+        },
+      },
+    ]
+    const event = makeEvent(people, invoices)
+    const balances = calculateBalances(event)
+    expect(balances).toEqual([
+      { personId: 'p1', totalPaid: 100, totalOwed: 60, net: 40 },
+      { personId: 'p2', totalPaid: 0, totalOwed: 40, net: -40 },
+      { personId: 'p3', totalPaid: 0, totalOwed: 0, net: 0 },
+    ])
+    const transfers = suggestTransfers(balances)
+    expect(transfers).toEqual([
+      { fromPersonId: 'p2', toPersonId: 'p1', amount: 40 },
+    ])
+  })
 })

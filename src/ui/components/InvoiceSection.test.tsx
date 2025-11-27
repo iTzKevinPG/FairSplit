@@ -67,4 +67,46 @@ describe('InvoiceSection', () => {
 
     expect(screen.getByRole('button', { name: /guardar factura/i })).toBeDisabled()
   })
+
+  it('shows error when consumptions are zero in consumption mode', async () => {
+    const onAdd = vi.fn()
+    render(<InvoiceSection {...baseProps} onAdd={onAdd} />)
+
+    await userEvent.type(
+      screen.getByPlaceholderText(/descripcion/i),
+      'Cena',
+    )
+    await userEvent.clear(screen.getByPlaceholderText(/monto/i))
+    await userEvent.type(screen.getByPlaceholderText(/monto/i), '50')
+    await userEvent.selectOptions(screen.getAllByRole('combobox')[1], 'Por consumo')
+    await userEvent.click(screen.getByRole('button', { name: /guardar factura/i }))
+
+    expect(await screen.findByText(/consumos mayores a 0/i)).toBeInTheDocument()
+    expect(onAdd).not.toHaveBeenCalled()
+  })
+
+  it('shows error when consumptions do not match total', async () => {
+    const onAdd = vi.fn()
+    render(<InvoiceSection {...baseProps} onAdd={onAdd} />)
+
+    await userEvent.type(
+      screen.getByPlaceholderText(/descripcion/i),
+      'Cena',
+    )
+    await userEvent.clear(screen.getByPlaceholderText(/monto/i))
+    await userEvent.type(screen.getByPlaceholderText(/monto/i), '50')
+    await userEvent.selectOptions(screen.getAllByRole('combobox')[1], 'Por consumo')
+    const consumptionAna = screen.getByTestId('consumption-p1')
+    const consumptionBen = screen.getByTestId('consumption-p2')
+    await userEvent.clear(consumptionAna)
+    await userEvent.type(consumptionAna, '10')
+    await userEvent.clear(consumptionBen)
+    await userEvent.type(consumptionBen, '5')
+
+    await userEvent.click(screen.getByRole('button', { name: /guardar factura/i }))
+    expect(
+      await screen.findByText(/suma de consumos no coincide/i),
+    ).toBeInTheDocument()
+    expect(onAdd).not.toHaveBeenCalled()
+  })
 })

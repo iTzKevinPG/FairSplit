@@ -29,6 +29,8 @@ export interface AddInvoiceInput {
   amount: number
   payerId: PersonId
   participantIds: PersonId[]
+  divisionMethod?: 'equal' | 'consumption'
+  consumptions?: Record<PersonId, number>
 }
 
 export interface UpdateInvoiceInput extends AddInvoiceInput {

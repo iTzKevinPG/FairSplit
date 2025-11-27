@@ -22,6 +22,7 @@ export function calculateBalances(event: Event): Balance[] {
 
   event.invoices.forEach((invoice) => {
     const participants = invoice.participantIds
+    const divisionMethod = invoice.divisionMethod ?? 'equal'
     const count = participants.length
     const shareRaw = count > 0 ? invoice.amount / count : 0
     const share = roundToCents(shareRaw)
@@ -33,16 +34,41 @@ export function calculateBalances(event: Event): Balance[] {
       payerBalance.totalPaid = roundToCents(payerBalance.totalPaid + invoice.amount)
     }
 
-    participants.forEach((personId, index) => {
-      const isLast = index === participants.length - 1
-      const adjustedShare = isLast ? roundToCents(share + diff) : share
-      const participantBalance = balances.get(personId)
-      if (participantBalance) {
-        participantBalance.totalOwed = roundToCents(
-          participantBalance.totalOwed + adjustedShare,
-        )
-      }
-    })
+    if (divisionMethod === 'consumption') {
+      const consumptions = invoice.consumptions ?? {}
+      const roundedShares: number[] = []
+      let sumRounded = 0
+      participants.forEach((personId) => {
+        const raw = Number(consumptions[personId] ?? 0)
+        const rounded = roundToCents(raw)
+        roundedShares.push(rounded)
+        sumRounded += rounded
+      })
+      const diffConsumption = roundToCents(invoice.amount - roundToCents(sumRounded))
+
+      participants.forEach((personId, index) => {
+        const isLast = index === participants.length - 1
+        const baseShare = roundedShares[index] ?? 0
+        const adjustedShare = roundToCents(baseShare + (isLast ? diffConsumption : 0))
+        const participantBalance = balances.get(personId)
+        if (participantBalance) {
+          participantBalance.totalOwed = roundToCents(
+            participantBalance.totalOwed + adjustedShare,
+          )
+        }
+      })
+    } else {
+      participants.forEach((personId, index) => {
+        const isLast = index === participants.length - 1
+        const adjustedShare = isLast ? roundToCents(share + diff) : share
+        const participantBalance = balances.get(personId)
+        if (participantBalance) {
+          participantBalance.totalOwed = roundToCents(
+            participantBalance.totalOwed + adjustedShare,
+          )
+        }
+      })
+    }
   })
 
   return Array.from(balances.values()).map((balance) => ({

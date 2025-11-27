@@ -1,4 +1,4 @@
-import { type FormEvent, useMemo, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { SectionCard } from './SectionCard'
 import type { InvoiceForUI, PersonForUI } from '../../shared/state/fairsplitStore'
 
@@ -11,6 +11,8 @@ interface InvoiceSectionProps {
     amount: number
     payerId: string
     participantIds: string[]
+    divisionMethod?: 'equal' | 'consumption'
+    consumptions?: Record<string, number>
   }) => Promise<void>
   onRemove: (invoiceId: string) => Promise<void>
 }
@@ -32,6 +34,25 @@ export function InvoiceSection({
   )
   const [error, setError] = useState<string | null>(null)
   const [detailInvoiceId, setDetailInvoiceId] = useState<string | null>(null)
+  const [divisionMethod, setDivisionMethod] = useState<'equal' | 'consumption'>('equal')
+  const [consumptions, setConsumptions] = useState<Record<string, string>>(
+    () =>
+      people.reduce<Record<string, string>>((acc, person) => {
+        acc[person.id] = ''
+        return acc
+      }, {}),
+  )
+
+  useEffect(() => {
+    setPayerId((prev) => prev ?? people[0]?.id)
+    setParticipantIds(people.map((person) => person.id))
+    setConsumptions(
+      people.reduce<Record<string, string>>((acc, person) => {
+        acc[person.id] = ''
+        return acc
+      }, {}),
+    )
+  }, [people])
 
   const canCreate = useMemo(
     () => description.trim() && Number(amount) > 0 && payerId && participantIds.length > 0,
@@ -69,22 +90,53 @@ export function InvoiceSection({
       return
     }
 
+    let consumptionPayload: Record<string, number> | undefined
+    if (divisionMethod === 'consumption') {
+      const numericConsumptions = participantIds.reduce<Record<string, number>>(
+        (acc, id) => {
+          const value = Number(consumptions[id] ?? 0)
+          acc[id] = value
+          return acc
+        },
+        {},
+      )
+      const sum = Object.values(numericConsumptions).reduce((acc, val) => acc + val, 0)
+      const hasPositive = Object.values(numericConsumptions).some((val) => val > 0)
+      if (!hasPositive || sum <= 0) {
+        setError('Ingresa consumos mayores a 0.')
+        return
+      }
+      const diff = Math.abs(numericAmount - sum)
+      if (diff > 0.01) {
+        setError('La suma de consumos no coincide con el total.')
+        return
+      }
+      consumptionPayload = numericConsumptions
+    }
+
     setError(null)
     await onAdd({
       description: trimmedDescription,
       amount: numericAmount,
       payerId,
       participantIds,
+      divisionMethod,
+      consumptions: consumptionPayload,
     })
     setDescription('')
     setAmount('')
     setParticipantIds(people.map((person) => person.id))
+    setConsumptions(
+      people.reduce<Record<string, string>>((acc, person) => {
+        acc[person.id] = ''
+        return acc
+      }, {}),
+    )
+    setDivisionMethod('equal')
   }
 
   const detailInvoice = invoices.find((invoice) => invoice.id === detailInvoiceId) ?? null
-  const participantShares = detailInvoice
-    ? calculateEqualShares(detailInvoice.amount, detailInvoice.participantIds, people)
-    : []
+  const participantShares = detailInvoice ? calculateShares(detailInvoice, people) : []
 
   return (
     <SectionCard
@@ -135,6 +187,15 @@ export function InvoiceSection({
           )}
         </select>
 
+        <select
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          value={divisionMethod}
+          onChange={(e) => setDivisionMethod(e.target.value as 'equal' | 'consumption')}
+        >
+          <option value="equal">Reparto igualitario</option>
+          <option value="consumption">Por consumo</option>
+        </select>
+
         <div className="md:col-span-4">
           <p className="text-xs font-semibold tracking-wide text-slate-600">
             Participantes
@@ -145,14 +206,14 @@ export function InvoiceSection({
                 Agrega personas para asignar participantes.
               </span>
             ) : (
-            people.map((person) => {
-              const checked = participantIds.includes(person.id)
-              const isPayer = person.id === payerId
-              return (
-                <label
-                  key={person.id}
-                  className={`flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold shadow-sm transition ${
-                    checked
+              people.map((person) => {
+                const checked = participantIds.includes(person.id)
+                const isPayer = person.id === payerId
+                return (
+                  <label
+                    key={person.id}
+                    className={`flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold shadow-sm transition ${
+                      checked
                         ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
                         : 'border-slate-200 bg-white text-slate-700'
                     }`}
@@ -176,6 +237,45 @@ export function InvoiceSection({
             )}
           </div>
         </div>
+
+        {divisionMethod === 'consumption' ? (
+          <div className="md:col-span-4">
+            <p className="text-xs font-semibold tracking-wide text-slate-600">
+              Consumo por participante
+            </p>
+            <div className="mt-2 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+              {participantIds.map((id) => (
+                <div
+                  key={id}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm"
+                >
+                  <p className="text-xs font-semibold text-slate-600">
+                    {resolvePersonName(id, people)}
+                  </p>
+                  <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-2 py-1 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
+                    <span className="text-[10px] font-semibold text-slate-500">
+                      {currency}
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      className="w-full text-sm text-slate-900 outline-none"
+                      data-testid={`consumption-${id}`}
+                      value={consumptions[id] ?? ''}
+                      onChange={(e) =>
+                        setConsumptions((curr) => ({
+                          ...curr,
+                          [id]: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
@@ -287,17 +387,32 @@ function resolvePersonName(id: string, people: PersonForUI[]) {
   return people.find((person) => person.id === id)?.name ?? 'Desconocido'
 }
 
-function calculateEqualShares(
-  amount: number,
-  participantIds: string[],
-  people: PersonForUI[],
-) {
+function calculateShares(invoice: InvoiceForUI, people: PersonForUI[]) {
+  const participantIds = invoice.participantIds
   if (participantIds.length === 0) return []
+  if (invoice.divisionMethod === 'consumption') {
+    const consumptions = invoice.consumptions ?? {}
+    const rounded = participantIds.map((id) =>
+      roundToCents(Number(consumptions[id] ?? 0)),
+    )
+    const totalRounded = roundToCents(
+      rounded.reduce((acc, val) => acc + val, 0),
+    )
+    const diff = roundToCents(invoice.amount - totalRounded)
+
+    return participantIds.map((personId, index) => {
+      const isLast = index === participantIds.length - 1
+      const base = rounded[index] ?? 0
+      const adjusted = roundToCents(base + (isLast ? diff : 0))
+      return { personId, amount: adjusted, name: resolvePersonName(personId, people) }
+    })
+  }
+
   const count = participantIds.length
-  const rawShare = amount / count
+  const rawShare = invoice.amount / count
   const share = roundToCents(rawShare)
   const totalRounded = roundToCents(share * count)
-  const diff = roundToCents(amount - totalRounded)
+  const diff = roundToCents(invoice.amount - totalRounded)
 
   return participantIds.map((personId, index) => {
     const isLast = index === participantIds.length - 1
