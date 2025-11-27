@@ -22,20 +22,24 @@ export function calculateBalances(event: Event): Balance[] {
 
   event.invoices.forEach((invoice) => {
     const participants = invoice.participantIds
-    const shareRaw =
-      participants.length > 0 ? invoice.amount / participants.length : 0
+    const count = participants.length
+    const shareRaw = count > 0 ? invoice.amount / count : 0
     const share = roundToCents(shareRaw)
+    const totalRounded = roundToCents(share * count)
+    const diff = roundToCents(invoice.amount - totalRounded)
 
     const payerBalance = balances.get(invoice.payerId)
     if (payerBalance) {
       payerBalance.totalPaid = roundToCents(payerBalance.totalPaid + invoice.amount)
     }
 
-    participants.forEach((personId) => {
+    participants.forEach((personId, index) => {
+      const isLast = index === participants.length - 1
+      const adjustedShare = isLast ? roundToCents(share + diff) : share
       const participantBalance = balances.get(personId)
       if (participantBalance) {
         participantBalance.totalOwed = roundToCents(
-          participantBalance.totalOwed + share,
+          participantBalance.totalOwed + adjustedShare,
         )
       }
     })

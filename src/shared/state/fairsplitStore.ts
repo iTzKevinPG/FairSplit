@@ -23,13 +23,20 @@ import type {
   UpdatePersonInput,
 } from '../../application/dto/eventDtos'
 import { InMemoryEventRepository } from '../../infra/persistence/in-memory/InMemoryEventRepository'
+import { InMemoryPersonRepository } from '../../infra/persistence/in-memory/InMemoryPersonRepository'
+import { InMemoryInvoiceRepository } from '../../infra/persistence/in-memory/InMemoryInvoiceRepository'
 
 const eventRepository = new InMemoryEventRepository()
+const personRepository = new InMemoryPersonRepository(eventRepository)
+const invoiceRepository = new InMemoryInvoiceRepository(eventRepository)
+let demoSeeded = false
 
 interface FairSplitState {
   events: Event[]
   selectedEventId?: EventId
+  hasSeededDemo: boolean
   hydrate: () => Promise<void>
+  seedDemoData: () => Promise<void>
   selectEvent: (eventId: EventId) => void
   createEvent: (input: CreateEventInput) => Promise<Event>
   addPerson: (input: Omit<AddPersonInput, 'eventId'>) => Promise<Event | undefined>
@@ -60,31 +67,86 @@ interface FairSplitState {
 export const useFairSplitStore = create<FairSplitState>((set, get) => ({
   events: [],
   selectedEventId: undefined,
+  hasSeededDemo: false,
   hydrate: async () => {
     const events = await eventRepository.list()
     set({
       events,
-      selectedEventId: events[0]?.id,
+      selectedEventId: get().selectedEventId ?? events[0]?.id,
     })
+  },
+  seedDemoData: async () => {
+    if (demoSeeded || get().hasSeededDemo) return
+    demoSeeded = true
+
+    const current = await eventRepository.list()
+    if (current.length > 0) {
+      set({ hasSeededDemo: true })
+      return
+    }
+
+    const event = await createEvent(eventRepository, {
+      name: 'Salida demo',
+      currency: 'USD',
+    })
+
+    await addPersonToEvent(eventRepository, personRepository, {
+      eventId: event.id,
+      name: 'Ana',
+    })
+    await addPersonToEvent(eventRepository, personRepository, {
+      eventId: event.id,
+      name: 'Ben',
+    })
+    await addPersonToEvent(eventRepository, personRepository, {
+      eventId: event.id,
+      name: 'Carla',
+    })
+
+    const loaded = await eventRepository.getById(event.id)
+    if (!loaded) return
+
+    await addInvoiceToEvent(eventRepository, invoiceRepository, {
+      eventId: loaded.id,
+      description: 'Cena',
+      amount: 90,
+      payerId: loaded.people[0].id,
+      participantIds: loaded.people.map((p) => p.id),
+    })
+
+    const finalEvent = await eventRepository.getById(event.id)
+    if (!finalEvent) return
+
+    set((state) => ({
+      events: [finalEvent],
+      selectedEventId: finalEvent.id,
+      hasSeededDemo: true,
+    }))
   },
   selectEvent: (eventId: EventId) => {
     set({ selectedEventId: eventId })
   },
   createEvent: async (input) => {
-    const event = await createEvent(eventRepository, input)
-    set((state) => ({
-      events: [...state.events, event],
-      selectedEventId: event.id,
-    }))
-    return event
+    const created = await createEvent(eventRepository, input)
+    const events = await eventRepository.list()
+    set({
+      events,
+      selectedEventId: created.id,
+    })
+    return created
   },
   addPerson: async (input) => {
     const eventId = get().selectedEventId
     if (!eventId) return undefined
-    const event = await addPersonToEvent(eventRepository, {
-      ...input,
-      eventId,
-    })
+    const event = await addPersonToEvent(
+      eventRepository,
+      personRepository,
+      {
+        ...input,
+        eventId,
+      },
+    )
+    if (!event) return undefined
     set((state) => ({
       events: state.events.map((item) =>
         item.id === event.id ? event : item,
@@ -95,10 +157,15 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
   updatePerson: async (input) => {
     const eventId = get().selectedEventId
     if (!eventId) return undefined
-    const event = await updatePersonInEvent(eventRepository, {
-      ...input,
-      eventId,
-    })
+    const event = await updatePersonInEvent(
+      eventRepository,
+      personRepository,
+      {
+        ...input,
+        eventId,
+      },
+    )
+    if (!event) return undefined
     set((state) => ({
       events: state.events.map((item) =>
         item.id === event.id ? event : item,
@@ -109,10 +176,16 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
   removePerson: async (input) => {
     const eventId = get().selectedEventId
     if (!eventId) return undefined
-    const event = await removePersonFromEvent(eventRepository, {
-      ...input,
-      eventId,
-    })
+    const event = await removePersonFromEvent(
+      eventRepository,
+      personRepository,
+      invoiceRepository,
+      {
+        ...input,
+        eventId,
+      },
+    )
+    if (!event) return undefined
     set((state) => ({
       events: state.events.map((item) =>
         item.id === event.id ? event : item,
@@ -123,10 +196,15 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
   addInvoice: async (input) => {
     const eventId = get().selectedEventId
     if (!eventId) return undefined
-    const event = await addInvoiceToEvent(eventRepository, {
-      ...input,
-      eventId,
-    })
+    const event = await addInvoiceToEvent(
+      eventRepository,
+      invoiceRepository,
+      {
+        ...input,
+        eventId,
+      },
+    )
+    if (!event) return undefined
     set((state) => ({
       events: state.events.map((item) =>
         item.id === event.id ? event : item,
@@ -137,10 +215,15 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
   updateInvoice: async (input) => {
     const eventId = get().selectedEventId
     if (!eventId) return undefined
-    const event = await updateInvoiceInEvent(eventRepository, {
-      ...input,
-      eventId,
-    })
+    const event = await updateInvoiceInEvent(
+      eventRepository,
+      invoiceRepository,
+      {
+        ...input,
+        eventId,
+      },
+    )
+    if (!event) return undefined
     set((state) => ({
       events: state.events.map((item) =>
         item.id === event.id ? event : item,
@@ -151,10 +234,15 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
   removeInvoice: async (input) => {
     const eventId = get().selectedEventId
     if (!eventId) return undefined
-    const event = await removeInvoiceFromEvent(eventRepository, {
-      ...input,
-      eventId,
-    })
+    const event = await removeInvoiceFromEvent(
+      eventRepository,
+      invoiceRepository,
+      {
+        ...input,
+        eventId,
+      },
+    )
+    if (!event) return undefined
     set((state) => ({
       events: state.events.map((item) =>
         item.id === event.id ? event : item,

@@ -1,6 +1,6 @@
 import { type FormEvent, useMemo, useState } from 'react'
-import type { InvoiceForUI, PersonForUI } from '../../state/fairsplitStore'
 import { SectionCard } from './SectionCard'
+import type { InvoiceForUI, PersonForUI } from '../../shared/state/fairsplitStore'
 
 interface InvoiceSectionProps {
   invoices: InvoiceForUI[]
@@ -30,6 +30,8 @@ export function InvoiceSection({
   const [participantIds, setParticipantIds] = useState<string[]>(
     people.map((person) => person.id),
   )
+  const [error, setError] = useState<string | null>(null)
+  const [detailInvoiceId, setDetailInvoiceId] = useState<string | null>(null)
 
   const canCreate = useMemo(
     () => description.trim() && Number(amount) > 0 && payerId && participantIds.length > 0,
@@ -37,6 +39,7 @@ export function InvoiceSection({
   )
 
   const handleToggleParticipant = (id: string) => {
+    if (id === payerId) return // payer must stay included
     setParticipantIds((current) =>
       current.includes(id)
         ? current.filter((item) => item !== id)
@@ -46,10 +49,30 @@ export function InvoiceSection({
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
-    if (!canCreate || !payerId) return
+    const trimmedDescription = description.trim()
+    const numericAmount = Number(amount)
+
+    if (!trimmedDescription) {
+      setError('La descripcion es obligatoria.')
+      return
+    }
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      setError('El monto debe ser mayor que 0.')
+      return
+    }
+    if (!payerId) {
+      setError('Debes seleccionar un pagador.')
+      return
+    }
+    if (participantIds.length === 0) {
+      setError('Selecciona al menos un participante.')
+      return
+    }
+
+    setError(null)
     await onAdd({
-      description: description.trim(),
-      amount: Number(amount),
+      description: trimmedDescription,
+      amount: numericAmount,
       payerId,
       participantIds,
     })
@@ -57,6 +80,11 @@ export function InvoiceSection({
     setAmount('')
     setParticipantIds(people.map((person) => person.id))
   }
+
+  const detailInvoice = invoices.find((invoice) => invoice.id === detailInvoiceId) ?? null
+  const participantShares = detailInvoice
+    ? calculateEqualShares(detailInvoice.amount, detailInvoice.participantIds, people)
+    : []
 
   return (
     <SectionCard
@@ -91,10 +119,11 @@ export function InvoiceSection({
         </div>
         <select
           className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          value={payerId}
+          value={payerId ?? ''}
           onChange={(e) => setPayerId(e.target.value)}
           disabled={people.length === 0}
         >
+          <option value="">Selecciona pagador</option>
           {people.length === 0 ? (
             <option>No hay personas</option>
           ) : (
@@ -107,7 +136,7 @@ export function InvoiceSection({
         </select>
 
         <div className="md:col-span-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <p className="text-xs font-semibold tracking-wide text-slate-600">
             Participantes
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -116,13 +145,14 @@ export function InvoiceSection({
                 Agrega personas para asignar participantes.
               </span>
             ) : (
-              people.map((person) => {
-                const checked = participantIds.includes(person.id)
-                return (
-                  <label
-                    key={person.id}
-                    className={`flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold shadow-sm transition ${
-                      checked
+            people.map((person) => {
+              const checked = participantIds.includes(person.id)
+              const isPayer = person.id === payerId
+              return (
+                <label
+                  key={person.id}
+                  className={`flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold shadow-sm transition ${
+                    checked
                         ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
                         : 'border-slate-200 bg-white text-slate-700'
                     }`}
@@ -131,9 +161,15 @@ export function InvoiceSection({
                       type="checkbox"
                       className="accent-indigo-600"
                       checked={checked}
+                      disabled={isPayer}
                       onChange={() => handleToggleParticipant(person.id)}
                     />
                     {person.name}
+                    {isPayer ? (
+                      <span className="text-[10px] font-semibold text-slate-500">
+                        (Pagador)
+                      </span>
+                    ) : null}
                   </label>
                 )
               })
@@ -141,11 +177,13 @@ export function InvoiceSection({
           </div>
         </div>
 
+        {error ? <p className="text-sm text-red-600">{error}</p> : null}
+
         <div className="md:col-span-4 flex justify-end">
           <button
             type="submit"
             className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
-            disabled={!canCreate || people.length === 0}
+            disabled={people.length === 0}
           >
             Guardar factura
           </button>
@@ -154,9 +192,10 @@ export function InvoiceSection({
 
       <div className="mt-5 space-y-3">
         {invoices.length === 0 ? (
-          <p className="text-sm text-slate-600">
-            Aun no hay facturas registradas.
-          </p>
+          <div className="flex items-center justify-between rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            <span>Aun no hay facturas registradas.</span>
+            <span className="text-xs text-indigo-600">Agrega la primera arriba.</span>
+          </div>
         ) : (
           invoices.map((invoice) => (
             <div
@@ -174,22 +213,72 @@ export function InvoiceSection({
                   Pago: {resolvePersonName(invoice.payerId, people)}
                 </p>
                 <p className="text-xs text-slate-600">
-                  Participantes: {invoice.participantIds
+                  Participantes ({invoice.participantIds.length}):{' '}
+                  {invoice.participantIds
                     .map((id) => resolvePersonName(id, people))
                     .join(', ')}
                 </p>
               </div>
-              <button
-                type="button"
-                className="self-start text-xs font-semibold text-slate-500 hover:text-red-600"
-                onClick={() => onRemove(invoice.id)}
-              >
-                Eliminar
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  className="text-xs font-semibold text-indigo-600 hover:text-indigo-500"
+                  onClick={() =>
+                    setDetailInvoiceId((current) =>
+                      current === invoice.id ? null : invoice.id,
+                    )
+                  }
+                >
+                  Ver detalle
+                </button>
+                <button
+                  type="button"
+                  className="text-xs font-semibold text-slate-500 hover:text-red-600"
+                  onClick={() => onRemove(invoice.id)}
+                >
+                  Eliminar
+                </button>
+              </div>
             </div>
           ))
         )}
       </div>
+
+      {detailInvoice ? (
+        <div className="mt-4 rounded-lg border border-indigo-100 bg-indigo-50/70 p-4 text-sm text-slate-800">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <p className="font-semibold text-indigo-800">{detailInvoice.description}</p>
+              <p className="text-xs text-slate-600">
+                Pago: {resolvePersonName(detailInvoice.payerId, people)} · Monto:{' '}
+                {currency} {detailInvoice.amount.toFixed(2)}
+              </p>
+            </div>
+            <button
+              type="button"
+              className="text-xs font-semibold text-slate-500 hover:text-slate-700"
+              onClick={() => setDetailInvoiceId(null)}
+            >
+              Cerrar
+            </button>
+          </div>
+          <div className="mt-3 space-y-2">
+            {participantShares.map((share) => (
+              <div
+                key={share.personId}
+                className="flex items-center justify-between rounded-md bg-white px-3 py-2 shadow-sm"
+              >
+                <span className="font-semibold text-slate-900">
+                  {resolvePersonName(share.personId, people)}
+                </span>
+                <span className="text-indigo-700 font-semibold">
+                  {currency} {share.amount.toFixed(2)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </SectionCard>
   )
 }
@@ -197,3 +286,25 @@ export function InvoiceSection({
 function resolvePersonName(id: string, people: PersonForUI[]) {
   return people.find((person) => person.id === id)?.name ?? 'Desconocido'
 }
+
+function calculateEqualShares(
+  amount: number,
+  participantIds: string[],
+  people: PersonForUI[],
+) {
+  if (participantIds.length === 0) return []
+  const count = participantIds.length
+  const rawShare = amount / count
+  const share = roundToCents(rawShare)
+  const totalRounded = roundToCents(share * count)
+  const diff = roundToCents(amount - totalRounded)
+
+  return participantIds.map((personId, index) => {
+    const isLast = index === participantIds.length - 1
+    const adjusted = isLast ? roundToCents(share + diff) : share
+    return { personId, amount: adjusted, name: resolvePersonName(personId, people) }
+  })
+}
+
+const roundToCents = (value: number) =>
+  Math.round((value + Number.EPSILON) * 100) / 100

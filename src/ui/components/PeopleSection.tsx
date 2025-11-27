@@ -6,20 +6,61 @@ interface PeopleSectionProps {
   people: PersonForUI[]
   onAdd: (name: string) => Promise<void>
   onRemove: (personId: string) => Promise<void>
+  onEdit: (personId: string, name: string) => Promise<void>
 }
 
 export function PeopleSection({
   people,
   onAdd,
   onRemove,
+  onEdit,
 }: PeopleSectionProps) {
   const [name, setName] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingName, setEditingName] = useState('')
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
-    if (!name.trim()) return
+    if (!name.trim()) {
+      setError('El nombre es obligatorio.')
+      return
+    }
+
+    setError(null)
     await onAdd(name.trim())
     setName('')
+  }
+
+  const startEditing = (person: PersonForUI) => {
+    setEditingId(person.id)
+    setEditingName(person.name)
+    setError(null)
+  }
+
+  const handleEditSave = async () => {
+    if (!editingId) return
+    if (!editingName.trim()) {
+      setError('El nombre es obligatorio.')
+      return
+    }
+    setError(null)
+    await onEdit(editingId, editingName.trim())
+    setEditingId(null)
+    setEditingName('')
+  }
+
+  const handleRemove = async (personId: string) => {
+    try {
+      setError(null)
+      await onRemove(personId)
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'No puedes eliminar este participante.'
+      setError(message)
+    }
   }
 
   return (
@@ -46,7 +87,9 @@ export function PeopleSection({
         </button>
       </form>
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-2 md:grid-cols-3">
+      {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
         {people.length === 0 ? (
           <p className="text-sm text-slate-600">
             Aun no hay personas. Agrega al menos una para crear facturas.
@@ -55,16 +98,63 @@ export function PeopleSection({
           people.map((person) => (
             <div
               key={person.id}
-              className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm"
+              className="flex min-h-[90px] flex-col gap-2 rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 shadow-sm"
             >
-              <span className="truncate">{person.name}</span>
-              <button
-                type="button"
-                className="text-xs font-semibold text-slate-500 hover:text-red-600"
-                onClick={() => onRemove(person.id)}
-              >
-                Eliminar
-              </button>
+              {editingId === person.id ? (
+                <div className="flex w-full flex-col gap-2" onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    void handleEditSave()
+                  }
+                }}>
+                  <input
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    value={editingName}
+                    onChange={(e) => setEditingName(e.target.value)}
+                  />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      className="text-xs font-semibold text-indigo-700 hover:text-indigo-600"
+                      onClick={handleEditSave}
+                    >
+                      Guardar
+                    </button>
+                    <button
+                      type="button"
+                      className="text-xs font-semibold text-slate-500 hover:text-slate-700"
+                      onClick={() => {
+                        setEditingId(null)
+                        setEditingName('')
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <span className="truncate font-semibold text-slate-900">
+                    {person.name}
+                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      className="text-xs font-semibold text-indigo-600 hover:text-indigo-500"
+                      onClick={() => startEditing(person)}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      className="text-xs font-semibold text-slate-500 hover:text-red-600"
+                      onClick={() => handleRemove(person.id)}
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           ))
         )}

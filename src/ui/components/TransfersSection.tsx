@@ -13,38 +13,44 @@ export function TransfersSection({
   people,
   currency,
 }: TransfersSectionProps) {
+  const hasTransfers = transfers.length > 0
+
   return (
     <SectionCard
       title="Transferencias sugeridas"
       description="Pagos simples para saldar los saldos netos."
     >
-      {transfers.length === 0 ? (
-        <p className="text-sm text-slate-600">
-          Sin transferencias pendientes. Agrega facturas o personas para ver el
-          resultado.
-        </p>
+      {hasTransfers ? (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-200 text-sm">
+            <thead>
+              <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
+                <th className="px-3 py-2">De</th>
+                <th className="px-3 py-2">Hacia</th>
+                <th className="px-3 py-2">Monto</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {transfers.map((transfer, index) => (
+                <tr key={`${transfer.fromPersonId}-${transfer.toPersonId}-${index}`}>
+                  <td className="px-3 py-2 font-semibold text-slate-900">
+                    {resolvePersonName(transfer.fromPersonId, people)}
+                  </td>
+                  <td className="px-3 py-2 font-semibold text-slate-900">
+                    {resolvePersonName(transfer.toPersonId, people)}
+                  </td>
+                  <td className="px-3 py-2 font-semibold text-indigo-700">
+                    {currency} {transfer.amount.toFixed(2)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
-        <ul className="space-y-2 text-sm text-slate-800">
-          {transfers.map((transfer, index) => (
-            <li
-              key={`${transfer.fromPersonId}-${transfer.toPersonId}-${index}`}
-              className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm"
-            >
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-slate-900">
-                  {resolvePersonName(transfer.fromPersonId, people)}
-                </span>
-                <span className="text-slate-500">paga a</span>
-                <span className="font-semibold text-slate-900">
-                  {resolvePersonName(transfer.toPersonId, people)}
-                </span>
-              </div>
-              <span className="font-semibold text-indigo-700">
-                {currency} {transfer.amount.toFixed(2)}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <p className="text-sm text-slate-600">
+          No hay deudas pendientes, todo está equilibrado.
+        </p>
       )}
     </SectionCard>
   )

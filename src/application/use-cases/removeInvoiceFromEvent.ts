@@ -1,19 +1,13 @@
 import type { RemoveInvoiceInput } from '../dto/eventDtos'
 import type { EventRepository } from '../ports/EventRepository'
+import type { InvoiceRepository } from '../ports/InvoiceRepository'
 import { requireEvent } from './helpers'
 
 export async function removeInvoiceFromEvent(
-  repo: EventRepository,
+  eventRepo: EventRepository,
+  invoiceRepo: InvoiceRepository,
   input: RemoveInvoiceInput,
 ) {
-  const event = await requireEvent(repo, input.eventId)
-  const nextEvent = {
-    ...event,
-    invoices: event.invoices.filter(
-      (invoice) => invoice.id !== input.invoiceId,
-    ),
-  }
-
-  await repo.save(nextEvent)
-  return nextEvent
+  await invoiceRepo.remove(input.eventId, input.invoiceId)
+  return eventRepo.getById(input.eventId)
 }
