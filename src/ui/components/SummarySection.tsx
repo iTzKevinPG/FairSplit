@@ -13,6 +13,9 @@ export function SummarySection({
   people,
   currency,
 }: SummarySectionProps) {
+  const normalize = (value: number) =>
+    Math.abs(value) < 0.01 ? 0 : value
+
   return (
     <SectionCard
       title="Resumen por persona"
@@ -38,6 +41,7 @@ export function SummarySection({
                 const personName =
                   people.find((person) => person.id === balance.personId)?.name ??
                   'Desconocido'
+                const net = normalize(balance.net)
                 return (
                   <tr key={balance.personId}>
                     <td className="px-3 py-2 font-semibold text-slate-900">
@@ -51,14 +55,15 @@ export function SummarySection({
                     </td>
                     <td
                       className={`px-3 py-2 font-semibold ${
-                        balance.net > 0
+                        net > 0
                           ? 'text-emerald-700'
-                          : balance.net < 0
+                          : net < 0
                           ? 'text-red-700'
                           : 'text-slate-700'
                       }`}
                     >
-                      {currency} {balance.net.toFixed(2)}
+                      {net > 0 ? '⬆ ' : net < 0 ? '⬇ ' : ''}
+                      {currency} {net.toFixed(2)}
                     </td>
                   </tr>
                 )

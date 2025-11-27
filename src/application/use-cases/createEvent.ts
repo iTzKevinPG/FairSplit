@@ -4,17 +4,27 @@ import type { CreateEventInput } from '../dto/eventDtos'
 import type { EventRepository } from '../ports/EventRepository'
 
 export async function createEvent(
-  repo: EventRepository,
+  eventRepo: EventRepository,
   input: CreateEventInput,
 ): Promise<Event> {
+  const name = input.name.trim()
+  const currency = input.currency.trim()
+
+  if (!name) {
+    throw new Error('Event name is required')
+  }
+  if (!currency) {
+    throw new Error('Currency is required')
+  }
+
   const event: Event = {
     id: createId(),
-    name: input.name,
-    currency: input.currency,
+    name,
+    currency,
     people: [],
     invoices: [],
   }
 
-  await repo.save(event)
+  await eventRepo.save(event)
   return event
 }

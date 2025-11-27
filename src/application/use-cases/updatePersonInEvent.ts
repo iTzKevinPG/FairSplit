@@ -1,19 +1,18 @@
 import type { UpdatePersonInput } from '../dto/eventDtos'
 import type { EventRepository } from '../ports/EventRepository'
+import type { PersonRepository } from '../ports/PersonRepository'
 import { requireEvent } from './helpers'
 
 export async function updatePersonInEvent(
-  repo: EventRepository,
+  eventRepo: EventRepository,
+  personRepo: PersonRepository,
   input: UpdatePersonInput,
 ) {
-  const event = await requireEvent(repo, input.eventId)
-  const nextEvent = {
-    ...event,
-    people: event.people.map((person) =>
-      person.id === input.personId ? { ...person, name: input.name } : person,
-    ),
+  const name = input.name.trim()
+  if (!name) {
+    throw new Error('Person name is required')
   }
-
-  await repo.save(nextEvent)
-  return nextEvent
+  await requireEvent(eventRepo, input.eventId)
+  await personRepo.update(input.eventId, { id: input.personId, name })
+  return eventRepo.getById(input.eventId)
 }

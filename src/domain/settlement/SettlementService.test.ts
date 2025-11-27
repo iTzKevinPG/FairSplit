@@ -94,13 +94,33 @@ describe('Settlement service', () => {
     expect(balances).toEqual([
       { personId: 'p1', totalPaid: 100, totalOwed: 33.33, net: 66.67 },
       { personId: 'p2', totalPaid: 0, totalOwed: 33.33, net: -33.33 },
-      { personId: 'p3', totalPaid: 0, totalOwed: 33.33, net: -33.33 },
+      { personId: 'p3', totalPaid: 0, totalOwed: 33.34, net: -33.34 },
     ])
 
     const transfers = suggestTransfers(balances)
     expect(transfers).toEqual([
+      { fromPersonId: 'p3', toPersonId: 'p1', amount: 33.34 },
       { fromPersonId: 'p2', toPersonId: 'p1', amount: 33.33 },
-      { fromPersonId: 'p3', toPersonId: 'p1', amount: 33.33 },
     ])
+  })
+
+  it('maneja factura con unico participante (pagador)', () => {
+    const invoices: Invoice[] = [
+      {
+        id: 'i1',
+        description: 'Solo pagador',
+        amount: 50,
+        payerId: 'p1',
+        participantIds: ['p1'],
+      },
+    ]
+    const event = makeEvent(people, invoices)
+    const balances = calculateBalances(event)
+    expect(balances).toEqual([
+      { personId: 'p1', totalPaid: 50, totalOwed: 50, net: 0 },
+      { personId: 'p2', totalPaid: 0, totalOwed: 0, net: 0 },
+      { personId: 'p3', totalPaid: 0, totalOwed: 0, net: 0 },
+    ])
+    expect(suggestTransfers(balances)).toEqual([])
   })
 })

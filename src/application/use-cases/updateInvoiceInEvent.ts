@@ -1,31 +1,25 @@
 import type { UpdateInvoiceInput } from '../dto/eventDtos'
 import type { EventRepository } from '../ports/EventRepository'
+import type { InvoiceRepository } from '../ports/InvoiceRepository'
 import { requireEvent } from './helpers'
 
 export async function updateInvoiceInEvent(
-  repo: EventRepository,
+  eventRepo: EventRepository,
+  invoiceRepo: InvoiceRepository,
   input: UpdateInvoiceInput,
 ) {
-  const event = await requireEvent(repo, input.eventId)
+  await requireEvent(eventRepo, input.eventId)
   const participants = Array.from(
     new Set([...input.participantIds, input.payerId]),
   )
 
-  const nextEvent = {
-    ...event,
-    invoices: event.invoices.map((invoice) =>
-      invoice.id === input.invoiceId
-        ? {
-            ...invoice,
-            description: input.description,
-            amount: input.amount,
-            payerId: input.payerId,
-            participantIds: participants,
-          }
-        : invoice,
-    ),
-  }
+  await invoiceRepo.update(input.eventId, {
+    id: input.invoiceId,
+    description: input.description,
+    amount: input.amount,
+    payerId: input.payerId,
+    participantIds: participants,
+  })
 
-  await repo.save(nextEvent)
-  return nextEvent
+  return eventRepo.getById(input.eventId)
 }

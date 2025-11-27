@@ -4,10 +4,10 @@ import type { EventRepository } from '../ports/EventRepository'
 import { requireEvent } from './helpers'
 
 export async function calculateSettlement(
-  repo: EventRepository,
+  eventRepo: EventRepository,
   eventId: EventId,
 ) {
-  const event = await requireEvent(repo, eventId)
+  const event = await requireEvent(eventRepo, eventId)
   const balances = calculateBalances(event)
   const transfers = suggestTransfers(balances)
 

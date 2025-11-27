@@ -1,0 +1,60 @@
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import EventDetailPage from './EventDetailPage'
+import { useFairSplitStore } from '../../shared/state/fairsplitStore'
+
+describe('EventDetailPage', () => {
+  beforeEach(() => {
+    useFairSplitStore.setState({
+      events: [],
+      selectedEventId: undefined,
+      hasSeededDemo: false,
+    })
+  })
+
+  it('renders event name and currency in header', async () => {
+    const { createEvent, hydrate, seedDemoData, selectEvent } =
+      useFairSplitStore.getState()
+
+    const created = await createEvent({ name: 'Fiesta', currency: 'EUR' })
+    await hydrate()
+    await seedDemoData()
+    selectEvent(created.id)
+
+    render(
+      <MemoryRouter initialEntries={[`/events/${created.id}`]}>
+        <Routes>
+          <Route path="/events/:eventId" element={<EventDetailPage />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(
+      await screen.findByRole('heading', { name: /Fiesta/i }),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/Moneda: EUR/i)).toBeInTheDocument()
+  })
+
+  it('allows switching tabs without losing context', async () => {
+    const { createEvent, selectEvent } = useFairSplitStore.getState()
+    const created = await createEvent({ name: 'Tabs', currency: 'USD' })
+    selectEvent(created.id)
+
+    render(
+      <MemoryRouter initialEntries={[`/events/${created.id}`]}>
+        <Routes>
+          <Route path="/events/:eventId" element={<EventDetailPage />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    const resumenButtons = screen.getAllByRole('button', { name: /Resumen/i })
+    expect(resumenButtons.length).toBeGreaterThan(0)
+    await userEvent.click(resumenButtons[0])
+    expect(screen.getByText(/Resumen por persona/i)).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: /Transferencias/i }))
+    expect(screen.getByText(/Transferencias sugeridas/i)).toBeInTheDocument()
+  })
+})
