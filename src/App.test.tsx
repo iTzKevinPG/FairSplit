@@ -2,10 +2,10 @@ import { render, screen } from '@testing-library/react'
 import App from './App'
 
 describe('App', () => {
-  it('renders the FairSplit headline', () => {
+  it('renders the FairSplit headline', async () => {
     render(<App />)
     expect(
-      screen.getByText('Divide gastos entre amigos sin dolores de cabeza.'),
+      await screen.findByText('Divide gastos entre amigos con claridad.'),
     ).toBeInTheDocument()
   })
 })

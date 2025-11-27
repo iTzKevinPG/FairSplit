@@ -1,57 +1,115 @@
+import { useEffect } from 'react'
+import { EventSelector } from './ui/components/EventSelector'
+import { PeopleSection } from './ui/components/PeopleSection'
+import { InvoiceSection } from './ui/components/InvoiceSection'
+import { SummarySection } from './ui/components/SummarySection'
+import { TransfersSection } from './ui/components/TransfersSection'
+import { useFairSplitStore } from './shared/state/fairsplitStore'
+
 function App() {
+  const {
+    events,
+    selectedEventId,
+    selectEvent,
+    createEvent,
+    addPerson,
+    removePerson,
+    addInvoice,
+    removeInvoice,
+    getSelectedEvent,
+    getBalances,
+    getTransfers,
+    hydrate,
+  } = useFairSplitStore()
+
+  const selectedEvent = getSelectedEvent()
+  const balances = selectedEvent ? getBalances() : []
+  const transfers = selectedEvent ? getTransfers() : []
+
+  useEffect(() => {
+    void hydrate()
+  }, [hydrate])
+
   return (
-    <main className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-sky-50">
-      <div className="mx-auto flex max-w-5xl flex-col gap-10 px-6 py-12">
+    <main className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-slate-50">
+      <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-12">
         <header className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-500">
             FairSplit
           </p>
           <h1 className="text-3xl font-semibold text-slate-900 sm:text-4xl">
-            Divide gastos entre amigos sin dolores de cabeza.
+            Divide gastos entre amigos con claridad.
           </h1>
           <p className="max-w-3xl text-base text-slate-600">
-            Ingresa eventos, facturas, pagadores y participantes. Calculamos
-            saldos netos y sugerimos las transferencias para cerrar cuentas con
-            confianza. Todo en memoria en esta primera versión.
+            Registra eventos, personas y facturas. Calcula saldos netos y
+            transferencias sugeridas para cerrar cuentas rapido. Todo vive en
+            memoria por ahora, listo para conectar un backend luego.
           </p>
         </header>
 
-        <section className="grid gap-6 sm:grid-cols-2">
-          <div className="rounded-2xl border border-indigo-100 bg-white/80 p-6 shadow-sm backdrop-blur">
-            <h2 className="text-lg font-semibold text-slate-900">
-              MVP en camino
-            </h2>
-            <ul className="mt-4 space-y-3 text-sm text-slate-600">
-              <li className="flex items-start gap-3">
-                <span className="mt-1 inline-block h-2 w-2 rounded-full bg-indigo-500" />
-                Gestiona eventos con moneda y lista de participantes.
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="mt-1 inline-block h-2 w-2 rounded-full bg-indigo-500" />
-                Registra facturas con pagador y participantes.
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="mt-1 inline-block h-2 w-2 rounded-full bg-indigo-500" />
-                Calcula saldos netos y transferencias sugeridas.
-              </li>
-            </ul>
-          </div>
+        <div className="space-y-6">
+          <EventSelector
+            events={events}
+            selectedEventId={selectedEventId}
+            onSelect={selectEvent}
+            onCreate={async (name, currency) => {
+              await createEvent({ name, currency })
+            }}
+          />
 
-          <div className="rounded-2xl border border-indigo-100 bg-white/80 p-6 shadow-sm backdrop-blur">
-            <h2 className="text-lg font-semibold text-slate-900">
-              Próximos pasos
-            </h2>
-            <p className="mt-4 text-sm text-slate-600">
-              Configura la arquitectura limpia: dominio + casos de uso +
-              infraestructura en memoria + UI con React y Zustand. Lista para
-              conectar un backend cuando llegue el momento.
-            </p>
-          </div>
-        </section>
+          {selectedEvent ? (
+            <div className="grid gap-6 lg:grid-cols-3">
+              <div className="space-y-6 lg:col-span-1">
+                <PeopleSection
+                  people={selectedEvent.people}
+                  onAdd={async (name) => {
+                    await addPerson({ name })
+                  }}
+                  onRemove={async (personId) => {
+                    await removePerson({ personId })
+                  }}
+                />
+              </div>
+
+              <div className="space-y-6 lg:col-span-2">
+                <InvoiceSection
+                  invoices={selectedEvent.invoices}
+                  people={selectedEvent.people}
+                  currency={selectedEvent.currency}
+                  onAdd={async (invoice) => {
+                    await addInvoice(invoice)
+                  }}
+                  onRemove={async (invoiceId) => {
+                    await removeInvoice({ invoiceId })
+                  }}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-sm text-slate-600 shadow-sm">
+              Crea un evento para empezar a cargar personas y facturas.
+            </div>
+          )}
+
+          {selectedEvent ? (
+            <div className="grid gap-6 md:grid-cols-2">
+              <SummarySection
+                balances={balances}
+                people={selectedEvent.people}
+                currency={selectedEvent.currency}
+              />
+              <TransfersSection
+                transfers={transfers}
+                people={selectedEvent.people}
+                currency={selectedEvent.currency}
+              />
+            </div>
+          ) : null}
+        </div>
 
         <footer className="text-sm text-slate-500">
-          Iteración 1: bootstrap del proyecto con Vite, Tailwind, ESLint,
-          Prettier y pruebas listas con Vitest.
+          Arquitectura limpia: dominio y casos de uso desacoplados de la UI,
+          repositorio en memoria y store global con Zustand.
         </footer>
       </div>
     </main>

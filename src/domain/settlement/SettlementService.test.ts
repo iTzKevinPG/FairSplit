@@ -1,0 +1,106 @@
+import { describe, expect, it } from 'vitest'
+import type { Event } from '../event/Event'
+import type { Invoice } from '../invoice/Invoice'
+import type { Person } from '../person/Person'
+import { calculateBalances, suggestTransfers } from './SettlementService'
+
+const makeEvent = (people: Person[], invoices: Invoice[]): Event => ({
+  id: 'event-1',
+  name: 'Test Event',
+  currency: 'USD',
+  people,
+  invoices,
+})
+
+describe('Settlement service', () => {
+  const people: Person[] = [
+    { id: 'p1', name: 'Ana' },
+    { id: 'p2', name: 'Beto' },
+    { id: 'p3', name: 'Carla' },
+  ]
+
+  it('calcula balances y transfers para un caso simple', () => {
+    const invoices: Invoice[] = [
+      {
+        id: 'i1',
+        description: 'Cena',
+        amount: 60,
+        payerId: 'p1',
+        participantIds: ['p1', 'p2', 'p3'],
+      },
+    ]
+
+    const event = makeEvent(people, invoices)
+    const balances = calculateBalances(event)
+    expect(balances).toEqual([
+      { personId: 'p1', totalPaid: 60, totalOwed: 20, net: 40 },
+      { personId: 'p2', totalPaid: 0, totalOwed: 20, net: -20 },
+      { personId: 'p3', totalPaid: 0, totalOwed: 20, net: -20 },
+    ])
+
+    const transfers = suggestTransfers(balances)
+    expect(transfers).toEqual([
+      { fromPersonId: 'p2', toPersonId: 'p1', amount: 20 },
+      { fromPersonId: 'p3', toPersonId: 'p1', amount: 20 },
+    ])
+  })
+
+  it('soporta varios pagadores', () => {
+    const invoices: Invoice[] = [
+      {
+        id: 'i1',
+        description: 'Comida',
+        amount: 90,
+        payerId: 'p1',
+        participantIds: ['p1', 'p2', 'p3'],
+      },
+      {
+        id: 'i2',
+        description: 'Taxi',
+        amount: 45,
+        payerId: 'p2',
+        participantIds: ['p1', 'p2'],
+      },
+    ]
+
+    const event = makeEvent(people, invoices)
+    const balances = calculateBalances(event)
+    expect(balances).toEqual([
+      { personId: 'p1', totalPaid: 90, totalOwed: 52.5, net: 37.5 },
+      { personId: 'p2', totalPaid: 45, totalOwed: 52.5, net: -7.5 },
+      { personId: 'p3', totalPaid: 0, totalOwed: 30, net: -30 },
+    ])
+
+    const transfers = suggestTransfers(balances)
+    expect(transfers).toEqual([
+      { fromPersonId: 'p3', toPersonId: 'p1', amount: 30 },
+      { fromPersonId: 'p2', toPersonId: 'p1', amount: 7.5 },
+    ])
+  })
+
+  it('aplica redondeo a centavos', () => {
+    const invoices: Invoice[] = [
+      {
+        id: 'i1',
+        description: 'Brunch',
+        amount: 100,
+        payerId: 'p1',
+        participantIds: ['p1', 'p2', 'p3'],
+      },
+    ]
+
+    const event = makeEvent(people, invoices)
+    const balances = calculateBalances(event)
+    expect(balances).toEqual([
+      { personId: 'p1', totalPaid: 100, totalOwed: 33.33, net: 66.67 },
+      { personId: 'p2', totalPaid: 0, totalOwed: 33.33, net: -33.33 },
+      { personId: 'p3', totalPaid: 0, totalOwed: 33.33, net: -33.33 },
+    ])
+
+    const transfers = suggestTransfers(balances)
+    expect(transfers).toEqual([
+      { fromPersonId: 'p2', toPersonId: 'p1', amount: 33.33 },
+      { fromPersonId: 'p3', toPersonId: 'p1', amount: 33.33 },
+    ])
+  })
+})
