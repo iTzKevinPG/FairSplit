@@ -56,15 +56,15 @@
                         "type": "color",
                         "description": "Bordes suaves, dividers y líneas separadoras."
                     },
-                    "700": {
-                        "value": "#374151",
-                        "type": "color",
-                        "description": "Texto principal en fondos claros."
-                    },
                     "500": {
                         "value": "#6B7280",
                         "type": "color",
                         "description": "Texto secundario / muted."
+                    },
+                    "700": {
+                        "value": "#374151",
+                        "type": "color",
+                        "description": "Texto principal en fondos claros."
                     },
                     "900": {
                         "value": "#111827",
@@ -165,6 +165,31 @@
                     "value": "{tokens.color.palette.accent.success}",
                     "type": "color",
                     "description": "Bordes y acentos para estados de éxito."
+                },
+                "warningBackground": {
+                    "value": "{tokens.color.palette.accent.warning}",
+                    "type": "color",
+                    "description": "Fondos para mensajes de advertencia."
+                },
+                "warningBorder": {
+                    "value": "{tokens.color.palette.accent.warning}",
+                    "type": "color",
+                    "description": "Bordes y acentos de advertencia."
+                },
+                "infoBackground": {
+                    "value": "{tokens.color.palette.accent.info}",
+                    "type": "color",
+                    "description": "Fondos para mensajes informativos."
+                },
+                "infoBorder": {
+                    "value": "{tokens.color.palette.accent.info}",
+                    "type": "color",
+                    "description": "Bordes y acentos para estados informativos."
+                },
+                "focusRing": {
+                    "value": "{tokens.color.palette.primary.light}",
+                    "type": "color",
+                    "description": "Color para el anillo de enfoque (focus) en inputs y botones."
                 }
             }
         },
@@ -546,6 +571,31 @@
                 "title": {
                     "fontSize": "{tokens.font.size.md}",
                     "fontWeight": "{tokens.font.weight.semibold}"
+                }
+            }
+        },
+        "alert": {
+            "description": "Mensajes de estado (éxito, error, advertencia, info) para feedback del usuario.",
+            "variants": {
+                "success": {
+                    "backgroundColor": "{tokens.color.semantic.successBackground}",
+                    "borderColor": "{tokens.color.semantic.successBorder}",
+                    "textColor": "{tokens.color.semantic.textMain}"
+                },
+                "danger": {
+                    "backgroundColor": "{tokens.color.semantic.dangerBackground}",
+                    "borderColor": "{tokens.color.semantic.dangerBorder}",
+                    "textColor": "{tokens.color.semantic.textMain}"
+                },
+                "warning": {
+                    "backgroundColor": "{tokens.color.semantic.warningBackground}",
+                    "borderColor": "{tokens.color.semantic.warningBorder}",
+                    "textColor": "{tokens.color.semantic.textMain}"
+                },
+                "info": {
+                    "backgroundColor": "{tokens.color.semantic.infoBackground}",
+                    "borderColor": "{tokens.color.semantic.infoBorder}",
+                    "textColor": "{tokens.color.semantic.textMain}"
                 }
             }
         }
