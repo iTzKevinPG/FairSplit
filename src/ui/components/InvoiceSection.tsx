@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useMemo, useState } from 'react'
+import { type FormEvent, useMemo, useState } from 'react'
 import { SectionCard } from './SectionCard'
 import type { InvoiceForUI, PersonForUI } from '../../shared/state/fairsplitStore'
 
@@ -48,30 +48,6 @@ export function InvoiceSection({
   const [tipAmount, setTipAmount] = useState('')
   const [birthdayEnabled, setBirthdayEnabled] = useState(false)
   const [birthdayPersonId, setBirthdayPersonId] = useState<string>('')
-
-  useEffect(() => {
-    setPayerId((prev) => prev ?? people[0]?.id)
-    setParticipantIds(people.map((person) => person.id))
-    setConsumptions(
-      people.reduce<Record<string, string>>((acc, person) => {
-        acc[person.id] = ''
-        return acc
-      }, {}),
-    )
-    setBirthdayPersonId((prev) =>
-      prev && people.some((p) => p.id === prev) ? prev : '',
-    )
-    setBirthdayEnabled((prev) => (people.length === 0 ? false : prev))
-  }, [people])
-
-  useEffect(() => {
-    if (birthdayEnabled && !birthdayPersonId && participantIds.length > 0) {
-      setBirthdayPersonId(participantIds[0])
-    }
-    if (birthdayEnabled && birthdayPersonId && !participantIds.includes(birthdayPersonId)) {
-      setBirthdayPersonId(participantIds[0] ?? '')
-    }
-  }, [birthdayEnabled, birthdayPersonId, participantIds])
 
   const handleToggleParticipant = (id: string) => {
     if (id === payerId) return // payer must stay included
@@ -377,29 +353,29 @@ export function InvoiceSection({
                 Suma ingresada: {currency} {roundToCents(consumptionSum).toFixed(2)}
               </p>
             </div>
-            <div className="mt-2 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-              {participantIds.map((id) => (
-                <div
-                  key={id}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm"
-                >
-                  <p className="text-xs font-semibold text-[color:var(--color-text-muted)]">
-                    {resolvePersonName(id, people)}
-                  </p>
-                  <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-2 py-1 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
-                    <span className="text-[10px] font-semibold text-[color:var(--color-text-muted)]">
-                      {currency}
-                    </span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      className="w-full text-sm text-[color:var(--color-text-main)] outline-none"
-                      data-testid={`consumption-${id}`}
-                      value={consumptions[id] ?? ''}
-                      onChange={(e) =>
-                        setConsumptions((curr) => ({
-                          ...curr,
+              <div className="mt-2 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+                {participantIds.map((id) => (
+                  <div
+                    key={id}
+                    className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-3 py-2 text-sm shadow-sm"
+                  >
+                    <p className="text-xs font-semibold text-[color:var(--color-text-muted)]">
+                      {resolvePersonName(id, people)}
+                    </p>
+                    <div className="flex items-center gap-2 rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-2 py-1 shadow-sm focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
+                      <span className="text-[10px] font-semibold text-[color:var(--color-text-muted)]">
+                        {currency}
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className="w-full bg-transparent text-sm text-[color:var(--color-text-main)] outline-none"
+                        data-testid={`consumption-${id}`}
+                        value={consumptions[id] ?? ''}
+                        onChange={(e) =>
+                          setConsumptions((curr) => ({
+                            ...curr,
                           [id]: e.target.value,
                         }))
                       }
@@ -691,3 +667,5 @@ function buildTipPortion(
     personId === tipReceivers[tipReceivers.length - 1]
   return roundToCents(tipShare + (isLastTip ? tipDiff : 0))
 }
+
+

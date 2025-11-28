@@ -117,7 +117,7 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
     const finalEvent = await eventRepository.getById(event.id)
     if (!finalEvent) return
 
-    set((_) => ({
+    set(() => ({
       events: [finalEvent],
       selectedEventId: finalEvent.id,
       hasSeededDemo: true,

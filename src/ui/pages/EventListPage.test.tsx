@@ -1,16 +1,8 @@
 import { render, screen, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import EventListPage from './EventListPage'
 import { useFairSplitStore } from '../../shared/state/fairsplitStore'
-
-// Simple navigator spy wrapper
-function NavigateSpy() {
-  const navigate = useNavigate()
-  // expose navigate to jest mock
-  ;(NavigateSpy as any).navigate = navigate
-  return null
-}
 
 describe('EventListPage', () => {
   beforeEach(() => {
@@ -42,24 +34,13 @@ describe('EventListPage', () => {
     render(
       <MemoryRouter initialEntries={['/']}>
         <Routes>
-          <Route
-            path="/"
-            element={
-              <>
-                <NavigateSpy />
-                <EventListPage />
-              </>
-            }
-          />
+          <Route path="/" element={<EventListPage />} />
           <Route path="/events/:eventId" element={<div>Detail</div>} />
         </Routes>
       </MemoryRouter>,
     )
 
     await userEvent.click(screen.getByText(event.name))
-
-    const navigate = (NavigateSpy as any).navigate as ReturnType<typeof useNavigate>
-    // Should navigate to the event detail route
-    expect(navigate).toBeDefined()
+    expect(await screen.findByText('Detail')).toBeInTheDocument()
   })
 })

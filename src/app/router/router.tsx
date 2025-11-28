@@ -1,6 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
-import EventDetailPage from '../ui/pages/EventDetailPage'
-import EventListPage from '../ui/pages/EventListPage'
+import EventDetailPage from '../../ui/pages/EventDetailPage'
+import EventListPage from '../../ui/pages/EventListPage'
 
 const router = createBrowserRouter([
   {
