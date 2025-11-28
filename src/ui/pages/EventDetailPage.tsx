@@ -9,6 +9,7 @@ import { TransfersSection } from '../components/TransfersSection'
 import { useState } from 'react'
 import { BentoOverview } from '../components/BentoOverview'
 import { ThemeToggle } from '../components/ThemeToggle'
+import { Footer } from '../components/Footer'
 
 function EventDetailPage() {
   const { eventId } = useParams<{ eventId: string }>()
@@ -206,6 +207,8 @@ function EventDetailPage() {
             currency={selectedEvent.currency}
           />
         )}
+
+        <Footer />
       </div>
     </main>
   )

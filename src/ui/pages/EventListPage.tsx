@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { EventSelector } from '../components/EventSelector'
 import { useEvents } from '../hooks/useEvents'
 import { ThemeToggle } from '../components/ThemeToggle'
+import { Footer } from '../components/Footer'
 
 function EventListPage() {
   const { events, selectedEventId, loadEvents, selectEvent, createAndSelect } =
@@ -86,6 +87,8 @@ function EventListPage() {
             </div>
           )}
         </section>
+
+        <Footer />
       </div>
     </main>
   )
