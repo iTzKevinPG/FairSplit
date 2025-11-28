@@ -13,6 +13,8 @@ interface InvoiceSectionProps {
     participantIds: string[]
     divisionMethod?: 'equal' | 'consumption'
     consumptions?: Record<string, number>
+    tipAmount?: number
+    birthdayPersonId?: string
   }) => Promise<void>
   onRemove: (invoiceId: string) => Promise<void>
 }
@@ -44,6 +46,8 @@ export function InvoiceSection({
   )
   const [includeTip, setIncludeTip] = useState(false)
   const [tipAmount, setTipAmount] = useState('')
+  const [birthdayEnabled, setBirthdayEnabled] = useState(false)
+  const [birthdayPersonId, setBirthdayPersonId] = useState<string>('')
 
   useEffect(() => {
     setPayerId((prev) => prev ?? people[0]?.id)
@@ -54,20 +58,32 @@ export function InvoiceSection({
         return acc
       }, {}),
     )
+    setBirthdayPersonId((prev) =>
+      prev && people.some((p) => p.id === prev) ? prev : '',
+    )
+    setBirthdayEnabled((prev) => (people.length === 0 ? false : prev))
   }, [people])
 
-  const canCreate = useMemo(
-    () => description.trim() && Number(amount) > 0 && payerId && participantIds.length > 0,
-    [description, amount, payerId, participantIds.length],
-  )
+  useEffect(() => {
+    if (birthdayEnabled && !birthdayPersonId && participantIds.length > 0) {
+      setBirthdayPersonId(participantIds[0])
+    }
+    if (birthdayEnabled && birthdayPersonId && !participantIds.includes(birthdayPersonId)) {
+      setBirthdayPersonId(participantIds[0] ?? '')
+    }
+  }, [birthdayEnabled, birthdayPersonId, participantIds])
 
   const handleToggleParticipant = (id: string) => {
     if (id === payerId) return // payer must stay included
-    setParticipantIds((current) =>
-      current.includes(id)
+    setParticipantIds((current) => {
+      const next = current.includes(id)
         ? current.filter((item) => item !== id)
-        : [...current, id],
-    )
+        : [...current, id]
+      setBirthdayPersonId((currentBirthday) =>
+        currentBirthday && next.includes(currentBirthday) ? currentBirthday : '',
+      )
+      return next
+    })
   }
 
   const handleSubmit = async (event: FormEvent) => {
@@ -86,6 +102,20 @@ export function InvoiceSection({
     if (!payerId) {
       setError('Debes seleccionar un pagador.')
       return
+    }
+    if (birthdayEnabled) {
+      if (!birthdayPersonId) {
+        setError('Selecciona a la persona cumpleañera.')
+        return
+      }
+      if (!participantIds.includes(birthdayPersonId)) {
+        setError('El cumpleañero debe estar en la lista de participantes.')
+        return
+      }
+      if (participantIds.length < 2) {
+        setError('Se necesita al menos otra persona para repartir el consumo del cumpleañero.')
+        return
+      }
     }
     if (participantIds.length === 0) {
       setError('Selecciona al menos un participante.')
@@ -118,6 +148,10 @@ export function InvoiceSection({
         setError('La suma de consumos no coincide con el total.')
         return
       }
+      if (birthdayEnabled && birthdayPersonId && consumptions[birthdayPersonId] === undefined) {
+        setError('El cumpleañero debe tener un consumo declarado (puede ser 0).')
+        return
+      }
       consumptionPayload = numericConsumptions
     }
 
@@ -130,6 +164,7 @@ export function InvoiceSection({
       divisionMethod,
       consumptions: consumptionPayload,
       tipAmount: includeTip ? numericTip : undefined,
+      birthdayPersonId: birthdayEnabled ? birthdayPersonId : undefined,
     })
     setDescription('')
     setAmount('')
@@ -143,6 +178,8 @@ export function InvoiceSection({
     setDivisionMethod('equal')
     setIncludeTip(false)
     setTipAmount('')
+    setBirthdayEnabled(false)
+    setBirthdayPersonId('')
   }
 
   const detailInvoice = invoices.find((invoice) => invoice.id === detailInvoiceId) ?? null
@@ -155,7 +192,7 @@ export function InvoiceSection({
   return (
     <SectionCard
       title="Facturas"
-      description="Registra facturas con pagador y participantes. El reparto es igualitario."
+      description="Registra facturas con pagador y participantes. Elige reparto igualitario o por consumo, con propina y cumpleañero opcional."
       actions={
         <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
           {invoices.length} factura(s)
@@ -215,6 +252,49 @@ export function InvoiceSection({
           <span className="text-[11px] text-slate-500" title="La propina se reparte igualitariamente entre los participantes al guardar la factura.">
             La propina se reparte igualitario al guardar.
           </span>
+        </div>
+
+        <div className="md:col-span-4 flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={birthdayEnabled}
+              onChange={(e) => setBirthdayEnabled(e.target.checked)}
+              className="accent-indigo-600"
+              id="birthday-toggle"
+              disabled={participantIds.length === 0}
+            />
+            <label htmlFor="birthday-toggle" className="text-xs font-semibold text-slate-700">
+              Marcar cumpleañero
+            </label>
+          </div>
+          {birthdayEnabled ? (
+            <>
+              <select
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                value={birthdayPersonId}
+                onChange={(e) => setBirthdayPersonId(e.target.value)}
+                aria-label="Selecciona cumpleañero"
+              >
+                <option value="">Selecciona cumpleañero</option>
+                {participantIds.map((id) => (
+                  <option key={id} value={id}>
+                    {resolvePersonName(id, people)}
+                  </option>
+                ))}
+              </select>
+              <span
+                className="text-[11px] text-slate-500"
+                title="El consumo del cumpleañero se reparte entre el resto de participantes al guardar."
+              >
+                🎉 El consumo del cumpleañero se reparte al resto.
+              </span>
+            </>
+          ) : (
+            <span className="text-[11px] text-slate-500" title="Marca un cumpleañero para que su consumo se reparta entre el resto.">
+              (Opcional) Marca a un cumpleañero para repartir su consumo.
+            </span>
+          )}
         </div>
         <select
           className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
@@ -370,6 +450,11 @@ export function InvoiceSection({
                     .map((id) => resolvePersonName(id, people))
                     .join(', ')}
                 </p>
+                {invoice.birthdayPersonId ? (
+                  <p className="text-xs text-indigo-700 font-semibold">
+                    Cumpleañero: {resolvePersonName(invoice.birthdayPersonId, people)}
+                  </p>
+                ) : null}
                 {invoice.tipAmount ? (
                   <p className="text-xs text-slate-600">
                     Propina: {currency} {invoice.tipAmount.toFixed(2)}
@@ -428,6 +513,11 @@ export function InvoiceSection({
                   ? 'Consumo'
                   : 'Igualitario'}
               </p>
+              {detailInvoice.birthdayPersonId ? (
+                <p className="text-[11px] font-semibold text-indigo-700">
+                  Cumpleañero: {resolvePersonName(detailInvoice.birthdayPersonId, people)}
+                </p>
+              ) : null}
             </div>
             <button
               type="button"
@@ -441,10 +531,17 @@ export function InvoiceSection({
             {participantShares.map((share) => (
               <div
                 key={share.personId}
-                className="flex items-center justify-between rounded-md bg-white px-3 py-2 shadow-sm"
+                className={`flex items-center justify-between rounded-md bg-white px-3 py-2 shadow-sm ${
+                  share.isBirthday ? 'border border-indigo-200' : ''
+                }`}
               >
                 <span className="font-semibold text-slate-900">
                   {resolvePersonName(share.personId, people)}
+                  {share.isBirthday ? (
+                    <span className="ml-2 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">
+                      Cumpleañero
+                    </span>
+                  ) : null}
                 </span>
                 <div className="text-right">
                   {share.tipPortion ? (
@@ -473,9 +570,14 @@ function calculateShares(invoice: InvoiceForUI, people: PersonForUI[]) {
   const participantIds = invoice.participantIds
   if (participantIds.length === 0) return []
   const tip = roundToCents(invoice.tipAmount ?? 0)
-  const tipShare = participantIds.length > 0 ? roundToCents(tip / participantIds.length) : 0
-  const tipTotalRounded = roundToCents(tipShare * participantIds.length)
+  const tipReceivers = invoice.birthdayPersonId
+    ? participantIds.filter((id) => id !== invoice.birthdayPersonId)
+    : participantIds
+  const tipShare =
+    tipReceivers.length > 0 ? roundToCents(tip / tipReceivers.length) : 0
+  const tipTotalRounded = roundToCents(tipShare * tipReceivers.length)
   const tipDiff = roundToCents(tip - tipTotalRounded)
+  const birthdayPersonId = invoice.birthdayPersonId
 
   if (invoice.divisionMethod === 'consumption') {
     const consumptions = invoice.consumptions ?? {}
@@ -486,17 +588,29 @@ function calculateShares(invoice: InvoiceForUI, people: PersonForUI[]) {
       rounded.reduce((acc, val) => acc + val, 0),
     )
     const diff = roundToCents(invoice.amount - totalRounded)
+    const adjustedBases = rounded.map((base, index) =>
+      roundToCents(base + (index === participantIds.length - 1 ? diff : 0)),
+    )
+    const withBirthday = redistributeBirthdayShares(
+      adjustedBases,
+      participantIds,
+      birthdayPersonId,
+    )
 
     return participantIds.map((personId, index) => {
-      const isLast = index === participantIds.length - 1
-      const base = rounded[index] ?? 0
-      const adjustedBase = roundToCents(base + (isLast ? diff : 0))
-      const adjustedTip = roundToCents(tipShare + (isLast ? tipDiff : 0))
+      const adjustedBase = withBirthday[index] ?? 0
+      const adjustedTip = buildTipPortion(
+        personId,
+        tipReceivers,
+        tipShare,
+        tipDiff,
+      )
       return {
         personId,
         amount: roundToCents(adjustedBase + adjustedTip),
         tipPortion: adjustedTip,
         name: resolvePersonName(personId, people),
+        isBirthday: personId === birthdayPersonId,
       }
     })
   }
@@ -506,19 +620,72 @@ function calculateShares(invoice: InvoiceForUI, people: PersonForUI[]) {
   const share = roundToCents(rawShare)
   const totalRounded = roundToCents(share * count)
   const diff = roundToCents(invoice.amount - totalRounded)
+  const adjustedBases = participantIds.map((_, index) =>
+    index === participantIds.length - 1 ? roundToCents(share + diff) : share,
+  )
+  const withBirthday = redistributeBirthdayShares(
+    adjustedBases,
+    participantIds,
+    birthdayPersonId,
+  )
 
   return participantIds.map((personId, index) => {
-    const isLast = index === participantIds.length - 1
-    const adjusted = isLast ? roundToCents(share + diff) : share
-    const adjustedTip = roundToCents(tipShare + (isLast ? tipDiff : 0))
+    const adjusted = withBirthday[index] ?? 0
+    const adjustedTip = buildTipPortion(
+      personId,
+      tipReceivers,
+      tipShare,
+      tipDiff,
+    )
     return {
       personId,
       amount: roundToCents(adjusted + adjustedTip),
       tipPortion: adjustedTip,
       name: resolvePersonName(personId, people),
+      isBirthday: personId === birthdayPersonId,
     }
   })
 }
 
 const roundToCents = (value: number) =>
   Math.round((value + Number.EPSILON) * 100) / 100
+
+function redistributeBirthdayShares(
+  baseShares: number[],
+  participants: string[],
+  birthdayPersonId?: string,
+) {
+  if (!birthdayPersonId) return baseShares
+  const birthdayIndex = participants.findIndex((id) => id === birthdayPersonId)
+  if (birthdayIndex === -1 || participants.length <= 1) return baseShares
+
+  const updated = [...baseShares]
+  const birthdayBase = updated[birthdayIndex] ?? 0
+  updated[birthdayIndex] = 0
+
+  const others = participants.filter((id) => id !== birthdayPersonId)
+  const perOther = roundToCents(birthdayBase / others.length)
+  const totalRounded = roundToCents(perOther * others.length)
+  const diff = roundToCents(birthdayBase - totalRounded)
+
+  others.forEach((id, idx) => {
+    const target = participants.indexOf(id)
+    updated[target] = roundToCents(
+      (updated[target] ?? 0) + perOther + (idx === others.length - 1 ? diff : 0),
+    )
+  })
+
+  return updated
+}
+
+function buildTipPortion(
+  personId: string,
+  tipReceivers: string[],
+  tipShare: number,
+  tipDiff: number,
+) {
+  if (!tipReceivers.includes(personId)) return 0
+  const isLastTip = tipReceivers.length > 0 &&
+    personId === tipReceivers[tipReceivers.length - 1]
+  return roundToCents(tipShare + (isLastTip ? tipDiff : 0))
+}

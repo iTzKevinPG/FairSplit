@@ -53,4 +53,66 @@ describe('Application use cases (in-memory)', () => {
       },
     ])
   })
+
+  it('rejects birthday without another participant to split', async () => {
+    const eventRepo = new InMemoryEventRepository()
+    const personRepo = new InMemoryPersonRepository(eventRepo)
+    const invoiceRepo = new InMemoryInvoiceRepository(eventRepo)
+
+    const event = await createEvent(eventRepo, { name: 'Party', currency: 'USD' })
+    const person = await addPersonToEvent(eventRepo, personRepo, {
+      eventId: event.id,
+      name: 'Solo',
+    })
+    const payerId = person?.people[0].id as string
+
+    await expect(
+      addInvoiceToEvent(eventRepo, invoiceRepo, {
+        eventId: event.id,
+        description: 'Cena',
+        amount: 50,
+        payerId,
+        participantIds: [payerId],
+        birthdayPersonId: payerId,
+      }),
+    ).rejects.toThrow(/birthday person requires at least one additional participant/i)
+  })
+
+  it('allows marking birthday and redistributes consumption', async () => {
+    const eventRepo = new InMemoryEventRepository()
+    const personRepo = new InMemoryPersonRepository(eventRepo)
+    const invoiceRepo = new InMemoryInvoiceRepository(eventRepo)
+
+    const event = await createEvent(eventRepo, { name: 'Party', currency: 'USD' })
+    await addPersonToEvent(eventRepo, personRepo, { eventId: event.id, name: 'Ana' })
+    await addPersonToEvent(eventRepo, personRepo, { eventId: event.id, name: 'Ben' })
+    await addPersonToEvent(eventRepo, personRepo, { eventId: event.id, name: 'Cara' })
+
+    const updated = await eventRepo.getById(event.id)
+    const payerId = updated?.people[0].id as string
+    const birthdayId = updated?.people[2].id as string
+
+    await addInvoiceToEvent(eventRepo, invoiceRepo, {
+      eventId: event.id,
+      description: 'Cena',
+      amount: 90,
+      payerId,
+      participantIds: updated?.people.map((p) => p.id) ?? [],
+      birthdayPersonId: birthdayId,
+    })
+
+    const settlement = await calculateSettlement(eventRepo, event.id)
+    expect(settlement.balances.find((b) => b.personId === payerId)).toEqual({
+      personId: payerId,
+      totalPaid: 90,
+      totalOwed: 45,
+      net: 45,
+    })
+    expect(settlement.balances.find((b) => b.personId === birthdayId)).toEqual({
+      personId: birthdayId,
+      totalPaid: 0,
+      totalOwed: 0,
+      net: 0,
+    })
+  })
 })

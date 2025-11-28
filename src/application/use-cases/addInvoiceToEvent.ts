@@ -12,6 +12,7 @@ export async function addInvoiceToEvent(
   const description = input.description.trim()
   const amount = Number(input.amount)
   const tipAmount = Number(input.tipAmount ?? 0)
+  const birthdayPersonId = input.birthdayPersonId
   if (!description) {
     throw new Error('Description is required')
   }
@@ -29,6 +30,14 @@ export async function addInvoiceToEvent(
   const participants = Array.from(
     new Set([...input.participantIds, input.payerId]),
   )
+
+  if (birthdayPersonId && !participants.includes(birthdayPersonId)) {
+    throw new Error('Birthday person must be one of the participants')
+  }
+
+  if (birthdayPersonId && participants.length < 2) {
+    throw new Error('Birthday person requires at least one additional participant')
+  }
 
   const divisionMethod = input.divisionMethod ?? 'equal'
   let consumptions: Record<string, number> | undefined
@@ -58,6 +67,13 @@ export async function addInvoiceToEvent(
       )
     }
     consumptions = normalized
+
+    if (
+      birthdayPersonId &&
+      inputConsumptions[birthdayPersonId] === undefined
+    ) {
+      throw new Error('Birthday person must have a declared consumption (can be 0)')
+    }
   }
 
   const invoice = {
@@ -69,6 +85,7 @@ export async function addInvoiceToEvent(
     divisionMethod,
     consumptions,
     tipAmount: tipAmount > 0 ? tipAmount : undefined,
+    birthdayPersonId,
   }
 
   await invoiceRepo.add(input.eventId, invoice)

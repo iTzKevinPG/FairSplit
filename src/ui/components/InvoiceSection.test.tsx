@@ -109,4 +109,28 @@ describe('InvoiceSection', () => {
     ).toBeInTheDocument()
     expect(onAdd).not.toHaveBeenCalled()
   })
+
+  it('validates birthday needs another participant', async () => {
+    const onAdd = vi.fn()
+    render(<InvoiceSection {...baseProps} onAdd={onAdd} />)
+
+    await userEvent.type(screen.getByPlaceholderText(/descripcion/i), 'Cumple')
+    const amountInput = screen.getByPlaceholderText(/monto/i)
+    await userEvent.clear(amountInput)
+    await userEvent.type(amountInput, '40')
+
+    await userEvent.click(screen.getByLabelText(/marcar cumple/i))
+    await userEvent.selectOptions(
+      screen.getByLabelText('Selecciona cumpleañero', { selector: 'select' }),
+      'p1',
+    )
+
+    await userEvent.click(screen.getByLabelText(/Ben/))
+
+    await userEvent.click(screen.getByRole('button', { name: /guardar factura/i }))
+    expect(
+      await screen.findByText(/se necesita al menos otra persona/i),
+    ).toBeInTheDocument()
+    expect(onAdd).not.toHaveBeenCalled()
+  })
 })

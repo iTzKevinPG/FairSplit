@@ -180,4 +180,57 @@ describe('Settlement service', () => {
       { fromPersonId: 'p2', toPersonId: 'p1', amount: 35 },
     ])
   })
+
+  it('redistribuye consumo del cumpleañero en reparto igualitario', () => {
+    const invoices: Invoice[] = [
+      {
+        id: 'i1',
+        description: 'Fiesta',
+        amount: 90,
+        payerId: 'p1',
+        participantIds: ['p1', 'p2', 'p3'],
+        birthdayPersonId: 'p3',
+      },
+    ]
+    const event = makeEvent(people, invoices)
+    const balances = calculateBalances(event)
+    expect(balances).toEqual([
+      { personId: 'p1', totalPaid: 90, totalOwed: 45, net: 45 },
+      { personId: 'p2', totalPaid: 0, totalOwed: 45, net: -45 },
+      { personId: 'p3', totalPaid: 0, totalOwed: 0, net: 0 },
+    ])
+    expect(suggestTransfers(balances)).toEqual([
+      { fromPersonId: 'p2', toPersonId: 'p1', amount: 45 },
+    ])
+  })
+
+  it('redistribuye consumo del cumpleañero en modo consumo con propina', () => {
+    const invoices: Invoice[] = [
+      {
+        id: 'i1',
+        description: 'Cena especial',
+        amount: 100,
+        tipAmount: 10,
+        payerId: 'p1',
+        participantIds: ['p1', 'p2', 'p3'],
+        divisionMethod: 'consumption',
+        consumptions: {
+          p1: 50,
+          p2: 30,
+          p3: 20,
+        },
+        birthdayPersonId: 'p3',
+      },
+    ]
+    const event = makeEvent(people, invoices)
+    const balances = calculateBalances(event)
+    expect(balances).toEqual([
+      { personId: 'p1', totalPaid: 110, totalOwed: 65, net: 45 },
+      { personId: 'p2', totalPaid: 0, totalOwed: 45, net: -45 },
+      { personId: 'p3', totalPaid: 0, totalOwed: 0, net: 0 },
+    ])
+    expect(suggestTransfers(balances)).toEqual([
+      { fromPersonId: 'p2', toPersonId: 'p1', amount: 45 },
+    ])
+  })
 })

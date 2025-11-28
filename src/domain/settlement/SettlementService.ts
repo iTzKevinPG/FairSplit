@@ -8,6 +8,47 @@ const EPSILON = 1e-6
 const roundToCents = (value: number) =>
   Math.round((value + Number.EPSILON) * 100) / 100
 
+function buildTipPortion(
+  personId: PersonId,
+  tipReceivers: PersonId[],
+  tipShare: number,
+  tipDiff: number,
+) {
+  if (!tipReceivers.includes(personId)) return 0
+  const isLastTipReceiver =
+    tipReceivers.length > 0 &&
+    personId === tipReceivers[tipReceivers.length - 1]
+  return roundToCents(tipShare + (isLastTipReceiver ? tipDiff : 0))
+}
+
+function redistributeBirthday(
+  baseShares: number[],
+  participants: PersonId[],
+  birthdayPersonId?: PersonId,
+) {
+  if (!birthdayPersonId) return baseShares
+  const birthdayIndex = participants.findIndex((id) => id === birthdayPersonId)
+  if (birthdayIndex === -1 || participants.length <= 1) return baseShares
+
+  const updated = [...baseShares]
+  const birthdayBase = updated[birthdayIndex] ?? 0
+  updated[birthdayIndex] = 0
+
+  const others = participants.filter((id) => id !== birthdayPersonId)
+  const perOther = roundToCents(birthdayBase / others.length)
+  const totalRounded = roundToCents(perOther * others.length)
+  const diff = roundToCents(birthdayBase - totalRounded)
+
+  others.forEach((id, index) => {
+    const target = participants.indexOf(id)
+    updated[target] = roundToCents(
+      (updated[target] ?? 0) + perOther + (index === others.length - 1 ? diff : 0),
+    )
+  })
+
+  return updated
+}
+
 export function calculateBalances(event: Event): Balance[] {
   const balances = new Map<PersonId, Balance>()
 
@@ -29,8 +70,12 @@ export function calculateBalances(event: Event): Balance[] {
     const totalRounded = roundToCents(share * count)
     const diff = roundToCents(invoice.amount - totalRounded)
     const tip = roundToCents(invoice.tipAmount ?? 0)
-    const tipShare = count > 0 ? roundToCents(tip / count) : 0
-    const tipTotalRounded = roundToCents(tipShare * count)
+    const tipReceivers = invoice.birthdayPersonId
+      ? participants.filter((id) => id !== invoice.birthdayPersonId)
+      : participants
+    const tipShare =
+      tipReceivers.length > 0 ? roundToCents(tip / tipReceivers.length) : 0
+    const tipTotalRounded = roundToCents(tipShare * tipReceivers.length)
     const tipDiff = roundToCents(tip - tipTotalRounded)
 
     const payerBalance = balances.get(invoice.payerId)
@@ -42,21 +87,30 @@ export function calculateBalances(event: Event): Balance[] {
 
     if (divisionMethod === 'consumption') {
       const consumptions = invoice.consumptions ?? {}
-      const roundedShares: number[] = []
-      let sumRounded = 0
-      participants.forEach((personId) => {
-        const raw = Number(consumptions[personId] ?? 0)
-        const rounded = roundToCents(raw)
-        roundedShares.push(rounded)
-        sumRounded += rounded
-      })
+      const roundedShares = participants.map((personId) =>
+        roundToCents(Number(consumptions[personId] ?? 0)),
+      )
+      const sumRounded = roundedShares.reduce((acc, val) => acc + val, 0)
       const diffConsumption = roundToCents(invoice.amount - roundToCents(sumRounded))
 
+      const adjustedBases = roundedShares.map((base, index) =>
+        roundToCents(base + (index === participants.length - 1 ? diffConsumption : 0)),
+      )
+
+      const withBirthday = redistributeBirthday(
+        adjustedBases,
+        participants,
+        invoice.birthdayPersonId,
+      )
+
       participants.forEach((personId, index) => {
-        const isLast = index === participants.length - 1
-        const baseShare = roundedShares[index] ?? 0
-        const adjustedBase = roundToCents(baseShare + (isLast ? diffConsumption : 0))
-        const adjustedTip = roundToCents(tipShare + (isLast ? tipDiff : 0))
+        const adjustedBase = withBirthday[index] ?? 0
+        const adjustedTip = buildTipPortion(
+          personId,
+          tipReceivers,
+          tipShare,
+          tipDiff,
+        )
         const participantBalance = balances.get(personId)
         if (participantBalance) {
           participantBalance.totalOwed = roundToCents(
@@ -65,10 +119,25 @@ export function calculateBalances(event: Event): Balance[] {
         }
       })
     } else {
-      participants.forEach((personId, index) => {
+      const adjustedBaseShares = participants.map((_, index) => {
         const isLast = index === participants.length - 1
-        const adjustedShare = isLast ? roundToCents(share + diff) : share
-        const adjustedTip = roundToCents(tipShare + (isLast ? tipDiff : 0))
+        return isLast ? roundToCents(share + diff) : share
+      })
+
+      const withBirthday = redistributeBirthday(
+        adjustedBaseShares,
+        participants,
+        invoice.birthdayPersonId,
+      )
+
+      participants.forEach((personId, index) => {
+        const adjustedShare = withBirthday[index] ?? 0
+        const adjustedTip = buildTipPortion(
+          personId,
+          tipReceivers,
+          tipShare,
+          tipDiff,
+        )
         const participantBalance = balances.get(personId)
         if (participantBalance) {
           participantBalance.totalOwed = roundToCents(

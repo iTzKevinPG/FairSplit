@@ -66,6 +66,11 @@ export function BentoOverview({
                   Pago: {resolvePersonName(inv.payerId, people)} · {currency}{' '}
                   {inv.amount.toFixed(2)} · Part: {inv.participantIds.length}
                 </p>
+                {inv.birthdayPersonId ? (
+                  <p className="text-[11px] font-semibold text-indigo-700">
+                    Cumpleañero: {resolvePersonName(inv.birthdayPersonId, people)}
+                  </p>
+                ) : null}
                 {inv.tipAmount ? (
                   <p className="text-[11px] text-slate-500">
                     Propina: {currency} {inv.tipAmount.toFixed(2)}

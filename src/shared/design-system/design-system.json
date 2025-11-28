@@ -1,0 +1,553 @@
+{
+    "meta": {
+        "name": "Bill Splitter Design System",
+        "version": "1.0.0",
+        "description": "Guía de diseño para la SPA de división de cuentas entre amigos. Define tokens de color, tipografía, espaciado y componentes base.",
+        "projectContext": "React + TypeScript + Vite + Tailwind + Zustand. Arquitectura limpia: UI, Application, Domain, Infrastructure. Dominio: división de facturas entre amigos, con eventos, participantes, facturas, saldos y transferencias sugeridas."
+    },
+    "rules_for_ai": {
+        "language": "es",
+        "guidelines": [
+            "Usar exclusivamente los tokens definidos en este archivo para colores, tipografía, espaciados, sombras y radios.",
+            "No inventar nuevos valores de color, tamaño o espaciado. Si falta un token, referirse al más cercano ya definido y documentar la necesidad.",
+            "Preferir tokens semánticos (ej. surfaceCard, textMuted, primaryAction) antes que valores crudos (ej. hex, px).",
+            "Al definir nuevos componentes, construir sus estilos usando referencias {tokens.*} en lugar de valores literales.",
+            "Respetar las intenciones de diseño: interfaz clara, simple, móvil-first, sin sobrecarga visual."
+        ]
+    },
+    "tokens": {
+        "color": {
+            "palette": {
+                "primary": {
+                    "main": {
+                        "value": "#6D28D9",
+                        "type": "color",
+                        "description": "MORADO ROYAL principal. Se usa para acciones primarias y elementos destacados."
+                    },
+                    "dark": {
+                        "value": "#4C1D95",
+                        "type": "color",
+                        "description": "Versión más oscura del morado para hover y énfasis fuerte."
+                    },
+                    "light": {
+                        "value": "#A855F7",
+                        "type": "color",
+                        "description": "Versión más clara del morado, usada como acento suave o para estados secundarios."
+                    },
+                    "soft": {
+                        "value": "#F3E8FF",
+                        "type": "color",
+                        "description": "Fondo suave relacionado al morado (chips, badges, fondos resaltados ligeros)."
+                    }
+                },
+                "neutral": {
+                    "50": {
+                        "value": "#F9FAFB",
+                        "type": "color",
+                        "description": "Fondo general de la aplicación."
+                    },
+                    "100": {
+                        "value": "#F3F4F6",
+                        "type": "color",
+                        "description": "Fondos de secciones, barras y contenedores suaves."
+                    },
+                    "200": {
+                        "value": "#E5E7EB",
+                        "type": "color",
+                        "description": "Bordes suaves, dividers y líneas separadoras."
+                    },
+                    "700": {
+                        "value": "#374151",
+                        "type": "color",
+                        "description": "Texto principal en fondos claros."
+                    },
+                    "500": {
+                        "value": "#6B7280",
+                        "type": "color",
+                        "description": "Texto secundario / muted."
+                    },
+                    "900": {
+                        "value": "#111827",
+                        "type": "color",
+                        "description": "Texto fuerte para títulos importantes sobre fondo muy claro."
+                    }
+                },
+                "accent": {
+                    "warning": {
+                        "value": "#F59E0B",
+                        "type": "color",
+                        "description": "Advertencias ligeras (ej. datos incompletos)."
+                    },
+                    "danger": {
+                        "value": "#DC2626",
+                        "type": "color",
+                        "description": "Errores: formularios, validaciones, mensajes de deuda negativa."
+                    },
+                    "success": {
+                        "value": "#16A34A",
+                        "type": "color",
+                        "description": "Mensajes de éxito (ej. cálculos completos, pagos marcados)."
+                    },
+                    "info": {
+                        "value": "#0EA5E9",
+                        "type": "color",
+                        "description": "Mensajes informativos o neutrales."
+                    }
+                }
+            },
+            "semantic": {
+                "appBackground": {
+                    "value": "{tokens.color.palette.neutral.50}",
+                    "type": "color",
+                    "description": "Fondo principal de la app."
+                },
+                "surfaceCard": {
+                    "value": "#FFFFFF",
+                    "type": "color",
+                    "description": "Cards, contenedores y secciones elevadas."
+                },
+                "surfaceMuted": {
+                    "value": "{tokens.color.palette.neutral.100}",
+                    "type": "color",
+                    "description": "Fondos suaves de paneles secundarios."
+                },
+                "borderSubtle": {
+                    "value": "{tokens.color.palette.neutral.200}",
+                    "type": "color",
+                    "description": "Bordes discretos para inputs, tarjetas y separadores."
+                },
+                "textMain": {
+                    "value": "{tokens.color.palette.neutral.900}",
+                    "type": "color",
+                    "description": "Texto principal."
+                },
+                "textMuted": {
+                    "value": "{tokens.color.palette.neutral.500}",
+                    "type": "color",
+                    "description": "Texto secundario, descripciones y etiquetas."
+                },
+                "textOnPrimary": {
+                    "value": "#FFFFFF",
+                    "type": "color",
+                    "description": "Texto sobre botones y fondos morados."
+                },
+                "primaryActionBackground": {
+                    "value": "{tokens.color.palette.primary.main}",
+                    "type": "color",
+                    "description": "Botones y acciones primarias."
+                },
+                "primaryActionBackgroundHover": {
+                    "value": "{tokens.color.palette.primary.dark}",
+                    "type": "color",
+                    "description": "Hover de botones primarios."
+                },
+                "primarySoftBackground": {
+                    "value": "{tokens.color.palette.primary.soft}",
+                    "type": "color",
+                    "description": "Fondos sutiles relacionados con el color primario."
+                },
+                "dangerBackground": {
+                    "value": "#FEF2F2",
+                    "type": "color",
+                    "description": "Fondos para mensajes de error."
+                },
+                "dangerBorder": {
+                    "value": "{tokens.color.palette.accent.danger}",
+                    "type": "color",
+                    "description": "Bordes y acentos para estados de error."
+                },
+                "successBackground": {
+                    "value": "#ECFDF3",
+                    "type": "color",
+                    "description": "Fondos para mensajes de éxito."
+                },
+                "successBorder": {
+                    "value": "{tokens.color.palette.accent.success}",
+                    "type": "color",
+                    "description": "Bordes y acentos para estados de éxito."
+                }
+            }
+        },
+        "spacing": {
+            "xs": {
+                "value": 4,
+                "unit": "px",
+                "description": "Espaciado muy pequeño (chips, tags, separación mínima)."
+            },
+            "sm": {
+                "value": 8,
+                "unit": "px",
+                "description": "Espaciado pequeño entre elementos relacionados."
+            },
+            "md": {
+                "value": 12,
+                "unit": "px",
+                "description": "Espaciado por defecto en grupos pequeños."
+            },
+            "lg": {
+                "value": 16,
+                "unit": "px",
+                "description": "Espaciado principal entre secciones en móvil."
+            },
+            "xl": {
+                "value": 24,
+                "unit": "px",
+                "description": "Espaciado amplio entre bloques o cards."
+            },
+            "2xl": {
+                "value": 32,
+                "unit": "px",
+                "description": "Espaciado muy amplio en desktop."
+            }
+        },
+        "radius": {
+            "none": {
+                "value": 0,
+                "unit": "px",
+                "description": "Elementos cuadrados sin bordes redondeados."
+            },
+            "sm": {
+                "value": 4,
+                "unit": "px",
+                "description": "Inputs y pequeñas etiquetas."
+            },
+            "md": {
+                "value": 8,
+                "unit": "px",
+                "description": "Botones y tarjetas estándar."
+            },
+            "lg": {
+                "value": 12,
+                "unit": "px",
+                "description": "Cards importantes o contenedores principales."
+            },
+            "pill": {
+                "value": 9999,
+                "unit": "px",
+                "description": "Chips, badges y etiquetas redondeadas."
+            }
+        },
+        "font": {
+            "family": {
+                "primary": {
+                    "value": "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                    "description": "Fuente principal de la aplicación."
+                }
+            },
+            "size": {
+                "xs": {
+                    "value": 12,
+                    "unit": "px",
+                    "description": "Texto auxiliar, badges y labels pequeños."
+                },
+                "sm": {
+                    "value": 14,
+                    "unit": "px",
+                    "description": "Texto normal en móvil y formularios."
+                },
+                "md": {
+                    "value": 16,
+                    "unit": "px",
+                    "description": "Texto principal en desktop y títulos en móvil."
+                },
+                "lg": {
+                    "value": 18,
+                    "unit": "px",
+                    "description": "Subtítulos y encabezados secundarios."
+                },
+                "xl": {
+                    "value": 20,
+                    "unit": "px",
+                    "description": "Títulos principales de secciones."
+                },
+                "2xl": {
+                    "value": 24,
+                    "unit": "px",
+                    "description": "Título principal del evento o de la app."
+                }
+            },
+            "weight": {
+                "regular": {
+                    "value": 400,
+                    "description": "Texto de párrafo estándar."
+                },
+                "medium": {
+                    "value": 500,
+                    "description": "Botones, labels importantes."
+                },
+                "semibold": {
+                    "value": 600,
+                    "description": "Títulos de cards, totales, montos."
+                },
+                "bold": {
+                    "value": 700,
+                    "description": "Títulos destacados y encabezados principales."
+                }
+            },
+            "lineHeight": {
+                "tight": {
+                    "value": 1.2,
+                    "description": "Títulos y heading compactos."
+                },
+                "normal": {
+                    "value": 1.4,
+                    "description": "Texto estándar de lectura."
+                },
+                "relaxed": {
+                    "value": 1.6,
+                    "description": "Textos más largos o con mucho contenido."
+                }
+            }
+        },
+        "shadow": {
+            "none": {
+                "value": "none",
+                "description": "Sin sombra."
+            },
+            "sm": {
+                "value": "0 1px 3px rgba(15, 23, 42, 0.08)",
+                "description": "Elevación ligera para cards y modales pequeños."
+            },
+            "md": {
+                "value": "0 4px 10px rgba(15, 23, 42, 0.12)",
+                "description": "Modales o contenedores importantes."
+            }
+        },
+        "layout": {
+            "pageMaxWidth": {
+                "value": 960,
+                "unit": "px",
+                "description": "Ancho máximo del contenido en desktop."
+            },
+            "pagePaddingMobile": {
+                "value": 16,
+                "unit": "px",
+                "description": "Padding horizontal en pantallas móviles."
+            },
+            "pagePaddingDesktop": {
+                "value": 24,
+                "unit": "px",
+                "description": "Padding horizontal en pantallas grandes."
+            },
+            "navbarHeight": {
+                "value": 56,
+                "unit": "px",
+                "description": "Altura de la barra superior de navegación."
+            }
+        },
+        "breakpoints": {
+            "mobile": {
+                "value": 640,
+                "unit": "px",
+                "description": "Hasta aquí se considera vista móvil."
+            },
+            "tablet": {
+                "value": 768,
+                "unit": "px",
+                "description": "Ancho mínimo para tablet."
+            },
+            "desktop": {
+                "value": 1024,
+                "unit": "px",
+                "description": "Ancho mínimo para desktop."
+            }
+        }
+    },
+    "components": {
+        "button": {
+            "description": "Botón base de la aplicación. Se usa para acciones principales y secundarias.",
+            "variants": {
+                "primary": {
+                    "backgroundColor": "{tokens.color.semantic.primaryActionBackground}",
+                    "textColor": "{tokens.color.semantic.textOnPrimary}",
+                    "borderColor": "{tokens.color.semantic.primaryActionBackground}",
+                    "borderRadius": "{tokens.radius.md}",
+                    "paddingY": "{tokens.spacing.sm}",
+                    "paddingX": "{tokens.spacing.lg}",
+                    "fontSize": "{tokens.font.size.sm}",
+                    "fontWeight": "{tokens.font.weight.medium}",
+                    "shadow": "{tokens.shadow.sm}",
+                    "states": {
+                        "hover": {
+                            "backgroundColor": "{tokens.color.semantic.primaryActionBackgroundHover}"
+                        },
+                        "disabled": {
+                            "backgroundColor": "{tokens.color.semantic.primarySoftBackground}",
+                            "textColor": "{tokens.color.semantic.textMuted}",
+                            "shadow": "{tokens.shadow.none}"
+                        }
+                    }
+                },
+                "secondary": {
+                    "backgroundColor": "{tokens.color.semantic.surfaceMuted}",
+                    "textColor": "{tokens.color.semantic.textMain}",
+                    "borderColor": "{tokens.color.semantic.borderSubtle}",
+                    "borderRadius": "{tokens.radius.md}",
+                    "paddingY": "{tokens.spacing.sm}",
+                    "paddingX": "{tokens.spacing.lg}",
+                    "fontSize": "{tokens.font.size.sm}",
+                    "fontWeight": "{tokens.font.weight.medium}"
+                },
+                "ghost": {
+                    "backgroundColor": "transparent",
+                    "textColor": "{tokens.color.palette.primary.main}",
+                    "borderColor": "transparent",
+                    "borderRadius": "{tokens.radius.md}",
+                    "paddingY": "{tokens.spacing.xs}",
+                    "paddingX": "{tokens.spacing.sm}",
+                    "fontSize": "{tokens.font.size.sm}",
+                    "fontWeight": "{tokens.font.weight.medium}"
+                }
+            }
+        },
+        "input": {
+            "description": "Inputs de formularios para nombres, descripciones y montos.",
+            "base": {
+                "backgroundColor": "#FFFFFF",
+                "textColor": "{tokens.color.semantic.textMain}",
+                "borderColor": "{tokens.color.semantic.borderSubtle}",
+                "borderRadius": "{tokens.radius.sm}",
+                "paddingY": "{tokens.spacing.sm}",
+                "paddingX": "{tokens.spacing.sm}",
+                "fontSize": "{tokens.font.size.sm}",
+                "fontFamily": "{tokens.font.family.primary}"
+            },
+            "states": {
+                "focus": {
+                    "borderColor": "{tokens.color.palette.primary.main}",
+                    "shadow": "{tokens.shadow.sm}"
+                },
+                "error": {
+                    "borderColor": "{tokens.color.semantic.dangerBorder}",
+                    "backgroundColor": "{tokens.color.semantic.dangerBackground}"
+                },
+                "disabled": {
+                    "backgroundColor": "{tokens.color.semantic.surfaceMuted}",
+                    "textColor": "{tokens.color.semantic.textMuted}"
+                }
+            }
+        },
+        "tagParticipant": {
+            "description": "Chip/tag para mostrar participantes en facturas y resúmenes.",
+            "base": {
+                "backgroundColor": "{tokens.color.semantic.primarySoftBackground}",
+                "textColor": "{tokens.color.palette.primary.dark}",
+                "borderRadius": "{tokens.radius.pill}",
+                "paddingY": "{tokens.spacing.xs}",
+                "paddingX": "{tokens.spacing.sm}",
+                "fontSize": "{tokens.font.size.xs}",
+                "fontWeight": "{tokens.font.weight.medium}"
+            }
+        },
+        "cardEvent": {
+            "description": "Card para mostrar un evento en la lista de eventos.",
+            "base": {
+                "backgroundColor": "{tokens.color.semantic.surfaceCard}",
+                "borderRadius": "{tokens.radius.lg}",
+                "padding": "{tokens.spacing.lg}",
+                "shadow": "{tokens.shadow.sm}",
+                "title": {
+                    "fontSize": "{tokens.font.size.lg}",
+                    "fontWeight": "{tokens.font.weight.semibold}",
+                    "textColor": "{tokens.color.semantic.textMain}"
+                },
+                "subtitle": {
+                    "fontSize": "{tokens.font.size.xs}",
+                    "fontWeight": "{tokens.font.weight.regular}",
+                    "textColor": "{tokens.color.semantic.textMuted}"
+                }
+            }
+        },
+        "rowInvoice": {
+            "description": "Fila de factura en la vista de facturas.",
+            "base": {
+                "backgroundColor": "{tokens.color.semantic.surfaceCard}",
+                "borderRadius": "{tokens.radius.md}",
+                "paddingY": "{tokens.spacing.sm}",
+                "paddingX": "{tokens.spacing.sm}",
+                "title": {
+                    "fontSize": "{tokens.font.size.sm}",
+                    "fontWeight": "{tokens.font.weight.medium}",
+                    "textColor": "{tokens.color.semantic.textMain}"
+                },
+                "meta": {
+                    "fontSize": "{tokens.font.size.xs}",
+                    "fontWeight": "{tokens.font.weight.regular}",
+                    "textColor": "{tokens.color.semantic.textMuted}"
+                },
+                "amount": {
+                    "fontSize": "{tokens.font.size.sm}",
+                    "fontWeight": "{tokens.font.weight.semibold}",
+                    "textColor": "{tokens.color.palette.primary.main}"
+                }
+            }
+        },
+        "rowPersonSummary": {
+            "description": "Fila en la tabla de resumen por persona (Total Pagado, Total Debía, Saldo Neto).",
+            "base": {
+                "paddingY": "{tokens.spacing.xs}",
+                "paddingX": "{tokens.spacing.sm}",
+                "name": {
+                    "fontSize": "{tokens.font.size.sm}",
+                    "fontWeight": "{tokens.font.weight.medium}",
+                    "textColor": "{tokens.color.semantic.textMain}"
+                },
+                "amountPaid": {
+                    "fontSize": "{tokens.font.size.xs}",
+                    "textColor": "{tokens.color.semantic.textMain}"
+                },
+                "amountShouldPay": {
+                    "fontSize": "{tokens.font.size.xs}",
+                    "textColor": "{tokens.color.semantic.textMain}"
+                },
+                "netBalancePositive": {
+                    "fontSize": "{tokens.font.size.xs}",
+                    "fontWeight": "{tokens.font.weight.medium}",
+                    "textColor": "{tokens.color.palette.accent.success}"
+                },
+                "netBalanceNegative": {
+                    "fontSize": "{tokens.font.size.xs}",
+                    "fontWeight": "{tokens.font.weight.medium}",
+                    "textColor": "{tokens.color.palette.accent.danger}"
+                },
+                "netBalanceZero": {
+                    "fontSize": "{tokens.font.size.xs}",
+                    "fontWeight": "{tokens.font.weight.medium}",
+                    "textColor": "{tokens.color.semantic.textMuted}"
+                }
+            }
+        },
+        "rowTransfer": {
+            "description": "Fila en la lista de transferencias sugeridas (De → Hacia → Monto).",
+            "base": {
+                "backgroundColor": "{tokens.color.semantic.surfaceCard}",
+                "borderRadius": "{tokens.radius.md}",
+                "paddingY": "{tokens.spacing.sm}",
+                "paddingX": "{tokens.spacing.sm}",
+                "shadow": "{tokens.shadow.none}",
+                "fromToText": {
+                    "fontSize": "{tokens.font.size.sm}",
+                    "fontWeight": "{tokens.font.weight.regular}",
+                    "textColor": "{tokens.color.semantic.textMain}"
+                },
+                "amount": {
+                    "fontSize": "{tokens.font.size.sm}",
+                    "fontWeight": "{tokens.font.weight.semibold}",
+                    "textColor": "{tokens.color.palette.primary.main}"
+                }
+            }
+        },
+        "navbar": {
+            "description": "Barra superior con el nombre de la app y navegación principal.",
+            "base": {
+                "backgroundColor": "{tokens.color.palette.primary.main}",
+                "textColor": "{tokens.color.semantic.textOnPrimary}",
+                "height": "{tokens.layout.navbarHeight}",
+                "title": {
+                    "fontSize": "{tokens.font.size.md}",
+                    "fontWeight": "{tokens.font.weight.semibold}"
+                }
+            }
+        }
+    }
+}

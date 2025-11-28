@@ -11,4 +11,5 @@ export interface Invoice {
   divisionMethod?: 'equal' | 'consumption'
   consumptions?: Record<PersonId, number>
   tipAmount?: number
+  birthdayPersonId?: PersonId
 }
