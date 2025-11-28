@@ -1,13 +1,9 @@
 import type { RemovePersonInput } from '../dto/eventDtos'
 import type { EventRepository } from '../ports/EventRepository'
-import type { InvoiceRepository } from '../ports/InvoiceRepository'
-import type { PersonRepository } from '../ports/PersonRepository'
 import { requireEvent } from './helpers'
 
 export async function removePersonFromEvent(
   eventRepo: EventRepository,
-  personRepo: PersonRepository,
-  invoiceRepo: InvoiceRepository,
   input: RemovePersonInput,
 ) {
   const event = await requireEvent(eventRepo, input.eventId)

@@ -117,7 +117,7 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
     const finalEvent = await eventRepository.getById(event.id)
     if (!finalEvent) return
 
-    set((state) => ({
+    set((_) => ({
       events: [finalEvent],
       selectedEventId: finalEvent.id,
       hasSeededDemo: true,
@@ -178,8 +178,6 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
     if (!eventId) return undefined
     const event = await removePersonFromEvent(
       eventRepository,
-      personRepository,
-      invoiceRepository,
       {
         ...input,
         eventId,

@@ -1,5 +1,5 @@
-import type { Balance } from '../../domain/balance'
-import type { PersonForUI } from '../../state/fairsplitStore'
+import type { Balance } from '../../domain/settlement/Balance'
+import type { PersonForUI } from '../../shared/state/fairsplitStore'
 import { SectionCard } from './SectionCard'
 
 interface SummarySectionProps {
@@ -24,7 +24,7 @@ export function SummarySection({
       description="Saldos netos por persona: positivo significa que le deben; negativo, que debe."
       actions={
         tipTotal && tipTotal > 0 ? (
-          <span className="rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-semibold text-indigo-700">
+          <span className="ds-badge-soft">
             Propina total: {currency} {tipTotal.toFixed(2)}
           </span>
         ) : null
@@ -38,7 +38,7 @@ export function SummarySection({
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200">
             <thead>
-              <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
+              <tr className="text-left text-xs uppercase tracking-wide text-[color:var(--color-text-muted)]">
                 <th className="px-3 py-2">Persona</th>
                 <th className="px-3 py-2">Pagado</th>
                 <th className="px-3 py-2">Debia</th>
@@ -53,13 +53,13 @@ export function SummarySection({
                 const net = normalize(balance.net)
                 return (
                   <tr key={balance.personId}>
-                    <td className="px-3 py-2 font-semibold text-slate-900">
+                    <td className="px-3 py-2 font-semibold text-[color:var(--color-text-main)]">
                       {personName}
                     </td>
-                    <td className="px-3 py-2 text-slate-700">
+                    <td className="px-3 py-2 text-[color:var(--color-text-main)]">
                       {currency} {balance.totalPaid.toFixed(2)}
                     </td>
-                    <td className="px-3 py-2 text-slate-700">
+                    <td className="px-3 py-2 text-[color:var(--color-text-main)]">
                       {currency} {balance.totalOwed.toFixed(2)}
                     </td>
                     <td

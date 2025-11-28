@@ -1,5 +1,5 @@
-import type { SettlementTransfer } from '../../domain/transfer'
-import type { PersonForUI } from '../../state/fairsplitStore'
+import type { SettlementTransfer } from '../../domain/settlement/SettlementTransfer'
+import type { PersonForUI } from '../../shared/state/fairsplitStore'
 import { SectionCard } from './SectionCard'
 
 interface TransfersSectionProps {
@@ -23,7 +23,7 @@ export function TransfersSection({
       description="Pagos simples para saldar los saldos netos."
       actions={
         tipTotal && tipTotal > 0 ? (
-          <span className="rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-semibold text-indigo-700">
+          <span className="ds-badge-soft">
             Incluye propina: {currency} {tipTotal.toFixed(2)}
           </span>
         ) : null
@@ -33,7 +33,7 @@ export function TransfersSection({
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 text-sm">
             <thead>
-              <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
+              <tr className="text-left text-xs uppercase tracking-wide text-[color:var(--color-text-muted)]">
                 <th className="px-3 py-2">De</th>
                 <th className="px-3 py-2">Hacia</th>
                 <th className="px-3 py-2">Monto</th>
@@ -42,13 +42,13 @@ export function TransfersSection({
             <tbody className="divide-y divide-slate-100">
               {transfers.map((transfer, index) => (
                 <tr key={`${transfer.fromPersonId}-${transfer.toPersonId}-${index}`}>
-                  <td className="px-3 py-2 font-semibold text-slate-900">
+                  <td className="px-3 py-2 font-semibold text-[color:var(--color-text-main)]">
                     {resolvePersonName(transfer.fromPersonId, people)}
                   </td>
-                  <td className="px-3 py-2 font-semibold text-slate-900">
+                  <td className="px-3 py-2 font-semibold text-[color:var(--color-text-main)]">
                     {resolvePersonName(transfer.toPersonId, people)}
                   </td>
-                  <td className="px-3 py-2 font-semibold text-indigo-700">
+                  <td className="px-3 py-2 font-semibold text-accent">
                     {currency} {transfer.amount.toFixed(2)}
                   </td>
                 </tr>

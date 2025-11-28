@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from 'react'
-import type { PersonForUI } from '../../state/fairsplitStore'
 import { SectionCard } from './SectionCard'
+import type { PersonForUI } from '../../shared/state/fairsplitStore'
 
 interface PeopleSectionProps {
   people: PersonForUI[]
@@ -73,14 +73,14 @@ export function PeopleSection({
         className="flex flex-col gap-3 sm:flex-row sm:items-center"
       >
         <input
-          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="ds-input"
           placeholder="Nombre o alias"
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
         <button
           type="submit"
-          className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
+          className="ds-btn ds-btn-primary"
           disabled={!name.trim()}
         >
           Agregar
@@ -91,24 +91,27 @@ export function PeopleSection({
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         {people.length === 0 ? (
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-[color:var(--color-text-muted)]">
             Aun no hay personas. Agrega al menos una para crear facturas.
           </p>
         ) : (
           people.map((person) => (
             <div
               key={person.id}
-              className="flex min-h-[90px] flex-col gap-2 rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 shadow-sm"
+              className="flex min-h-[90px] flex-col gap-2 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-3 text-sm text-[color:var(--color-text-main)] shadow-sm"
             >
               {editingId === person.id ? (
-                <div className="flex w-full flex-col gap-2" onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    void handleEditSave()
-                  }
-                }}>
+                <div
+                  className="flex w-full flex-col gap-2"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      void handleEditSave()
+                    }
+                  }}
+                >
                   <input
-                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="ds-input"
                     value={editingName}
                     onChange={(e) => setEditingName(e.target.value)}
                   />
@@ -134,13 +137,13 @@ export function PeopleSection({
                 </div>
               ) : (
                 <>
-                  <span className="truncate font-semibold text-slate-900">
+                  <span className="truncate font-semibold text-[color:var(--color-text-main)]">
                     {person.name}
                   </span>
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
-                      className="text-xs font-semibold text-indigo-600 hover:text-indigo-500"
+                      className="text-xs font-semibold text-accent hover:text-indigo-600"
                       onClick={() => startEditing(person)}
                     >
                       Editar

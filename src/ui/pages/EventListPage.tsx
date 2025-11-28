@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { EventSelector } from '../components/EventSelector'
 import { useEvents } from '../hooks/useEvents'
+import { ThemeToggle } from '../components/ThemeToggle'
 
 function EventListPage() {
   const { events, selectedEventId, loadEvents, selectEvent, createAndSelect } =
@@ -25,16 +26,21 @@ function EventListPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-slate-50">
+    <main className="min-h-screen bg-[color:var(--color-app-bg)]">
       <div className="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-12">
         <header className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-500">
-            FairSplit
-          </p>
-          <h1 className="text-3xl font-semibold text-slate-900 sm:text-4xl">
-            Divide gastos entre amigos con claridad.
-          </h1>
-          <p className="max-w-3xl text-base text-slate-600">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary-600">
+                FairSplit
+              </p>
+              <h1 className="text-3xl font-semibold text-[color:var(--color-text-main)] sm:text-4xl">
+                Divide gastos entre amigos con claridad.
+              </h1>
+            </div>
+            <ThemeToggle />
+          </div>
+          <p className="max-w-3xl text-base text-[color:var(--color-text-muted)]">
             Crea eventos, agrega participantes y registra facturas. Calcula
             saldos netos y transferencias sugeridas con datos en memoria, listos
             para conectar un backend despues.
@@ -50,11 +56,11 @@ function EventListPage() {
         />
 
         <section className="space-y-3">
-          <h2 className="text-lg font-semibold text-slate-900">
+          <h2 className="text-lg font-semibold text-[color:var(--color-text-main)]">
             Eventos recientes
           </h2>
           {events.length === 0 ? (
-            <p className="text-sm text-slate-600" data-testid="empty-events">
+            <p className="text-sm text-[color:var(--color-text-muted)]" data-testid="empty-events">
               Aun no hay eventos. Crea uno para empezar.
             </p>
           ) : (
@@ -64,15 +70,15 @@ function EventListPage() {
                   key={event.id}
                   type="button"
                   onClick={() => handleSelect(event.id)}
-                  className="flex flex-col items-start rounded-xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow"
+                  className="ds-card flex flex-col items-start text-left transition hover:-translate-y-0.5 hover:shadow-md"
                 >
-                  <span className="text-sm font-semibold text-slate-900">
+                  <span className="text-sm font-semibold text-[color:var(--color-text-main)]">
                     {event.name}
                   </span>
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-[color:var(--color-text-muted)]">
                     Moneda: {event.currency} · Participantes: {event.people.length}
                   </span>
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-[color:var(--color-text-muted)]">
                     Facturas: {event.invoices.length}
                   </span>
                 </button>

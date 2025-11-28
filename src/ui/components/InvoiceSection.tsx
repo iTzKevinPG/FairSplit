@@ -194,27 +194,27 @@ export function InvoiceSection({
       title="Facturas"
       description="Registra facturas con pagador y participantes. Elige reparto igualitario o por consumo, con propina y cumpleañero opcional."
       actions={
-        <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
+        <span className="rounded-full accent-chip px-3 py-1 text-xs font-semibold text-accent">
           {invoices.length} factura(s)
         </span>
       }
     >
       <form onSubmit={handleSubmit} className="grid gap-3 md:grid-cols-4">
         <input
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 md:col-span-2"
+          className="ds-input md:col-span-2"
           placeholder="Descripcion"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
-        <div className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 shadow-sm focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
-          <span className="text-xs font-semibold text-slate-500">
+        <div className="flex items-center gap-2 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-2 shadow-sm focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
+          <span className="text-xs font-semibold text-[color:var(--color-text-muted)]">
             {currency}
           </span>
           <input
             type="number"
             min="0"
             step="0.01"
-            className="w-full text-sm text-slate-900 outline-none"
+            className="w-full bg-transparent text-sm text-[color:var(--color-text-main)] outline-none"
             placeholder="Monto"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
@@ -231,25 +231,25 @@ export function InvoiceSection({
               id="include-tip"
               disabled={people.length === 0}
             />
-            <label htmlFor="include-tip" className="text-xs font-semibold text-slate-700">
+            <label htmlFor="include-tip" className="text-xs font-semibold text-slate-500">
               Incluir propina
             </label>
           </div>
           {includeTip ? (
-            <div className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 shadow-sm focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
-              <span className="text-xs font-semibold text-slate-500">{currency}</span>
+            <div className="flex items-center gap-2 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-2 shadow-sm focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
+              <span className="text-xs font-semibold text-[color:var(--color-text-muted)]">{currency}</span>
               <input
                 type="number"
                 min="0"
                 step="0.01"
-                className="w-full text-sm text-slate-900 outline-none"
+                className="w-full bg-transparent text-sm text-[color:var(--color-text-main)] outline-none"
                 placeholder="Propina"
                 value={tipAmount}
                 onChange={(e) => setTipAmount(e.target.value)}
               />
             </div>
           ) : null}
-          <span className="text-[11px] text-slate-500" title="La propina se reparte igualitariamente entre los participantes al guardar la factura.">
+          <span className="text-[11px] text-[color:var(--color-text-muted)]" title="La propina se reparte igualitariamente entre los participantes al guardar la factura.">
             La propina se reparte igualitario al guardar.
           </span>
         </div>
@@ -264,14 +264,15 @@ export function InvoiceSection({
               id="birthday-toggle"
               disabled={participantIds.length === 0}
             />
-            <label htmlFor="birthday-toggle" className="text-xs font-semibold text-slate-700">
+            <label htmlFor="birthday-toggle" className="text-xs font-semibold text-slate-500">
               Marcar cumpleañero
             </label>
           </div>
           {birthdayEnabled ? (
             <>
+            <div>
               <select
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="ds-select"
                 value={birthdayPersonId}
                 onChange={(e) => setBirthdayPersonId(e.target.value)}
                 aria-label="Selecciona cumpleañero"
@@ -283,21 +284,22 @@ export function InvoiceSection({
                   </option>
                 ))}
               </select>
+            </div>
               <span
-                className="text-[11px] text-slate-500"
+                className="text-[11px] text-[color:var(--color-text-muted)]"
                 title="El consumo del cumpleañero se reparte entre el resto de participantes al guardar."
               >
                 🎉 El consumo del cumpleañero se reparte al resto.
               </span>
             </>
           ) : (
-            <span className="text-[11px] text-slate-500" title="Marca un cumpleañero para que su consumo se reparta entre el resto.">
+            <span className="text-[11px] text-[color:var(--color-text-muted)]" title="Marca un cumpleañero para que su consumo se reparta entre el resto.">
               (Opcional) Marca a un cumpleañero para repartir su consumo.
             </span>
           )}
         </div>
         <select
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="ds-select"
           value={payerId ?? ''}
           onChange={(e) => setPayerId(e.target.value)}
           disabled={people.length === 0}
@@ -315,7 +317,7 @@ export function InvoiceSection({
         </select>
 
         <select
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="ds-select"
           value={divisionMethod}
           onChange={(e) => setDivisionMethod(e.target.value as 'equal' | 'consumption')}
         >
@@ -324,12 +326,12 @@ export function InvoiceSection({
         </select>
 
         <div className="md:col-span-4">
-          <p className="text-xs font-semibold tracking-wide text-slate-600">
+          <p className="text-xs font-semibold tracking-wide text-[color:var(--color-text-muted)]">
             Participantes
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             {people.length === 0 ? (
-              <span className="text-sm text-slate-600">
+              <span className="text-sm text-[color:var(--color-text-muted)]">
                 Agrega personas para asignar participantes.
               </span>
             ) : (
@@ -341,7 +343,7 @@ export function InvoiceSection({
                     key={person.id}
                     className={`flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold shadow-sm transition ${
                       checked
-                        ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
+                        ? 'border-indigo-300 accent-chip text-accent'
                         : 'border-slate-200 bg-white text-slate-700'
                     }`}
                   >
@@ -354,7 +356,7 @@ export function InvoiceSection({
                     />
                     {person.name}
                     {isPayer ? (
-                      <span className="text-[10px] font-semibold text-slate-500">
+                      <span className="text-[10px] font-semibold text-[color:var(--color-text-muted)]">
                         (Pagador)
                       </span>
                     ) : null}
@@ -368,10 +370,10 @@ export function InvoiceSection({
         {divisionMethod === 'consumption' ? (
           <div className="md:col-span-4">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold tracking-wide text-slate-600">
+              <p className="text-xs font-semibold tracking-wide text-[color:var(--color-text-muted)]">
                 Consumo por participante
               </p>
-              <p className="text-[11px] font-semibold text-slate-600">
+              <p className="text-[11px] font-semibold text-[color:var(--color-text-muted)]">
                 Suma ingresada: {currency} {roundToCents(consumptionSum).toFixed(2)}
               </p>
             </div>
@@ -381,18 +383,18 @@ export function InvoiceSection({
                   key={id}
                   className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm"
                 >
-                  <p className="text-xs font-semibold text-slate-600">
+                  <p className="text-xs font-semibold text-[color:var(--color-text-muted)]">
                     {resolvePersonName(id, people)}
                   </p>
                   <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-2 py-1 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
-                    <span className="text-[10px] font-semibold text-slate-500">
+                    <span className="text-[10px] font-semibold text-[color:var(--color-text-muted)]">
                       {currency}
                     </span>
                     <input
                       type="number"
                       min="0"
                       step="0.01"
-                      className="w-full text-sm text-slate-900 outline-none"
+                      className="w-full text-sm text-[color:var(--color-text-main)] outline-none"
                       data-testid={`consumption-${id}`}
                       value={consumptions[id] ?? ''}
                       onChange={(e) =>
@@ -414,7 +416,7 @@ export function InvoiceSection({
         <div className="md:col-span-4 flex justify-end">
           <button
             type="submit"
-            className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
+            className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:accent-chip0 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-[color:var(--color-text-muted)]"
             disabled={people.length === 0}
           >
             Guardar factura
@@ -424,48 +426,48 @@ export function InvoiceSection({
 
       <div className="mt-5 space-y-3">
         {invoices.length === 0 ? (
-          <div className="flex items-center justify-between rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-            <span>Aun no hay facturas registradas.</span>
-            <span className="text-xs text-indigo-600">Agrega la primera arriba.</span>
+          <div className="ds-card flex items-center justify-between rounded-lg">
+            <span className='text-sm'>Aun no hay facturas registradas.</span>
+            <span className="text-xs text-accent">Agrega la primera arriba.</span>
           </div>
         ) : (
           invoices.map((invoice) => (
             <div
               key={invoice.id}
-              className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-2 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-3 py-2 text-sm shadow-sm sm:flex-row sm:items-center sm:justify-between"
             >
               <div>
-                <p className="font-semibold text-slate-900">
+                <p className="font-semibold text-accent">
                   {invoice.description}{' '}
-                  <span className="text-xs font-normal text-slate-500">
+                  <span className="text-xs font-normal text-[color:var(--color-text-muted)]">
                     ({currency} {invoice.amount.toFixed(2)})
                   </span>
                 </p>
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-[color:var(--color-text-muted)]">
                   Pago: {resolvePersonName(invoice.payerId, people)}
                 </p>
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-[color:var(--color-text-muted)]">
                   Participantes ({invoice.participantIds.length}):{' '}
                   {invoice.participantIds
                     .map((id) => resolvePersonName(id, people))
                     .join(', ')}
                 </p>
                 {invoice.birthdayPersonId ? (
-                  <p className="text-xs text-indigo-700 font-semibold">
+                  <p className="text-xs text-accent font-semibold">
                     Cumpleañero: {resolvePersonName(invoice.birthdayPersonId, people)}
                   </p>
                 ) : null}
                 {invoice.tipAmount ? (
-                  <p className="text-xs text-slate-600">
+                  <p className="text-xs text-[color:var(--color-text-muted)]">
                     Propina: {currency} {invoice.tipAmount.toFixed(2)}
                   </p>
                 ) : null}
                 {invoice.divisionMethod === 'consumption' ? (
-                  <p className="text-[10px] uppercase tracking-wide text-slate-500">
+                  <p className="text-[10px] uppercase tracking-wide text-[color:var(--color-text-muted)]">
                     Metodo: Consumo
                   </p>
                 ) : (
-                  <p className="text-[10px] uppercase tracking-wide text-slate-500">
+                  <p className="text-[10px] uppercase tracking-wide text-[color:var(--color-text-muted)]">
                     Metodo: Igualitario
                   </p>
                 )}
@@ -473,7 +475,7 @@ export function InvoiceSection({
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  className="text-xs font-semibold text-indigo-600 hover:text-indigo-500"
+                  className="text-xs font-semibold text-accent hover:text-indigo-500"
                   onClick={() =>
                     setDetailInvoiceId((current) =>
                       current === invoice.id ? null : invoice.id,
@@ -484,7 +486,7 @@ export function InvoiceSection({
                 </button>
                 <button
                   type="button"
-                  className="text-xs font-semibold text-slate-500 hover:text-red-600"
+                  className="text-xs font-semibold text-[color:var(--color-text-muted)] hover:text-red-600"
                   onClick={() => onRemove(invoice.id)}
                 >
                   Eliminar
@@ -496,32 +498,32 @@ export function InvoiceSection({
       </div>
 
       {detailInvoice ? (
-        <div className="mt-4 rounded-lg border border-indigo-100 bg-indigo-50/70 p-4 text-sm text-slate-800">
+        <div className="mt-4 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] p-4 text-sm text-[color:var(--color-text-main)]">
           <div className="flex items-center justify-between gap-2">
             <div>
-              <p className="font-semibold text-indigo-800">{detailInvoice.description}</p>
-              <p className="text-xs text-slate-600">
+              <p className="font-semibold text-accent">{detailInvoice.description}</p>
+              <p className="text-xs text-[color:var(--color-text-muted)]">
                 Pago: {resolvePersonName(detailInvoice.payerId, people)} · Monto:{' '}
                 {currency} {detailInvoice.amount.toFixed(2)}
                 {detailInvoice.tipAmount
                   ? ` · Propina: ${currency} ${detailInvoice.tipAmount.toFixed(2)}`
                   : ''}
               </p>
-              <p className="text-[10px] uppercase tracking-wide text-slate-500">
+              <p className="text-[10px] uppercase tracking-wide text-[color:var(--color-text-muted)]">
                 Metodo:{' '}
                 {detailInvoice.divisionMethod === 'consumption'
                   ? 'Consumo'
                   : 'Igualitario'}
               </p>
               {detailInvoice.birthdayPersonId ? (
-                <p className="text-[11px] font-semibold text-indigo-700">
+                <p className="text-[11px] font-semibold text-accent">
                   Cumpleañero: {resolvePersonName(detailInvoice.birthdayPersonId, people)}
                 </p>
               ) : null}
             </div>
             <button
               type="button"
-              className="text-xs font-semibold text-slate-500 hover:text-slate-700"
+              className="text-xs font-semibold text-[color:var(--color-text-muted)] hover:text-slate-700"
               onClick={() => setDetailInvoiceId(null)}
             >
               Cerrar
@@ -531,25 +533,25 @@ export function InvoiceSection({
             {participantShares.map((share) => (
               <div
                 key={share.personId}
-                className={`flex items-center justify-between rounded-md bg-white px-3 py-2 shadow-sm ${
-                  share.isBirthday ? 'border border-indigo-200' : ''
+                className={`flex items-center justify-between rounded-md bg-[color:var(--color-border-subtle)] px-3 py-2 shadow-sm ${
+                  share.isBirthday ? 'border border-[color:var(--color-primary-light)]' : ''
                 }`}
               >
-                <span className="font-semibold text-slate-900">
+                <span className="font-semibold text-[color:var(--color-text-main)]">
                   {resolvePersonName(share.personId, people)}
                   {share.isBirthday ? (
-                    <span className="ml-2 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">
+                    <span className="ml-2 rounded-full accent-chip px-2 py-0.5 text-[10px] font-semibold text-accent">
                       Cumpleañero
                     </span>
                   ) : null}
                 </span>
                 <div className="text-right">
                   {share.tipPortion ? (
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-[11px] text-[color:var(--color-text-muted)]">
                       Propina: {currency} {share.tipPortion.toFixed(2)}
                     </p>
                   ) : null}
-                  <p className="text-indigo-700 font-semibold">
+                  <p className="text-accent font-semibold">
                     Total: {currency} {share.amount.toFixed(2)}
                   </p>
                 </div>

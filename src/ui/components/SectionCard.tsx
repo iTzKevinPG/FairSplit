@@ -13,12 +13,12 @@ export function SectionCard({
   children,
 }: SectionCardProps) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="ds-card">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+          <h2 className="ds-card__title">{title}</h2>
           {description ? (
-            <p className="mt-1 text-sm text-slate-600">{description}</p>
+            <p className="ds-card__subtitle">{description}</p>
           ) : null}
         </div>
         {actions ? <div className="shrink-0">{actions}</div> : null}

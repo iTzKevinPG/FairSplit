@@ -8,6 +8,7 @@ import { SummarySection } from '../components/SummarySection'
 import { TransfersSection } from '../components/TransfersSection'
 import { useState } from 'react'
 import { BentoOverview } from '../components/BentoOverview'
+import { ThemeToggle } from '../components/ThemeToggle'
 
 function EventDetailPage() {
   const { eventId } = useParams<{ eventId: string }>()
@@ -93,17 +94,17 @@ function EventDetailPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-slate-50">
+    <main className="min-h-screen bg-[color:var(--color-app-bg)]">
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-10">
         <header className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-500">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary-600">
               Evento
             </p>
-            <h1 className="text-3xl font-semibold text-slate-900 sm:text-4xl">
+            <h1 className="text-3xl font-semibold text-[color:var(--color-text-main)] sm:text-4xl">
               {selectedEvent.name}
             </h1>
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-[color:var(--color-text-muted)]">
               Moneda: {selectedEvent.currency} · Participantes:{' '}
               {selectedEvent.people.length} · Facturas:{' '}
               {selectedEvent.invoices.length}
@@ -111,10 +112,11 @@ function EventDetailPage() {
           </div>
           <Link
             to="/"
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-indigo-200 hover:text-indigo-700"
+            className="ds-btn ds-btn-secondary !py-2 !px-3 text-xs"
           >
             Volver a eventos
           </Link>
+          <ThemeToggle />
         </header>
 
         <div className="flex flex-wrap gap-2">
@@ -129,11 +131,9 @@ function EventDetailPage() {
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
-                activeTab === tab.id
-                  ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
-                  : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-200'
-              }`}
+              className={`ds-btn ${
+                activeTab === tab.id ? 'ds-btn-primary' : 'ds-btn-secondary'
+              } !text-sm !py-2 !px-4`}
             >
               {tab.label}
             </button>

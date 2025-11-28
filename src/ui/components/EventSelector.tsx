@@ -1,4 +1,4 @@
-import { type FormEvent, useMemo, useState } from 'react'
+import { type FormEvent, useState } from 'react'
 import type { EventForUI } from '../../shared/state/fairsplitStore'
 
 interface EventSelectorProps {
@@ -41,20 +41,15 @@ export function EventSelector({
     setName('')
   }
 
-  const canCreate = useMemo(
-    () => Boolean(name.trim()) && Boolean(currency.trim()),
-    [name, currency],
-  )
-
   return (
     <div className="space-y-4">
       {showSelector ? (
         <div className="flex flex-wrap items-center gap-3">
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-[color:var(--color-text-main)]">
             Evento activo
           </label>
           <select
-            className="min-w-[220px] rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="ds-select min-w-[220px]"
             value={selectedEventId ?? ''}
             onChange={(e) => onSelect(e.target.value)}
           >
@@ -72,16 +67,16 @@ export function EventSelector({
 
       <form
         onSubmit={handleCreate}
-        className="grid gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-4 sm:grid-cols-[2fr_1fr_auto]"
+        className="grid gap-3 rounded-xl border border-dashed border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)]/70 p-4 sm:grid-cols-[2fr_1fr_auto]"
       >
         <input
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="ds-input"
           placeholder="Nombre del evento"
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
         <select
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="ds-select"
           value={currency}
           onChange={(e) => setCurrency(e.target.value)}
         >
@@ -93,7 +88,7 @@ export function EventSelector({
         </select>
         <button
           type="submit"
-          className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500"
+          className="ds-btn ds-btn-primary"
         >
           Crear evento
         </button>
