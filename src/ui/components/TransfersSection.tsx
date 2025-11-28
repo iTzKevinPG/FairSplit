@@ -6,12 +6,14 @@ interface TransfersSectionProps {
   transfers: SettlementTransfer[]
   people: PersonForUI[]
   currency: string
+  tipTotal?: number
 }
 
 export function TransfersSection({
   transfers,
   people,
   currency,
+  tipTotal,
 }: TransfersSectionProps) {
   const hasTransfers = transfers.length > 0
 
@@ -19,6 +21,13 @@ export function TransfersSection({
     <SectionCard
       title="Transferencias sugeridas"
       description="Pagos simples para saldar los saldos netos."
+      actions={
+        tipTotal && tipTotal > 0 ? (
+          <span className="rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-semibold text-indigo-700">
+            Incluye propina: {currency} {tipTotal.toFixed(2)}
+          </span>
+        ) : null
+      }
     >
       {hasTransfers ? (
         <div className="overflow-x-auto">

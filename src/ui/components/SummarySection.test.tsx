@@ -16,6 +16,7 @@ describe('SummarySection', () => {
         ]}
         people={people}
         currency="USD"
+        tipTotal={5}
       />,
     )
 

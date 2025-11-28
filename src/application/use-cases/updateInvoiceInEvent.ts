@@ -15,6 +15,10 @@ export async function updateInvoiceInEvent(
 
   const divisionMethod = input.divisionMethod ?? 'equal'
   let consumptions: Record<string, number> | undefined
+  const tipAmount = Number(input.tipAmount ?? 0)
+  if (input.tipAmount !== undefined && (!Number.isFinite(tipAmount) || tipAmount <= 0)) {
+    throw new Error('Tip amount must be greater than 0 when enabled')
+  }
   if (divisionMethod === 'consumption') {
     const inputConsumptions = input.consumptions ?? {}
     const normalized = participants.reduce<Record<string, number>>(
@@ -50,6 +54,7 @@ export async function updateInvoiceInEvent(
     participantIds: participants,
     divisionMethod,
     consumptions,
+    tipAmount: tipAmount > 0 ? tipAmount : undefined,
   })
 
   return eventRepo.getById(input.eventId)

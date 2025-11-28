@@ -11,6 +11,7 @@ export async function addInvoiceToEvent(
 ) {
   const description = input.description.trim()
   const amount = Number(input.amount)
+  const tipAmount = Number(input.tipAmount ?? 0)
   if (!description) {
     throw new Error('Description is required')
   }
@@ -19,6 +20,9 @@ export async function addInvoiceToEvent(
   }
   if (!input.payerId) {
     throw new Error('Payer is required')
+  }
+  if (input.tipAmount !== undefined && (!Number.isFinite(tipAmount) || tipAmount <= 0)) {
+    throw new Error('Tip amount must be greater than 0 when enabled')
   }
 
   await requireEvent(eventRepo, input.eventId)
@@ -64,6 +68,7 @@ export async function addInvoiceToEvent(
     participantIds: participants,
     divisionMethod,
     consumptions,
+    tipAmount: tipAmount > 0 ? tipAmount : undefined,
   }
 
   await invoiceRepo.add(input.eventId, invoice)

@@ -28,10 +28,16 @@ export function calculateBalances(event: Event): Balance[] {
     const share = roundToCents(shareRaw)
     const totalRounded = roundToCents(share * count)
     const diff = roundToCents(invoice.amount - totalRounded)
+    const tip = roundToCents(invoice.tipAmount ?? 0)
+    const tipShare = count > 0 ? roundToCents(tip / count) : 0
+    const tipTotalRounded = roundToCents(tipShare * count)
+    const tipDiff = roundToCents(tip - tipTotalRounded)
 
     const payerBalance = balances.get(invoice.payerId)
     if (payerBalance) {
-      payerBalance.totalPaid = roundToCents(payerBalance.totalPaid + invoice.amount)
+      payerBalance.totalPaid = roundToCents(
+        payerBalance.totalPaid + invoice.amount + tip,
+      )
     }
 
     if (divisionMethod === 'consumption') {
@@ -49,11 +55,12 @@ export function calculateBalances(event: Event): Balance[] {
       participants.forEach((personId, index) => {
         const isLast = index === participants.length - 1
         const baseShare = roundedShares[index] ?? 0
-        const adjustedShare = roundToCents(baseShare + (isLast ? diffConsumption : 0))
+        const adjustedBase = roundToCents(baseShare + (isLast ? diffConsumption : 0))
+        const adjustedTip = roundToCents(tipShare + (isLast ? tipDiff : 0))
         const participantBalance = balances.get(personId)
         if (participantBalance) {
           participantBalance.totalOwed = roundToCents(
-            participantBalance.totalOwed + adjustedShare,
+            participantBalance.totalOwed + adjustedBase + adjustedTip,
           )
         }
       })
@@ -61,10 +68,11 @@ export function calculateBalances(event: Event): Balance[] {
       participants.forEach((personId, index) => {
         const isLast = index === participants.length - 1
         const adjustedShare = isLast ? roundToCents(share + diff) : share
+        const adjustedTip = roundToCents(tipShare + (isLast ? tipDiff : 0))
         const participantBalance = balances.get(personId)
         if (participantBalance) {
           participantBalance.totalOwed = roundToCents(
-            participantBalance.totalOwed + adjustedShare,
+            participantBalance.totalOwed + adjustedShare + adjustedTip,
           )
         }
       })

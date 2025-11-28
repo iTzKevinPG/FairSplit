@@ -151,4 +151,33 @@ describe('Settlement service', () => {
       { fromPersonId: 'p2', toPersonId: 'p1', amount: 40 },
     ])
   })
+
+  it('reparte propina igualitaria en modo consumo', () => {
+    const invoices: Invoice[] = [
+      {
+        id: 'i1',
+        description: 'Cena',
+        amount: 90,
+        tipAmount: 10,
+        payerId: 'p1',
+        participantIds: ['p1', 'p2'],
+        divisionMethod: 'consumption',
+        consumptions: {
+          p1: 60,
+          p2: 30,
+        },
+      },
+    ]
+    const event = makeEvent(people, invoices)
+    const balances = calculateBalances(event)
+    expect(balances).toEqual([
+      { personId: 'p1', totalPaid: 100, totalOwed: 65, net: 35 },
+      { personId: 'p2', totalPaid: 0, totalOwed: 35, net: -35 },
+      { personId: 'p3', totalPaid: 0, totalOwed: 0, net: 0 },
+    ])
+    const transfers = suggestTransfers(balances)
+    expect(transfers).toEqual([
+      { fromPersonId: 'p2', toPersonId: 'p1', amount: 35 },
+    ])
+  })
 })

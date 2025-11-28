@@ -42,6 +42,8 @@ export function InvoiceSection({
         return acc
       }, {}),
   )
+  const [includeTip, setIncludeTip] = useState(false)
+  const [tipAmount, setTipAmount] = useState('')
 
   useEffect(() => {
     setPayerId((prev) => prev ?? people[0]?.id)
@@ -89,6 +91,11 @@ export function InvoiceSection({
       setError('Selecciona al menos un participante.')
       return
     }
+    const numericTip = Number(tipAmount || 0)
+    if (includeTip && (!Number.isFinite(numericTip) || numericTip <= 0)) {
+      setError('La propina debe ser mayor que 0.')
+      return
+    }
 
     let consumptionPayload: Record<string, number> | undefined
     if (divisionMethod === 'consumption') {
@@ -122,6 +129,7 @@ export function InvoiceSection({
       participantIds,
       divisionMethod,
       consumptions: consumptionPayload,
+      tipAmount: includeTip ? numericTip : undefined,
     })
     setDescription('')
     setAmount('')
@@ -133,10 +141,16 @@ export function InvoiceSection({
       }, {}),
     )
     setDivisionMethod('equal')
+    setIncludeTip(false)
+    setTipAmount('')
   }
 
   const detailInvoice = invoices.find((invoice) => invoice.id === detailInvoiceId) ?? null
   const participantShares = detailInvoice ? calculateShares(detailInvoice, people) : []
+  const consumptionSum = useMemo(() => {
+    if (divisionMethod !== 'consumption') return 0
+    return participantIds.reduce((acc, id) => acc + Number(consumptions[id] ?? 0), 0)
+  }, [divisionMethod, participantIds, consumptions])
 
   return (
     <SectionCard
@@ -168,6 +182,39 @@ export function InvoiceSection({
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
           />
+       </div>
+
+        <div className="md:col-span-4 flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={includeTip}
+              onChange={(e) => setIncludeTip(e.target.checked)}
+              className="accent-indigo-600"
+              id="include-tip"
+              disabled={people.length === 0}
+            />
+            <label htmlFor="include-tip" className="text-xs font-semibold text-slate-700">
+              Incluir propina
+            </label>
+          </div>
+          {includeTip ? (
+            <div className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 shadow-sm focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
+              <span className="text-xs font-semibold text-slate-500">{currency}</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                className="w-full text-sm text-slate-900 outline-none"
+                placeholder="Propina"
+                value={tipAmount}
+                onChange={(e) => setTipAmount(e.target.value)}
+              />
+            </div>
+          ) : null}
+          <span className="text-[11px] text-slate-500" title="La propina se reparte igualitariamente entre los participantes al guardar la factura.">
+            La propina se reparte igualitario al guardar.
+          </span>
         </div>
         <select
           className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
@@ -240,9 +287,14 @@ export function InvoiceSection({
 
         {divisionMethod === 'consumption' ? (
           <div className="md:col-span-4">
-            <p className="text-xs font-semibold tracking-wide text-slate-600">
-              Consumo por participante
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold tracking-wide text-slate-600">
+                Consumo por participante
+              </p>
+              <p className="text-[11px] font-semibold text-slate-600">
+                Suma ingresada: {currency} {roundToCents(consumptionSum).toFixed(2)}
+              </p>
+            </div>
             <div className="mt-2 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
               {participantIds.map((id) => (
                 <div
@@ -318,6 +370,20 @@ export function InvoiceSection({
                     .map((id) => resolvePersonName(id, people))
                     .join(', ')}
                 </p>
+                {invoice.tipAmount ? (
+                  <p className="text-xs text-slate-600">
+                    Propina: {currency} {invoice.tipAmount.toFixed(2)}
+                  </p>
+                ) : null}
+                {invoice.divisionMethod === 'consumption' ? (
+                  <p className="text-[10px] uppercase tracking-wide text-slate-500">
+                    Metodo: Consumo
+                  </p>
+                ) : (
+                  <p className="text-[10px] uppercase tracking-wide text-slate-500">
+                    Metodo: Igualitario
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-3">
                 <button
@@ -352,6 +418,15 @@ export function InvoiceSection({
               <p className="text-xs text-slate-600">
                 Pago: {resolvePersonName(detailInvoice.payerId, people)} · Monto:{' '}
                 {currency} {detailInvoice.amount.toFixed(2)}
+                {detailInvoice.tipAmount
+                  ? ` · Propina: ${currency} ${detailInvoice.tipAmount.toFixed(2)}`
+                  : ''}
+              </p>
+              <p className="text-[10px] uppercase tracking-wide text-slate-500">
+                Metodo:{' '}
+                {detailInvoice.divisionMethod === 'consumption'
+                  ? 'Consumo'
+                  : 'Igualitario'}
               </p>
             </div>
             <button
@@ -371,9 +446,16 @@ export function InvoiceSection({
                 <span className="font-semibold text-slate-900">
                   {resolvePersonName(share.personId, people)}
                 </span>
-                <span className="text-indigo-700 font-semibold">
-                  {currency} {share.amount.toFixed(2)}
-                </span>
+                <div className="text-right">
+                  {share.tipPortion ? (
+                    <p className="text-[11px] text-slate-500">
+                      Propina: {currency} {share.tipPortion.toFixed(2)}
+                    </p>
+                  ) : null}
+                  <p className="text-indigo-700 font-semibold">
+                    Total: {currency} {share.amount.toFixed(2)}
+                  </p>
+                </div>
               </div>
             ))}
           </div>
@@ -390,6 +472,11 @@ function resolvePersonName(id: string, people: PersonForUI[]) {
 function calculateShares(invoice: InvoiceForUI, people: PersonForUI[]) {
   const participantIds = invoice.participantIds
   if (participantIds.length === 0) return []
+  const tip = roundToCents(invoice.tipAmount ?? 0)
+  const tipShare = participantIds.length > 0 ? roundToCents(tip / participantIds.length) : 0
+  const tipTotalRounded = roundToCents(tipShare * participantIds.length)
+  const tipDiff = roundToCents(tip - tipTotalRounded)
+
   if (invoice.divisionMethod === 'consumption') {
     const consumptions = invoice.consumptions ?? {}
     const rounded = participantIds.map((id) =>
@@ -403,8 +490,14 @@ function calculateShares(invoice: InvoiceForUI, people: PersonForUI[]) {
     return participantIds.map((personId, index) => {
       const isLast = index === participantIds.length - 1
       const base = rounded[index] ?? 0
-      const adjusted = roundToCents(base + (isLast ? diff : 0))
-      return { personId, amount: adjusted, name: resolvePersonName(personId, people) }
+      const adjustedBase = roundToCents(base + (isLast ? diff : 0))
+      const adjustedTip = roundToCents(tipShare + (isLast ? tipDiff : 0))
+      return {
+        personId,
+        amount: roundToCents(adjustedBase + adjustedTip),
+        tipPortion: adjustedTip,
+        name: resolvePersonName(personId, people),
+      }
     })
   }
 
@@ -417,7 +510,13 @@ function calculateShares(invoice: InvoiceForUI, people: PersonForUI[]) {
   return participantIds.map((personId, index) => {
     const isLast = index === participantIds.length - 1
     const adjusted = isLast ? roundToCents(share + diff) : share
-    return { personId, amount: adjusted, name: resolvePersonName(personId, people) }
+    const adjustedTip = roundToCents(tipShare + (isLast ? tipDiff : 0))
+    return {
+      personId,
+      amount: roundToCents(adjusted + adjustedTip),
+      tipPortion: adjustedTip,
+      name: resolvePersonName(personId, people),
+    }
   })
 }
 

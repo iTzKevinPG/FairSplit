@@ -36,19 +36,20 @@ describe('Application use cases (in-memory)', () => {
       amount: 80,
       payerId: updated?.people[0].id as string,
       participantIds: updated?.people.map((p) => p.id) ?? [],
+      tipAmount: 10,
     })
 
     const settlement = await calculateSettlement(eventRepo, event.id)
     expect(settlement.balances).toEqual([
-      { personId: updated?.people[0].id, totalPaid: 80, totalOwed: 40, net: 40 },
-      { personId: updated?.people[1].id, totalPaid: 0, totalOwed: 40, net: -40 },
+      { personId: updated?.people[0].id, totalPaid: 90, totalOwed: 45, net: 45 },
+      { personId: updated?.people[1].id, totalPaid: 0, totalOwed: 45, net: -45 },
     ])
 
     expect(settlement.transfers).toEqual([
       {
         fromPersonId: updated?.people[1].id,
         toPersonId: updated?.people[0].id,
-        amount: 40,
+        amount: 45,
       },
     ])
   })

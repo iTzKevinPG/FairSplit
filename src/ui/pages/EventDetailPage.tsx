@@ -47,6 +47,14 @@ function EventDetailPage() {
     () => (selectedEvent ? getTransfers() : []),
     [getTransfers, selectedEvent],
   )
+  const tipTotal = useMemo(
+    () =>
+      selectedEvent?.invoices.reduce(
+        (acc, invoice) => acc + (invoice.tipAmount ?? 0),
+        0,
+      ) ?? 0,
+    [selectedEvent],
+  )
 
   if (!eventId) {
     return (
@@ -173,6 +181,7 @@ function EventDetailPage() {
               balances={balances}
               people={selectedEvent.people}
               currency={selectedEvent.currency}
+              tipTotal={tipTotal}
             />
           </div>
         )}
@@ -183,6 +192,7 @@ function EventDetailPage() {
               transfers={transfers}
               people={selectedEvent.people}
               currency={selectedEvent.currency}
+              tipTotal={tipTotal}
             />
           </div>
         )}

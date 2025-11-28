@@ -19,6 +19,7 @@ export function BentoOverview({
 }: BentoOverviewProps) {
   const totalInvoices = invoices.length
   const totalAmount = invoices.reduce((acc, inv) => acc + inv.amount, 0)
+  const totalTips = invoices.reduce((acc, inv) => acc + (inv.tipAmount ?? 0), 0)
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
@@ -46,7 +47,8 @@ export function BentoOverview({
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <h3 className="text-sm font-semibold text-slate-900">Facturas</h3>
         <p className="text-xs text-slate-600">
-          Total: {totalInvoices} · Suma: {currency} {totalAmount.toFixed(2)}
+          Total: {totalInvoices} · Suma: {currency} {totalAmount.toFixed(2)}{' '}
+          {totalTips > 0 ? `· Propina: ${currency} ${totalTips.toFixed(2)}` : ''}
         </p>
         <div className="mt-2 space-y-2">
           {invoices.length === 0 ? (
@@ -63,6 +65,15 @@ export function BentoOverview({
                 <p className="text-slate-600">
                   Pago: {resolvePersonName(inv.payerId, people)} · {currency}{' '}
                   {inv.amount.toFixed(2)} · Part: {inv.participantIds.length}
+                </p>
+                {inv.tipAmount ? (
+                  <p className="text-[11px] text-slate-500">
+                    Propina: {currency} {inv.tipAmount.toFixed(2)}
+                  </p>
+                ) : null}
+                <p className="text-[10px] uppercase tracking-wide text-slate-500">
+                  Metodo:{' '}
+                  {inv.divisionMethod === 'consumption' ? 'Consumo' : 'Igualitario'}
                 </p>
               </div>
             ))
@@ -122,6 +133,7 @@ export function BentoOverview({
         </h3>
         <p className="text-xs text-slate-600">
           Deudores → Acreedores (solo lectura)
+          {totalTips > 0 ? ` · Propina incluida: ${currency} ${totalTips.toFixed(2)}` : ''}
         </p>
         <div className="mt-2 space-y-2">
           {transfers.length === 0 ? (

@@ -6,12 +6,14 @@ interface SummarySectionProps {
   balances: Balance[]
   people: PersonForUI[]
   currency: string
+  tipTotal?: number
 }
 
 export function SummarySection({
   balances,
   people,
   currency,
+  tipTotal,
 }: SummarySectionProps) {
   const normalize = (value: number) =>
     Math.abs(value) < 0.01 ? 0 : value
@@ -20,6 +22,13 @@ export function SummarySection({
     <SectionCard
       title="Resumen por persona"
       description="Saldos netos por persona: positivo significa que le deben; negativo, que debe."
+      actions={
+        tipTotal && tipTotal > 0 ? (
+          <span className="rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-semibold text-indigo-700">
+            Propina total: {currency} {tipTotal.toFixed(2)}
+          </span>
+        ) : null
+      }
     >
       {balances.length === 0 ? (
         <p className="text-sm text-slate-600">

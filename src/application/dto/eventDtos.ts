@@ -31,6 +31,7 @@ export interface AddInvoiceInput {
   participantIds: PersonId[]
   divisionMethod?: 'equal' | 'consumption'
   consumptions?: Record<PersonId, number>
+  tipAmount?: number
 }
 
 export interface UpdateInvoiceInput extends AddInvoiceInput {
