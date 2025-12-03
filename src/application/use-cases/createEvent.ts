@@ -18,7 +18,7 @@ export async function createEvent(
   }
 
   const event: Event = {
-    id: createId(),
+    id: input.id ?? createId(),
     name,
     currency,
     people: [],

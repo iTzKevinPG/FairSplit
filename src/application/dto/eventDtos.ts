@@ -3,12 +3,14 @@ import type { InvoiceId } from '../../domain/invoice/Invoice'
 import type { PersonId } from '../../domain/person/Person'
 
 export interface CreateEventInput {
+  id?: string
   name: string
   currency: string
 }
 
 export interface AddPersonInput {
   eventId: EventId
+  id?: PersonId
   name: string
 }
 
@@ -25,6 +27,7 @@ export interface RemovePersonInput {
 
 export interface AddInvoiceInput {
   eventId: EventId
+  id?: InvoiceId
   description: string
   amount: number
   payerId: PersonId

@@ -58,3 +58,6 @@ src/
 - Facturas: reparto igualitario o por consumo, propina opcional repartida igualitaria, y opción de cumpleañero que redistribuye su consumo.
 - Saldos netos y transferencias sugeridas se calculan a partir de deudores/acreedores.
 - UI usa design tokens y tiene toggle de tema (light/dark) persistido en `localStorage`.
+
+## Backend API (opcional)
+- Configura `VITE_API_BASE_URL` (ver `.env.example`) para que el frontend persista eventos (`POST /events`, hydrate `GET /events`), participantes (`/events/:id/participants`) y facturas (`/events/:id/invoices`). Si la llamada falla, se mantiene el flujo en memoria con IDs locales.

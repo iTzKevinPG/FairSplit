@@ -15,7 +15,7 @@ export async function addPersonToEvent(
   }
 
   await requireEvent(eventRepo, input.eventId)
-  const person = { id: createId(), name }
+  const person = { id: input.id ?? createId(), name }
   await personRepo.add(input.eventId, person)
   return eventRepo.getById(input.eventId)
 }

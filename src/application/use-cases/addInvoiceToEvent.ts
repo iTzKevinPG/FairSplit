@@ -77,7 +77,7 @@ export async function addInvoiceToEvent(
   }
 
   const invoice = {
-    id: createId(),
+    id: input.id ?? createId(),
     description,
     amount,
     payerId: input.payerId,
