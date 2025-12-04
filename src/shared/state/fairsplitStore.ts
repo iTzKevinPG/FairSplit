@@ -35,7 +35,11 @@ import {
   listParticipantsApi,
   updateParticipantApi,
 } from '../../infra/persistence/http/participantApi'
-import { createInvoiceApi } from '../../infra/persistence/http/invoiceApi'
+import {
+  createInvoiceApi,
+  getInvoiceApi,
+  listInvoicesApi,
+} from '../../infra/persistence/http/invoiceApi'
 
 const eventRepository = new InMemoryEventRepository()
 const personRepository = new InMemoryPersonRepository(eventRepository)
@@ -100,6 +104,46 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
           } catch (error) {
             console.warn(
               `Failed to hydrate participants for event ${apiEvent.id}, using local state`,
+              error,
+            )
+          }
+          // Fetch invoices for the event (list + detail to map consumptions)
+          try {
+            const invoices = await listInvoicesApi(apiEvent.id)
+            const detailed = await Promise.all(
+              invoices.map(async (inv) => {
+                try {
+                  return await getInvoiceApi(apiEvent.id, inv.id)
+                } catch (error) {
+                  console.warn(`Failed to fetch invoice ${inv.id} detail`, error)
+                  return null
+                }
+              }),
+            )
+            const filtered = detailed.filter((d): d is NonNullable<typeof d> => Boolean(d))
+            hydrated.invoices = filtered.map((det) => {
+              const consumptions = det.participations.reduce<Record<string, number>>(
+                (acc, p) => {
+                  acc[p.participantId] = p.baseAmount
+                  return acc
+                },
+                {},
+              )
+              return {
+                id: det.id,
+                description: det.description,
+                amount: det.totalAmount,
+                payerId: det.payerId,
+                participantIds: det.participations.map((p) => p.participantId),
+                divisionMethod: det.divisionMethod,
+                consumptions,
+                tipAmount: det.tipAmount,
+                birthdayPersonId: det.birthdayPersonId,
+              }
+            })
+          } catch (error) {
+            console.warn(
+              `Failed to hydrate invoices for event ${apiEvent.id}, using local state`,
               error,
             )
           }
