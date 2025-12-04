@@ -40,11 +40,13 @@ import {
   getInvoiceApi,
   listInvoicesApi,
 } from '../../infra/persistence/http/invoiceApi'
+import { getSummaryApi, getTransfersApi } from '../../infra/persistence/http/summaryApi'
 
 const eventRepository = new InMemoryEventRepository()
 const personRepository = new InMemoryPersonRepository(eventRepository)
 const invoiceRepository = new InMemoryInvoiceRepository(eventRepository)
 let demoSeeded = false
+const loadedEventData = new Set<string>()
 
 interface FairSplitState {
   events: Event[]
@@ -84,81 +86,32 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
   selectedEventId: undefined,
   hasSeededDemo: false,
   hydrate: async () => {
-    // Try to hydrate from backend, fallback to local in-memory state
+    // Fetch event headers only; load details lazily per event to reduce calls.
     try {
       const apiEvents = await listEventsApi()
-      await Promise.all(
-        apiEvents.map(async (apiEvent) => {
-          const existing = await eventRepository.getById(apiEvent.id)
-          const hydrated: Event = {
-            id: apiEvent.id,
-            name: apiEvent.name,
-            currency: apiEvent.currency,
-            people: existing?.people ?? [],
-            invoices: existing?.invoices ?? [],
-          }
-          // Fetch participants for the event
-          try {
-            const participants = await listParticipantsApi(apiEvent.id)
-            hydrated.people = participants.map((p) => ({ id: p.id, name: p.name }))
-          } catch (error) {
-            console.warn(
-              `Failed to hydrate participants for event ${apiEvent.id}, using local state`,
-              error,
-            )
-          }
-          // Fetch invoices for the event (list + detail to map consumptions)
-          try {
-            const invoices = await listInvoicesApi(apiEvent.id)
-            const detailed = await Promise.all(
-              invoices.map(async (inv) => {
-                try {
-                  return await getInvoiceApi(apiEvent.id, inv.id)
-                } catch (error) {
-                  console.warn(`Failed to fetch invoice ${inv.id} detail`, error)
-                  return null
-                }
-              }),
-            )
-            const filtered = detailed.filter((d): d is NonNullable<typeof d> => Boolean(d))
-            hydrated.invoices = filtered.map((det) => {
-              const consumptions = det.participations.reduce<Record<string, number>>(
-                (acc, p) => {
-                  acc[p.participantId] = p.baseAmount
-                  return acc
-                },
-                {},
-              )
-              return {
-                id: det.id,
-                description: det.description,
-                amount: det.totalAmount,
-                payerId: det.payerId,
-                participantIds: det.participations.map((p) => p.participantId),
-                divisionMethod: det.divisionMethod,
-                consumptions,
-                tipAmount: det.tipAmount,
-                birthdayPersonId: det.birthdayPersonId,
-              }
-            })
-          } catch (error) {
-            console.warn(
-              `Failed to hydrate invoices for event ${apiEvent.id}, using local state`,
-              error,
-            )
-          }
-          await eventRepository.save(hydrated)
-        }),
-      )
+      apiEvents.forEach((apiEvent) => {
+        eventRepository.save({
+          id: apiEvent.id,
+          name: apiEvent.name,
+          currency: apiEvent.currency,
+          people: [],
+          invoices: [],
+        })
+      })
     } catch (error) {
       console.warn('Falling back to local events; backend list failed', error)
     }
 
     const events = await eventRepository.list()
+    const selected = get().selectedEventId ?? events[0]?.id
     set({
       events,
-      selectedEventId: get().selectedEventId ?? events[0]?.id,
+      selectedEventId: selected,
     })
+
+    if (selected) {
+      void loadEventData(selected)
+    }
   },
   seedDemoData: async () => {
     if (demoSeeded || get().hasSeededDemo) return
@@ -210,6 +163,9 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
   },
   selectEvent: (eventId: EventId) => {
     set({ selectedEventId: eventId })
+    if (!loadedEventData.has(eventId)) {
+      void loadEventData(eventId)
+    }
   },
   createEvent: async (input) => {
     let backendId: string | undefined
@@ -386,15 +342,117 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
     return event ? calculateBalances(event) : []
   },
   getTransfers: () => {
+    const eventId = get().selectedEventId
+    if (!eventId) return []
     const balances = get().getBalances()
     return suggestTransfers(balances)
   },
   getSettlement: async () => {
     const eventId = get().selectedEventId
     if (!eventId) return null
-    return calculateSettlement(eventRepository, eventId)
+    try {
+      const summaryPromise = getSummaryApi(eventId)
+      const transfersPromise = getTransfersApi(eventId).catch(() => null)
+
+      const [summary, transfers] = await Promise.all([summaryPromise, transfersPromise])
+      const balances: Balance[] = summary.map((item) => ({
+        personId: item.participantId,
+        totalPaid: item.totalPaid,
+        totalOwed: item.totalShouldPay,
+        netBalance: item.netBalance,
+      }))
+      return {
+        balances,
+        transfers:
+          transfers?.map((t) => ({
+            fromId: t.fromParticipantId,
+            toId: t.toParticipantId,
+            amount: t.amount,
+          })) ?? suggestTransfers(balances),
+      }
+    } catch (error) {
+      console.error('Failed to fetch summary from backend, falling back to local calc', error)
+      return calculateSettlement(eventRepository, eventId)
+    }
   },
 }))
+
+async function loadEventData(eventId: EventId) {
+  try {
+    const [participants, invoices] = await Promise.all([
+      listParticipantsApi(eventId).catch((error) => {
+        console.warn(`Failed to fetch participants for event ${eventId}`, error)
+        return null
+      }),
+      listInvoicesApi(eventId).catch((error) => {
+        console.warn(`Failed to fetch invoices list for event ${eventId}`, error)
+        return null
+      }),
+    ])
+
+    const detailedInvoices =
+      invoices !== null
+        ? await Promise.all(
+            invoices.map(async (inv) => {
+              try {
+                return await getInvoiceApi(eventId, inv.id)
+              } catch (error) {
+                console.warn(`Failed to fetch invoice ${inv.id} detail`, error)
+                return null
+              }
+            }),
+          )
+        : null
+
+    const existing = await eventRepository.getById(eventId)
+    const current: Event = existing ?? {
+      id: eventId,
+      name: existing?.name ?? '',
+      currency: existing?.currency ?? '',
+      people: [],
+      invoices: [],
+    }
+
+    const mappedParticipants =
+      participants?.map((p) => ({ id: p.id, name: p.name })) ?? current.people
+
+    const mappedInvoices =
+      detailedInvoices
+        ?.filter((d): d is NonNullable<typeof d> => Boolean(d))
+        .map((det) => {
+          const consumptions = det.participations.reduce<Record<string, number>>((acc, p) => {
+            acc[p.participantId] = p.baseAmount
+            return acc
+          }, {})
+          return {
+            id: det.id,
+            description: det.description,
+            amount: det.totalAmount,
+            payerId: det.payerId,
+            participantIds: det.participations.map((p) => p.participantId),
+            divisionMethod: det.divisionMethod,
+            consumptions,
+            tipAmount: det.tipAmount,
+            birthdayPersonId: det.birthdayPersonId,
+          }
+        }) ?? current.invoices
+
+    await eventRepository.save({
+      ...current,
+      people: mappedParticipants,
+      invoices: mappedInvoices,
+    })
+
+    const events = await eventRepository.list()
+    set((state) => ({
+      events,
+      selectedEventId: state.selectedEventId ?? eventId,
+    }))
+    loadedEventData.add(eventId)
+  } catch (error) {
+    console.warn(`Failed to load event data for ${eventId}`, error)
+  }
+}
 
 export type EventForUI = Event
 export type PersonForUI = Person
