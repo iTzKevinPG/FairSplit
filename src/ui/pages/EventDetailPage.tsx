@@ -10,6 +10,7 @@ import { useState } from 'react'
 import { BentoOverview } from '../components/BentoOverview'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { Footer } from '../components/Footer'
+import NotFoundPage from './NotFoundPage'
 
 function EventDetailPage() {
   const { eventId } = useParams<{ eventId: string }>()
@@ -40,6 +41,12 @@ function EventDetailPage() {
     }
   }, [eventId, selectEvent, events.length])
 
+  useEffect(() => {
+    if (eventId && events.length > 0 && !getSelectedEvent()) {
+      navigate('/', { replace: true })
+    }
+  }, [eventId, events.length, getSelectedEvent, navigate])
+
   const selectedEvent = getSelectedEvent()
   const balances = useMemo(
     () => (selectedEvent ? getBalances() : []),
@@ -59,39 +66,11 @@ function EventDetailPage() {
   )
 
   if (!eventId) {
-    return (
-      <main className="min-h-screen bg-slate-50">
-        <div className="mx-auto max-w-5xl px-6 py-12">
-          <p className="text-sm text-slate-600">
-            No event selected.{' '}
-            <Link to="/" className="text-indigo-600 underline">
-              Back to events
-            </Link>
-          </p>
-        </div>
-      </main>
-    )
+    return <NotFoundPage />
   }
 
   if (!selectedEvent) {
-    return (
-      <main className="min-h-screen bg-slate-50">
-        <div className="mx-auto max-w-5xl px-6 py-12">
-          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm text-slate-600">
-              Event not found.{' '}
-              <button
-                type="button"
-                className="text-indigo-600 underline"
-                onClick={() => navigate('/')}
-              >
-                Go back
-              </button>
-            </p>
-          </div>
-        </div>
-      </main>
-    )
+    return <NotFoundPage />
   }
 
   return (

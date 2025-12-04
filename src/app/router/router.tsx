@@ -1,6 +1,7 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter } from 'react-router-dom'
 import EventDetailPage from '../../ui/pages/EventDetailPage'
 import EventListPage from '../../ui/pages/EventListPage'
+import NotFoundPage from '../../ui/pages/NotFoundPage'
 
 const router = createBrowserRouter([
   {
@@ -13,7 +14,7 @@ const router = createBrowserRouter([
   },
   {
     path: '*',
-    element: <Navigate to="/" replace />,
+    element: <NotFoundPage />,
   },
 ])
 

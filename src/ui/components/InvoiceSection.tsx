@@ -392,7 +392,7 @@ export function InvoiceSection({
         <div className="md:col-span-4 flex justify-end">
           <button
             type="submit"
-            className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:accent-chip0 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-[color:var(--color-text-muted)]"
+            className="ds-btn ds-btn-primary"
             disabled={people.length === 0}
           >
             Guardar factura

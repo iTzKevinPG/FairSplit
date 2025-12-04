@@ -9,12 +9,24 @@ export type ApiSummaryItem = {
   status: 'creditor' | 'debtor' | 'settled';
 };
 
+function buildHeaders() {
+  const token =
+    typeof window !== 'undefined'
+      ? localStorage.getItem('fairsplit_auth_token')
+      : null;
+  if (!token) {
+    throw new Error('NO_AUTH_TOKEN');
+  }
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  };
+}
+
 export async function getSummaryApi(eventId: string): Promise<ApiSummaryItem[]> {
   const response = await fetch(`${API_BASE_URL}/events/${eventId}/summary`, {
     method: 'GET',
-    headers: {
-      'Content-Type': 'application/json'
-    }
+    headers: buildHeaders()
   });
   if (response.status === 404) {
     throw new Error('Event not found');
@@ -36,9 +48,7 @@ export type ApiTransferItem = {
 export async function getTransfersApi(eventId: string): Promise<ApiTransferItem[]> {
   const response = await fetch(`${API_BASE_URL}/events/${eventId}/transfers`, {
     method: 'GET',
-    headers: {
-      'Content-Type': 'application/json'
-    }
+    headers: buildHeaders()
   });
   if (response.status === 404) {
     throw new Error('Event not found');

@@ -49,13 +49,19 @@ const invoiceRepository = new InMemoryInvoiceRepository(eventRepository)
 let demoSeeded = false
 const loadedEventData = new Set<string>()
 
+function getAuthToken(): string | null {
+  return typeof window !== 'undefined'
+    ? localStorage.getItem('fairsplit_auth_token')
+    : null
+}
+
 interface FairSplitState {
   events: Event[]
   selectedEventId?: EventId
   hasSeededDemo: boolean
   hydrate: () => Promise<void>
   seedDemoData: () => Promise<void>
-  selectEvent: (eventId: EventId) => void
+  selectEvent: (eventId: EventId) => Promise<void>
   createEvent: (input: CreateEventInput) => Promise<Event>
   addPerson: (input: Omit<AddPersonInput, 'eventId'>) => Promise<Event | undefined>
   updatePerson: (
@@ -88,23 +94,26 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
   hasSeededDemo: false,
   hydrate: async () => {
     // Fetch event headers only; load details lazily per event to reduce calls.
-    try {
-      const apiEvents = await listEventsApi()
-      apiEvents.forEach((apiEvent) => {
-        eventRepository.save({
-          id: apiEvent.id,
-          name: apiEvent.name,
-          currency: apiEvent.currency,
-          people: [],
-          invoices: [],
+    const token = getAuthToken()
+    if (token) {
+      try {
+        const apiEvents = await listEventsApi()
+        apiEvents.forEach((apiEvent) => {
+          eventRepository.save({
+            id: apiEvent.id,
+            name: apiEvent.name,
+            currency: apiEvent.currency,
+            people: [],
+            invoices: [],
+          })
         })
-      })
-    } catch (error) {
-      console.warn('Falling back to local events; backend list failed', error)
+      } catch (error) {
+        console.warn('Falling back to local events; backend list failed', error)
+      }
     }
 
     const events = await eventRepository.list()
-    const selected = get().selectedEventId ?? events[0]?.id
+    const selected = get().selectedEventId ?? events[0]?.id ?? undefined
     set({
       events,
       selectedEventId: selected,
@@ -162,7 +171,12 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
       hasSeededDemo: true,
     }))
   },
-  selectEvent: (eventId: EventId) => {
+  selectEvent: async (eventId: EventId) => {
+    const existing = await eventRepository.getById(eventId)
+    if (!existing) {
+      set({ selectedEventId: undefined })
+      return
+    }
     set({ selectedEventId: eventId })
     if (!loadedEventData.has(eventId)) {
       void loadEventData(eventId, set)
@@ -170,14 +184,17 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
   },
   createEvent: async (input) => {
     let backendId: string | undefined
-    try {
-      const response = await createEventApi({
-        name: input.name,
-        currency: input.currency,
-      })
-      backendId = response.id
-    } catch (error) {
-      console.error('Failed to persist event to backend, using local id', error)
+    const token = getAuthToken()
+    if (token) {
+      try {
+        const response = await createEventApi({
+          name: input.name,
+          currency: input.currency,
+        })
+        backendId = response.id
+      } catch (error) {
+        console.error('Failed to persist event to backend, using local id', error)
+      }
     }
 
     const created = await createEvent(eventRepository, { ...input, id: backendId })
@@ -192,11 +209,14 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
     const eventId = get().selectedEventId
     if (!eventId) return undefined
     let participantId: string | undefined
-    try {
-      const created = await createParticipantApi(eventId, { name: input.name })
-      participantId = created.id
-    } catch (error) {
-      console.error('Failed to persist participant to backend, using local id', error)
+    const token = getAuthToken()
+    if (token) {
+      try {
+        const created = await createParticipantApi(eventId, { name: input.name })
+        participantId = created.id
+      } catch (error) {
+        console.error('Failed to persist participant to backend, using local id', error)
+      }
     }
 
     const event = await addPersonToEvent(eventRepository, personRepository, {
@@ -215,10 +235,13 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
   updatePerson: async (input) => {
     const eventId = get().selectedEventId
     if (!eventId) return undefined
-    try {
-      await updateParticipantApi(eventId, input.personId, { name: input.name })
-    } catch (error) {
-      console.error('Failed to update participant in backend, applying local change', error)
+    const token = getAuthToken()
+    if (token) {
+      try {
+        await updateParticipantApi(eventId, input.personId, { name: input.name })
+      } catch (error) {
+        console.error('Failed to update participant in backend, applying local change', error)
+      }
     }
     const event = await updatePersonInEvent(
       eventRepository,
@@ -239,10 +262,13 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
   removePerson: async (input) => {
     const eventId = get().selectedEventId
     if (!eventId) return undefined
-    try {
-      await deleteParticipantApi(eventId, input.personId)
-    } catch (error) {
-      console.error('Failed to delete participant in backend, applying local change', error)
+    const token = getAuthToken()
+    if (token) {
+      try {
+        await deleteParticipantApi(eventId, input.personId)
+      } catch (error) {
+        console.error('Failed to delete participant in backend, applying local change', error)
+      }
     }
     const event = await removePersonFromEvent(
       eventRepository,
@@ -263,20 +289,23 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
     const eventId = get().selectedEventId
     if (!eventId) return undefined
     let invoiceId: string | undefined
-    try {
-      const created = await createInvoiceApi(eventId, {
-        description: input.description,
-        totalAmount: input.amount,
-        payerId: input.payerId,
-        participantIds: input.participantIds,
-        divisionMethod: input.divisionMethod ?? 'equal',
-        consumptions: input.consumptions,
-        tipAmount: input.tipAmount,
-        birthdayPersonId: input.birthdayPersonId,
-      })
-      invoiceId = created.id
-    } catch (error) {
-      console.error('Failed to persist invoice to backend, using local id', error)
+    const token = getAuthToken()
+    if (token) {
+      try {
+        const created = await createInvoiceApi(eventId, {
+          description: input.description,
+          totalAmount: input.amount,
+          payerId: input.payerId,
+          participantIds: input.participantIds,
+          divisionMethod: input.divisionMethod ?? 'equal',
+          consumptions: input.consumptions,
+          tipAmount: input.tipAmount,
+          birthdayPersonId: input.birthdayPersonId,
+        })
+        invoiceId = created.id
+      } catch (error) {
+        console.error('Failed to persist invoice to backend, using local id', error)
+      }
     }
 
     const event = await addInvoiceToEvent(
@@ -382,6 +411,10 @@ async function loadEventData(
   eventId: EventId,
   setFn: StoreApi<FairSplitState>['setState'],
 ) {
+  const token = getAuthToken()
+  if (!token) {
+    return
+  }
   try {
     const [participants, invoices] = await Promise.all([
       listParticipantsApi(eventId).catch((error) => {

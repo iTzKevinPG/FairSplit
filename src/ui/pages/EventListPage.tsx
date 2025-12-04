@@ -4,6 +4,7 @@ import { EventSelector } from '../components/EventSelector'
 import { useEvents } from '../hooks/useEvents'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { Footer } from '../components/Footer'
+import { AuthCard } from '../components/AuthCard'
 
 function EventListPage() {
   const { events, selectedEventId, loadEvents, selectEvent, createAndSelect } =
@@ -43,10 +44,12 @@ function EventListPage() {
           </div>
           <p className="max-w-3xl text-base text-[color:var(--color-text-muted)]">
             Crea eventos, agrega participantes y registra facturas. Calcula
-            saldos netos y transferencias sugeridas con datos en memoria, listos
+        saldos netos y transferencias sugeridas con datos en memoria, listos
             para conectar un backend despues.
           </p>
         </header>
+
+        <AuthCard />
 
         <EventSelector
           events={events}

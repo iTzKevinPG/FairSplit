@@ -13,8 +13,16 @@ export type ApiEvent = {
 };
 
 function buildHeaders() {
+  const token =
+    typeof window !== 'undefined'
+      ? localStorage.getItem('fairsplit_auth_token')
+      : null;
+  if (!token) {
+    throw new Error('NO_AUTH_TOKEN');
+  }
   return {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 }
 
