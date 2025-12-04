@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import type { StoreApi } from 'zustand'
 import type { Balance } from '../../domain/settlement/Balance'
 import type { Event, EventId } from '../../domain/event/Event'
 import type { Invoice } from '../../domain/invoice/Invoice'
@@ -110,7 +111,7 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
     })
 
     if (selected) {
-      void loadEventData(selected, set, get)
+      void loadEventData(selected, set)
     }
   },
   seedDemoData: async () => {
@@ -164,7 +165,7 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
   selectEvent: (eventId: EventId) => {
     set({ selectedEventId: eventId })
     if (!loadedEventData.has(eventId)) {
-      void loadEventData(eventId, set, get)
+      void loadEventData(eventId, set)
     }
   },
   createEvent: async (input) => {
@@ -359,14 +360,14 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
         personId: item.participantId,
         totalPaid: item.totalPaid,
         totalOwed: item.totalShouldPay,
-        netBalance: item.netBalance,
+        net: item.netBalance,
       }))
       return {
         balances,
         transfers:
           transfers?.map((t) => ({
-            fromId: t.fromParticipantId,
-            toId: t.toParticipantId,
+            fromPersonId: t.fromParticipantId,
+            toPersonId: t.toParticipantId,
             amount: t.amount,
           })) ?? suggestTransfers(balances),
       }
@@ -379,7 +380,7 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
 
 async function loadEventData(
   eventId: EventId,
-  setFn: Parameters<typeof useFairSplitStore>[0],
+  setFn: StoreApi<FairSplitState>['setState'],
 ) {
   try {
     const [participants, invoices] = await Promise.all([
@@ -408,13 +409,14 @@ async function loadEventData(
         : null
 
     const existing = await eventRepository.getById(eventId)
-    const current: Event = existing ?? {
-      id: eventId,
-      name: existing?.name ?? '',
-      currency: existing?.currency ?? '',
-      people: existing?.people ?? [],
-      invoices: existing?.invoices ?? [],
-    }
+    const current: Event =
+      existing ?? {
+        id: eventId,
+        name: '',
+        currency: '',
+        people: [],
+        invoices: [],
+      }
 
     const mappedParticipants =
       participants?.map((p) => ({ id: p.id, name: p.name })) ?? current.people

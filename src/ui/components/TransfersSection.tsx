@@ -23,7 +23,7 @@ export function TransfersSection({
       description="Pagos simples para saldar los saldos netos."
       actions={
         tipTotal && tipTotal > 0 ? (
-          <span className="ds-badge-soft">
+          <span className="ds-badge-soft whitespace-normal break-words text-left">
             Incluye propina: {currency} {tipTotal.toFixed(2)}
           </span>
         ) : null
