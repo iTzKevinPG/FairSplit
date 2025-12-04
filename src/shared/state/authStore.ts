@@ -6,6 +6,7 @@ type AuthStatus = 'idle' | 'sending' | 'verifying'
 type AuthState = {
   email: string
   token?: string
+  fixedCodeMode: boolean
   status: AuthStatus
   error?: string
   nextRequestAt?: number
@@ -20,6 +21,7 @@ type AuthState = {
 const STORAGE_KEY = 'fairsplit_auth_token'
 const STORAGE_EMAIL_KEY = 'fairsplit_auth_email'
 export const STORAGE_EXPIRED_FLAG = 'fairsplit_auth_expired'
+const FIXED_CODE_MODE = import.meta.env.VITE_AUTH_FIXED_CODE_MODE === 'true'
 
 function loadStoredAuth() {
   if (typeof window === 'undefined') return { token: undefined, email: '' }
@@ -33,6 +35,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
   return {
     email: stored.email,
     token: stored.token,
+    fixedCodeMode: FIXED_CODE_MODE,
     status: 'idle',
     error: undefined,
     nextRequestAt: undefined,
@@ -46,6 +49,10 @@ export const useAuthStore = create<AuthState>((set, get) => {
       const now = Date.now()
       const next = get().nextRequestAt
       if (next && now < next) return
+      if (FIXED_CODE_MODE) {
+        set({ status: 'idle', error: undefined })
+        return
+      }
       set({ status: 'sending', error: undefined })
       try {
         await requestLoginCodeApi({ email })
