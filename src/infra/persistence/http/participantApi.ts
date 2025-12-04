@@ -33,6 +33,9 @@ export async function listParticipantsApi(eventId: string): Promise<ApiParticipa
     method: 'GET',
     headers: buildHeaders()
   });
+  if (response.status === 401) {
+    throw new Error('UNAUTHORIZED');
+  }
   if (response.status === 404) {
     throw new Error('Event not found');
   }
@@ -51,6 +54,9 @@ export async function createParticipantApi(
     headers: buildHeaders(),
     body: JSON.stringify(payload)
   });
+  if (response.status === 401) {
+    throw new Error('UNAUTHORIZED');
+  }
   if (!response.ok) {
     let details: unknown;
     try {
@@ -84,6 +90,9 @@ export async function updateParticipantApi(
       body: JSON.stringify(payload)
     }
   );
+  if (response.status === 401) {
+    throw new Error('UNAUTHORIZED');
+  }
   if (response.status === 404) {
     throw new Error('Participant not found');
   }
@@ -104,6 +113,9 @@ export async function deleteParticipantApi(
       headers: buildHeaders()
     }
   );
+  if (response.status === 401) {
+    throw new Error('UNAUTHORIZED');
+  }
   if (response.status === 404) {
     throw new Error('Participant not found');
   }

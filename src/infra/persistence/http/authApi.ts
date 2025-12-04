@@ -32,11 +32,7 @@ export async function requestLoginCodeApi(
 
   const data = await response.json().catch(() => ({}))
   if (!response.ok) {
-    const errorMessage =
-      data?.fieldErrors?.email ||
-      data?.message ||
-      'No se pudo enviar el código, intenta de nuevo.'
-    throw new Error(errorMessage)
+    throw new Error(normalizeAuthError(data, 'No se pudo enviar el codigo, intenta de nuevo.'))
   }
 
   return data as RequestCodeResponse
@@ -53,10 +49,25 @@ export async function verifyLoginCodeApi(
 
   const data = await response.json().catch(() => ({}))
   if (!response.ok) {
-    const errorMessage =
-      data?.message || 'Código inválido o expirado. Intenta de nuevo.'
-    throw new Error(errorMessage)
+    throw new Error(
+      normalizeAuthError(data, 'Codigo inválido o expirado. Intenta de nuevo.'),
+    )
   }
 
   return data as VerifyCodeResponse
+}
+
+function normalizeAuthError(data: unknown, fallback: string): string {
+  const payload = (data ?? {}) as Record<string, unknown>
+  const fieldErrors = (payload.fieldErrors ?? {}) as Record<string, string | undefined>
+  const rawMessage = typeof payload.message === 'string' ? payload.message : undefined
+  const emailError = fieldErrors.email
+
+  const knownEmailErrors = ['email must be an email', 'Email is required', 'email must be an Email']
+  if (emailError || (rawMessage && knownEmailErrors.some((m) => rawMessage.includes(m)))) {
+    return 'Ingresa un correo válido.'
+  }
+
+  if (rawMessage) return rawMessage
+  return fallback
 }

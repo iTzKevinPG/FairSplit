@@ -14,10 +14,12 @@ type AuthState = {
   verifyCode: (code: string) => Promise<boolean>
   isCooldownActive: () => number
   isAuthenticated: () => boolean
+  clearAuth: () => void
 }
 
 const STORAGE_KEY = 'fairsplit_auth_token'
 const STORAGE_EMAIL_KEY = 'fairsplit_auth_email'
+export const STORAGE_EXPIRED_FLAG = 'fairsplit_auth_expired'
 
 function loadStoredAuth() {
   if (typeof window === 'undefined') return { token: undefined, email: '' }
@@ -50,7 +52,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         const cooldownMs = 45_000
         set({ status: 'idle', nextRequestAt: Date.now() + cooldownMs })
       } catch (error) {
-        set({ status: 'idle', error: (error as Error).message })
+        set({ status: 'idle', error: (error as Error).message || 'No se pudo enviar el codigo' })
       }
     },
     verifyCode: async (code: string) => {
@@ -60,7 +62,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         return false
       }
       if (!code.trim()) {
-        set({ error: 'El código es obligatorio' })
+        set({ error: 'El codigo es obligatorio' })
         return false
       }
       set({ status: 'verifying', error: undefined })
@@ -69,8 +71,16 @@ export const useAuthStore = create<AuthState>((set, get) => {
         if (typeof window !== 'undefined') {
           localStorage.setItem(STORAGE_KEY, result.token)
           localStorage.setItem(STORAGE_EMAIL_KEY, result.user.email)
+          localStorage.removeItem(STORAGE_EXPIRED_FLAG)
         }
         set({ status: 'idle', token: result.token, email: result.user.email })
+        // Rehidratar eventos desde backend al iniciar sesion
+        try {
+          const { useFairSplitStore } = await import('./fairsplitStore')
+          await useFairSplitStore.getState().hydrate()
+        } catch {
+          // si falla, se mantiene el estado actual
+        }
         return true
       } catch (error) {
         set({ status: 'idle', error: (error as Error).message })
@@ -84,5 +94,15 @@ export const useAuthStore = create<AuthState>((set, get) => {
       return remaining > 0 ? remaining : 0
     },
     isAuthenticated: () => Boolean(get().token),
+    clearAuth: () => {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(STORAGE_KEY)
+        localStorage.removeItem(STORAGE_EMAIL_KEY)
+        localStorage.setItem(STORAGE_EXPIRED_FLAG, 'true')
+      }
+      set({ token: undefined, email: '', error: undefined })
+    },
   }
 })
+
+

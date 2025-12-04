@@ -5,6 +5,7 @@ import { useEvents } from '../hooks/useEvents'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { Footer } from '../components/Footer'
 import { AuthCard } from '../components/AuthCard'
+import { ModeBanner } from '../components/ModeBanner'
 
 function EventListPage() {
   const { events, selectedEventId, loadEvents, selectEvent, createAndSelect } =
@@ -48,6 +49,8 @@ function EventListPage() {
             para conectar un backend despues.
           </p>
         </header>
+
+        <ModeBanner />
 
         <AuthCard />
 

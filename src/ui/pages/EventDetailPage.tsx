@@ -11,6 +11,7 @@ import { BentoOverview } from '../components/BentoOverview'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { Footer } from '../components/Footer'
 import NotFoundPage from './NotFoundPage'
+import { ModeBanner } from '../components/ModeBanner'
 
 function EventDetailPage() {
   const { eventId } = useParams<{ eventId: string }>()
@@ -98,6 +99,8 @@ function EventDetailPage() {
           </Link>
           <ThemeToggle />
         </header>
+
+        <ModeBanner />
 
         <div className="flex flex-wrap gap-2">
           {[

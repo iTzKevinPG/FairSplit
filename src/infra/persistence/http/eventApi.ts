@@ -61,6 +61,9 @@ export async function listEventsApi(): Promise<ApiEvent[]> {
     method: 'GET',
     headers: buildHeaders()
   });
+  if (response.status === 401) {
+    throw new Error('UNAUTHORIZED');
+  }
   if (!response.ok) {
     throw new Error('Failed to fetch events');
   }

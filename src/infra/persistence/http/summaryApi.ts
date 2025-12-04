@@ -28,6 +28,9 @@ export async function getSummaryApi(eventId: string): Promise<ApiSummaryItem[]> 
     method: 'GET',
     headers: buildHeaders()
   });
+  if (response.status === 401) {
+    throw new Error('UNAUTHORIZED')
+  }
   if (response.status === 404) {
     throw new Error('Event not found');
   }
@@ -50,6 +53,9 @@ export async function getTransfersApi(eventId: string): Promise<ApiTransferItem[
     method: 'GET',
     headers: buildHeaders()
   });
+  if (response.status === 401) {
+    throw new Error('UNAUTHORIZED')
+  }
   if (response.status === 404) {
     throw new Error('Event not found');
   }
