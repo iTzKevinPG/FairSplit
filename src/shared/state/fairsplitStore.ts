@@ -110,7 +110,7 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
     })
 
     if (selected) {
-      void loadEventData(selected)
+      void loadEventData(selected, set, get)
     }
   },
   seedDemoData: async () => {
@@ -164,7 +164,7 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
   selectEvent: (eventId: EventId) => {
     set({ selectedEventId: eventId })
     if (!loadedEventData.has(eventId)) {
-      void loadEventData(eventId)
+      void loadEventData(eventId, set, get)
     }
   },
   createEvent: async (input) => {
@@ -377,7 +377,10 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
   },
 }))
 
-async function loadEventData(eventId: EventId) {
+async function loadEventData(
+  eventId: EventId,
+  setFn: Parameters<typeof useFairSplitStore>[0],
+) {
   try {
     const [participants, invoices] = await Promise.all([
       listParticipantsApi(eventId).catch((error) => {
@@ -409,8 +412,8 @@ async function loadEventData(eventId: EventId) {
       id: eventId,
       name: existing?.name ?? '',
       currency: existing?.currency ?? '',
-      people: [],
-      invoices: [],
+      people: existing?.people ?? [],
+      invoices: existing?.invoices ?? [],
     }
 
     const mappedParticipants =
@@ -444,7 +447,7 @@ async function loadEventData(eventId: EventId) {
     })
 
     const events = await eventRepository.list()
-    set((state) => ({
+    setFn((state: FairSplitState) => ({
       events,
       selectedEventId: state.selectedEventId ?? eventId,
     }))
