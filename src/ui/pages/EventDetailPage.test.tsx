@@ -18,6 +18,7 @@ describe('EventDetailPage', () => {
       useFairSplitStore.getState()
 
     const created = await createEvent({ name: 'Fiesta', currency: 'EUR' })
+    if (!created) throw new Error('Expected event to be created in guest mode')
     await hydrate()
     await seedDemoData()
     selectEvent(created.id)
@@ -39,6 +40,7 @@ describe('EventDetailPage', () => {
   it('allows switching tabs without losing context', async () => {
     const { createEvent, selectEvent } = useFairSplitStore.getState()
     const created = await createEvent({ name: 'Tabs', currency: 'USD' })
+    if (!created) throw new Error('Expected event to be created in guest mode')
     selectEvent(created.id)
 
     render(

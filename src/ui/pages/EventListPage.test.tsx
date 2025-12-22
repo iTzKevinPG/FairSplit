@@ -30,6 +30,7 @@ describe('EventListPage', () => {
   it('navigates to event detail when clicking a card', async () => {
     const { createEvent } = useFairSplitStore.getState()
     const event = await createEvent({ name: 'Viaje', currency: 'USD' })
+    if (!event) throw new Error('Expected event to be created in guest mode')
 
     render(
       <MemoryRouter initialEntries={['/']}>

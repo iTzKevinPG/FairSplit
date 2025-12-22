@@ -13,6 +13,7 @@ export function useEvents() {
   const createAndSelect = useCallback(
     async (input: CreateEventInput) => {
       const event = await createEvent(input)
+      if (!event) return undefined
       selectEvent(event.id)
       return event
     },

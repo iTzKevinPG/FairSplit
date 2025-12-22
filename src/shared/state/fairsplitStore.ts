@@ -43,6 +43,7 @@ import {
 } from '../../infra/persistence/http/invoiceApi'
 import { getSummaryApi, getTransfersApi } from '../../infra/persistence/http/summaryApi'
 import { STORAGE_EXPIRED_FLAG } from './authStore'
+import { showToast } from './toastStore'
 
 const eventRepository = new InMemoryEventRepository()
 const personRepository = new InMemoryPersonRepository(eventRepository)
@@ -56,6 +57,22 @@ function getAuthToken(): string | null {
     : null
 }
 
+function notifyApiFailure(action: string) {
+  showToast(`No se pudo ${action} en la nube. No se aplicaron cambios locales.`, 'error')
+}
+
+function notifyApiUnsupported(action: string) {
+  showToast(`No se pudo ${action} en modo perfil activo. Intenta mas tarde.`, 'warning')
+}
+
+function notifySessionExpired() {
+  showToast(
+    'Tu sesion expiro. Vuelve al inicio para configurar tu perfil.',
+    'warning',
+    3000,
+  )
+}
+
 async function ensureAuthOrRedirect(): Promise<string | null> {
   const token = getAuthToken()
   if (token) return token
@@ -64,8 +81,10 @@ async function ensureAuthOrRedirect(): Promise<string | null> {
     localStorage.getItem(STORAGE_EXPIRED_FLAG) === 'true'
   if (expired && typeof window !== 'undefined') {
     localStorage.removeItem(STORAGE_EXPIRED_FLAG)
-    window.alert('Tu sesion expiro. Vuelve al inicio para configurar tu perfil.')
-    window.location.assign('/')
+    notifySessionExpired()
+    window.setTimeout(() => {
+      window.location.assign('/')
+    }, 3000)
   }
   return null
 }
@@ -80,8 +99,10 @@ async function handleUnauthorizedAndRedirect() {
   if (typeof window !== 'undefined') {
     // evitar alertas duplicadas: consumimos el flag de expirado
     localStorage.removeItem(STORAGE_EXPIRED_FLAG)
-    window.alert('Tu sesion expiro. Vuelve al inicio para configurar tu perfil.')
-    window.location.assign('/')
+    notifySessionExpired()
+    window.setTimeout(() => {
+      window.location.assign('/')
+    }, 3000)
   }
 }
 
@@ -92,7 +113,7 @@ interface FairSplitState {
   hydrate: () => Promise<void>
   seedDemoData: () => Promise<void>
   selectEvent: (eventId: EventId) => Promise<void>
-  createEvent: (input: CreateEventInput) => Promise<Event>
+  createEvent: (input: CreateEventInput) => Promise<Event | undefined>
   addPerson: (input: Omit<AddPersonInput, 'eventId'>) => Promise<Event | undefined>
   updatePerson: (
     input: Omit<UpdatePersonInput, 'eventId'>,
@@ -127,6 +148,9 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
     const token = getAuthToken()
     if (token) {
       try {
+        const existing = await eventRepository.list()
+        await Promise.all(existing.map((event) => eventRepository.delete(event.id)))
+        loadedEventData.clear()
         const apiEvents = await listEventsApi()
         apiEvents.forEach((apiEvent) => {
           eventRepository.save({
@@ -236,9 +260,11 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
       } catch (error) {
         if ((error as Error).message === 'UNAUTHORIZED') {
           await handleUnauthorizedAndRedirect()
-          return createEvent(eventRepository, { ...input, id: undefined })
+          return undefined
         }
-        console.error('Failed to persist event to backend, using local id', error)
+        console.error('Failed to persist event to backend', error)
+        notifyApiFailure('crear el evento')
+        return undefined
       }
     }
 
@@ -264,7 +290,9 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
           await handleUnauthorizedAndRedirect()
           return undefined
         }
-        console.error('Failed to persist participant to backend, using local id', error)
+        console.error('Failed to persist participant to backend', error)
+        notifyApiFailure('crear el participante')
+        return undefined
       }
     }
 
@@ -293,7 +321,9 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
           await handleUnauthorizedAndRedirect()
           return undefined
         }
-        console.error('Failed to update participant in backend, applying local change', error)
+        console.error('Failed to update participant in backend', error)
+        notifyApiFailure('actualizar el participante')
+        return undefined
       }
     }
     const event = await updatePersonInEvent(
@@ -324,7 +354,9 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
           await handleUnauthorizedAndRedirect()
           return undefined
         }
-        console.error('Failed to delete participant in backend, applying local change', error)
+        console.error('Failed to delete participant in backend', error)
+        notifyApiFailure('eliminar el participante')
+        return undefined
       }
     }
     const event = await removePersonFromEvent(
@@ -365,7 +397,9 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
           await handleUnauthorizedAndRedirect()
           return undefined
         }
-        console.error('Failed to persist invoice to backend, using local id', error)
+        console.error('Failed to persist invoice to backend', error)
+        notifyApiFailure('crear la factura')
+        return undefined
       }
     }
 
@@ -389,6 +423,11 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
   updateInvoice: async (input) => {
     const eventId = get().selectedEventId
     if (!eventId) return undefined
+    const token = await ensureAuthOrRedirect()
+    if (token) {
+      notifyApiUnsupported('actualizar la factura')
+      return undefined
+    }
     const event = await updateInvoiceInEvent(
       eventRepository,
       invoiceRepository,
@@ -408,6 +447,11 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
   removeInvoice: async (input) => {
     const eventId = get().selectedEventId
     if (!eventId) return undefined
+    const token = await ensureAuthOrRedirect()
+    if (token) {
+      notifyApiUnsupported('eliminar la factura')
+      return undefined
+    }
     const event = await removeInvoiceFromEvent(
       eventRepository,
       invoiceRepository,
@@ -441,6 +485,7 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
   getSettlement: async () => {
     const eventId = get().selectedEventId
     if (!eventId) return null
+    const token = await ensureAuthOrRedirect()
     try {
       const summaryPromise = getSummaryApi(eventId)
       const transfersPromise = getTransfersApi(eventId).catch(() => null)
@@ -462,7 +507,11 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
           })) ?? suggestTransfers(balances),
       }
     } catch (error) {
-      console.error('Failed to fetch summary from backend, falling back to local calc', error)
+      console.error('Failed to fetch summary from backend', error)
+      if (token) {
+        notifyApiFailure('calcular el resumen')
+        return null
+      }
       return calculateSettlement(eventRepository, eventId)
     }
   },
