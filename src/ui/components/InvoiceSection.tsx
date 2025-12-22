@@ -100,7 +100,9 @@ export function InvoiceSection({
     setAmount(String(invoice.amount))
     setPayerId(invoice.payerId)
     setParticipantIds(invoice.participantIds)
-    setDivisionMethod(invoice.divisionMethod ?? 'equal')
+    const method =
+      invoice.divisionMethod ?? (invoice.consumptions ? 'consumption' : 'equal')
+    setDivisionMethod(method)
     setIncludeTip(Boolean(invoice.tipAmount && invoice.tipAmount > 0))
     setTipAmount(invoice.tipAmount ? String(invoice.tipAmount) : '')
     setBirthdayEnabled(Boolean(invoice.birthdayPersonId))
