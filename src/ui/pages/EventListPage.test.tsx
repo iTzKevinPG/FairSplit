@@ -25,6 +25,7 @@ describe('EventListPage', () => {
     })
 
     expect(screen.getByTestId('empty-events')).toBeInTheDocument()
+    expect(screen.getByText(/Aun no tienes eventos/i)).toBeInTheDocument()
   })
 
   it('navigates to event detail when clicking a card', async () => {

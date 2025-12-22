@@ -87,8 +87,8 @@ function EventDetailPage() {
               {selectedEvent.name}
             </h1>
             <p className="text-sm text-[color:var(--color-text-muted)]">
-              Moneda: {selectedEvent.currency} · Participantes:{' '}
-              {selectedEvent.people.length} · Facturas:{' '}
+              Moneda: {selectedEvent.currency} · Integrantes:{' '}
+              {selectedEvent.people.length} · Gastos:{' '}
               {selectedEvent.invoices.length}
             </p>
           </div>
@@ -105,8 +105,8 @@ function EventDetailPage() {
 
         <div className="flex flex-wrap gap-2">
           {[
-            { id: 'people', label: 'Participantes' },
-            { id: 'invoices', label: 'Facturas' },
+            { id: 'people', label: 'Integrantes' },
+            { id: 'invoices', label: 'Gastos' },
             { id: 'summary', label: 'Resumen' },
             { id: 'transfers', label: 'Transferencias' },
             { id: 'overview', label: 'Resumen total' },

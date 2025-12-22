@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from 'react'
+﻿import { type FormEvent, useState } from 'react'
 import { SectionCard } from './SectionCard'
 import type { PersonForUI } from '../../shared/state/fairsplitStore'
 
@@ -23,7 +23,7 @@ export function PeopleSection({
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
     if (!name.trim()) {
-      setError('El nombre es obligatorio.')
+      setError('Escribe un nombre para continuar.')
       return
     }
 
@@ -41,7 +41,7 @@ export function PeopleSection({
   const handleEditSave = async () => {
     if (!editingId) return
     if (!editingName.trim()) {
-      setError('El nombre es obligatorio.')
+      setError('Escribe un nombre para continuar.')
       return
     }
     setError(null)
@@ -65,8 +65,8 @@ export function PeopleSection({
 
   return (
     <SectionCard
-      title="Personas"
-      description="Agrega a tus amigos para poder asignarlos como pagadores o participantes."
+      title="Integrantes"
+      description="Invita a las personas del grupo para asignar pagos y consumos."
     >
       <form
         onSubmit={handleSubmit}
@@ -92,7 +92,7 @@ export function PeopleSection({
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         {people.length === 0 ? (
           <p className="text-sm text-[color:var(--color-text-muted)]">
-            Aun no hay personas. Agrega al menos una para crear facturas.
+            Aun no tienes integrantes. Agrega al menos uno para registrar gastos.
           </p>
         ) : (
           people.map((person) => (
@@ -165,3 +165,4 @@ export function PeopleSection({
     </SectionCard>
   )
 }
+

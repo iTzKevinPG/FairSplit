@@ -38,15 +38,14 @@ function EventListPage() {
                 FairSplit
               </p>
               <h1 className="text-3xl font-semibold text-[color:var(--color-text-main)] sm:text-4xl">
-                Divide gastos entre amigos con claridad.
+                Divide y cierra cuentas sin friccion.
               </h1>
             </div>
             <ThemeToggle />
           </div>
           <p className="max-w-3xl text-base text-[color:var(--color-text-muted)]">
-            Crea eventos, agrega participantes y registra facturas. Calcula
-        saldos netos y transferencias sugeridas con datos en memoria, listos
-            para conectar un backend despues.
+            Organiza tus planes, registra gastos y obtén balances claros para
+            saber quién paga a quién. Usa modo local o tu perfil en la nube.
           </p>
         </header>
 
@@ -64,11 +63,11 @@ function EventListPage() {
 
         <section className="space-y-3">
           <h2 className="text-lg font-semibold text-[color:var(--color-text-main)]">
-            Eventos recientes
+            Tus eventos recientes
           </h2>
           {events.length === 0 ? (
             <p className="text-sm text-[color:var(--color-text-muted)]" data-testid="empty-events">
-              Aun no hay eventos. Crea uno para empezar.
+              Aun no tienes eventos. Crea el primero para empezar.
             </p>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
@@ -83,10 +82,10 @@ function EventListPage() {
                     {event.name}
                   </span>
                   <span className="text-xs text-[color:var(--color-text-muted)]">
-                    Moneda: {event.currency} · Participantes: {event.people.length}
+                    Moneda: {event.currency} · Integrantes: {event.people.length}
                   </span>
                   <span className="text-xs text-[color:var(--color-text-muted)]">
-                    Facturas: {event.invoices.length}
+                    Gastos: {event.invoices.length}
                   </span>
                 </button>
               ))}

@@ -1,4 +1,4 @@
-import { type FormEvent, useMemo, useState } from 'react'
+﻿import { type FormEvent, useMemo, useState } from 'react'
 import { SectionCard } from './SectionCard'
 import type { InvoiceForUI, PersonForUI } from '../../shared/state/fairsplitStore'
 
@@ -222,18 +222,18 @@ export function InvoiceSection({
 
   return (
     <SectionCard
-      title="Facturas"
-      description="Registra facturas con pagador y participantes. Elige reparto igualitario o por consumo, con propina y cumpleañero opcional."
+      title="Gastos"
+      description="Registra cada gasto con su pagador y participantes. Elige reparto equitativo o por consumo real, con propina y cumpleañero opcional."
       actions={
         <span className="rounded-full accent-chip px-3 py-1 text-xs font-semibold text-accent">
-          {invoices.length} factura(s)
+          {invoices.length} gasto(s)
         </span>
       }
     >
       <form onSubmit={handleSubmit} className="grid gap-3 md:grid-cols-4">
         <input
           className="ds-input md:col-span-2"
-          placeholder="Descripcion"
+          placeholder="Concepto del gasto"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
@@ -263,7 +263,7 @@ export function InvoiceSection({
               disabled={people.length === 0}
             />
             <label htmlFor="include-tip" className="text-xs font-semibold text-slate-500">
-              Incluir propina
+              Agregar propina
             </label>
           </div>
           {includeTip ? (
@@ -281,7 +281,7 @@ export function InvoiceSection({
             </div>
           ) : null}
           <span className="text-[11px] text-[color:var(--color-text-muted)]" title="La propina se reparte igualitariamente entre los participantes al guardar la factura.">
-            La propina se reparte igualitario al guardar.
+            La propina se distribuye entre quienes participan.
           </span>
         </div>
 
@@ -296,7 +296,7 @@ export function InvoiceSection({
               disabled={participantIds.length === 0}
             />
             <label htmlFor="birthday-toggle" className="text-xs font-semibold text-slate-500">
-              Marcar cumpleañero
+              Cumpleañero
             </label>
           </div>
           {birthdayEnabled ? (
@@ -341,7 +341,7 @@ export function InvoiceSection({
           ) : (
             people.map((person) => (
               <option key={person.id} value={person.id}>
-                Pago: {person.name}
+                Pagó: {person.name}
               </option>
             ))
           )}
@@ -352,13 +352,13 @@ export function InvoiceSection({
           value={divisionMethod}
           onChange={(e) => setDivisionMethod(e.target.value as 'equal' | 'consumption')}
         >
-          <option value="equal">Reparto igualitario</option>
-          <option value="consumption">Por consumo</option>
+          <option value="equal">Reparto equitativo</option>
+          <option value="consumption">Por consumo real</option>
         </select>
 
         <div className="md:col-span-4">
           <p className="text-xs font-semibold tracking-wide text-[color:var(--color-text-muted)]">
-            Participantes
+            Personas incluidas
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             {people.length === 0 ? (
@@ -402,10 +402,10 @@ export function InvoiceSection({
           <div className="md:col-span-4">
             <div className="flex items-center justify-between">
               <p className="text-xs font-semibold tracking-wide text-[color:var(--color-text-muted)]">
-                Consumo por participante
+                Consumo por persona
               </p>
               <p className="text-[11px] font-semibold text-[color:var(--color-text-muted)]">
-                Suma ingresada: {currency} {roundToCents(consumptionSum).toFixed(2)}
+                Total registrado: {currency} {roundToCents(consumptionSum).toFixed(2)}
               </p>
             </div>
               <div className="mt-2 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
@@ -450,13 +450,13 @@ export function InvoiceSection({
             className="ds-btn ds-btn-primary"
             disabled={people.length === 0}
           >
-            {editingInvoiceId ? 'Guardar cambios' : 'Guardar factura'}
+            {editingInvoiceId ? 'Guardar cambios' : 'Guardar gasto'}
           </button>
         </div>
       </form>
       {editingInvoiceId ? (
         <div className="mt-2 flex items-center justify-between text-xs text-[color:var(--color-text-muted)]">
-          <span>Editando factura seleccionada.</span>
+          <span>Editando gasto seleccionado.</span>
           <button
             type="button"
             className="font-semibold hover:text-yellow-500"
@@ -467,149 +467,159 @@ export function InvoiceSection({
         </div>
       ) : null}
 
-      <div className="mt-5 space-y-3">
+            <div className="mt-5 space-y-3">
         {invoices.length === 0 ? (
           <div className="ds-card flex items-center justify-between rounded-lg">
-            <span className='text-sm'>Aun no hay facturas registradas.</span>
+            <span className='text-sm'>Aun no has registrado gastos.</span>
             <span className="text-xs text-accent">Agrega la primera arriba.</span>
           </div>
         ) : (
-          invoices.map((invoice) => (
-            <div
-              key={invoice.id}
-              className="flex flex-col gap-2 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-3 py-2 text-sm shadow-sm sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div>
-                <p className="font-semibold text-accent">
-                  {invoice.description}{' '}
-                  <span className="text-xs font-normal text-[color:var(--color-text-muted)]">
-                    ({currency} {invoice.amount.toFixed(2)})
-                  </span>
-                </p>
-                <p className="text-xs text-[color:var(--color-text-muted)]">
-                  Pago: {resolvePersonName(invoice.payerId, people)}
-                </p>
-                <p className="text-xs text-[color:var(--color-text-muted)]">
-                  Participantes ({invoice.participantIds.length}):{' '}
-                  {invoice.participantIds
-                    .map((id) => resolvePersonName(id, people))
-                    .join(', ')}
-                </p>
-                {invoice.birthdayPersonId ? (
-                  <p className="text-xs text-accent font-semibold">
-                    Cumpleañero: {resolvePersonName(invoice.birthdayPersonId, people)}
-                  </p>
+          invoices.map((invoice) => {
+            const isExpanded = detailInvoiceId === invoice.id
+            const shares = isExpanded && detailInvoice ? participantShares : []
+
+            return (
+              <div key={invoice.id} className="space-y-3">
+                <div
+                  className="flex flex-col gap-2 rounded-lg border border-[color:var(--color-border-subtle)] 
+    bg-[color:var(--color-surface-muted)] px-3 py-2 text-sm shadow-sm sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div>
+                    <p className="font-semibold text-accent">
+                      {invoice.description}{' '}
+                      <span className="text-xs font-normal text-[color:var(--color-text-muted)]">
+                        ({currency} {invoice.amount.toFixed(2)})
+                      </span>
+                    </p>
+                    <p className="text-xs text-[color:var(--color-text-muted)]">
+                      Pagó: {resolvePersonName(invoice.payerId, people)}
+                    </p>
+                    <p className="text-xs text-[color:var(--color-text-muted)]">
+                      Personas incluidas ({invoice.participantIds.length}):{' '}
+                      {invoice.participantIds
+                        .map((id) => resolvePersonName(id, people))
+                        .join(', ')}
+                    </p>
+                    {invoice.birthdayPersonId ? (
+                      <p className="text-xs text-accent font-semibold">
+                        Cumpleañero: {resolvePersonName(invoice.birthdayPersonId, people)}
+                      </p>
+                    ) : null}
+                    {invoice.tipAmount ? (
+                      <p className="text-xs text-[color:var(--color-text-muted)]">
+                        Propina: {currency} {invoice.tipAmount.toFixed(2)}
+                      </p>
+                    ) : null}
+                    {invoice.divisionMethod === 'consumption' ? (
+                      <p className="text-[10px] uppercase tracking-wide text-[color:var(--color-text-muted)]">
+                        Reparto: Consumo real
+                      </p>
+                    ) : (
+                      <p className="text-[10px] uppercase tracking-wide text-[color:var(--color-text-muted)]">
+                        Reparto: Equitativo
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      className="text-xs font-semibold text-accent hover:text-indigo-500"
+                      onClick={() =>
+                        setDetailInvoiceId((current) =>
+                          current === invoice.id ? null : invoice.id,
+                        )
+                      }
+                    >
+                      {isExpanded ? 'Ocultar detalle' : 'Ver detalle'}
+                    </button>
+                    <button
+                      type="button"
+                      className="text-xs font-semibold text-accent hover:text-indigo-500"
+                      onClick={() => startEdit(invoice)}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      className="text-xs font-semibold text-[color:var(--color-text-muted)] hover:text-red-600"
+                      onClick={() => onRemove(invoice.id)}
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+
+                {isExpanded && detailInvoice ? (
+                  <div className="rounded-lg border border-[color:var(--color-border-subtle)] 
+    bg-[color:var(--color-surface-muted)] p-4 text-sm text-[color:var(--color-text-main)]">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <p className="font-semibold text-accent">{detailInvoice.description}</p>
+                        <p className="text-xs text-[color:var(--color-text-muted)]">
+                          Pagó: {resolvePersonName(detailInvoice.payerId, people)} · Monto:{' '}
+                          {currency} {detailInvoice.amount.toFixed(2)}
+                          {detailInvoice.tipAmount
+                            ? ` · Propina: ${currency} ${detailInvoice.tipAmount.toFixed(2)}`
+                            : ''}
+                        </p>
+                        <p className="text-[10px] uppercase tracking-wide text-[color:var(--color-text-muted)]">
+                          Reparto:{' '}
+                          {detailInvoice.divisionMethod === 'consumption'
+                            ? 'Consumo real'
+                            : 'Equitativo'}
+                        </p>
+                        {detailInvoice.birthdayPersonId ? (
+                          <p className="text-[11px] font-semibold text-accent">
+                            Cumpleañero: {resolvePersonName(detailInvoice.birthdayPersonId, people)}
+                          </p>
+                        ) : null}
+                      </div>
+                      <button
+                        type="button"
+                        className="text-xs font-semibold text-[color:var(--color-text-muted)] hover:text-slate-700"
+                        onClick={() => setDetailInvoiceId(null)}
+                      >
+                        Cerrar
+                      </button>
+                    </div>
+                    <div className="mt-3 space-y-2">
+                      {shares.map((share) => (
+                        <div
+                          key={share.personId}
+                          className={`flex items-center justify-between rounded-md bg-[color:var(--color-border-subtle)] px-3 
+    py-2 shadow-sm ${
+                            share.isBirthday ? 'border border-[color:var(--color-primary-light)]' : ''
+                          }`}
+                        >
+                          <span className="font-semibold text-[color:var(--color-text-main)]">
+                            {resolvePersonName(share.personId, people)}
+                            {share.isBirthday ? (
+                              <span className="ml-2 rounded-full accent-chip px-2 py-0.5 text-[10px] font-semibold text-accent">
+                                Cumpleañero
+                              </span>
+                            ) : null}
+                          </span>
+                          <div className="text-right">
+                            {share.tipPortion ? (
+                              <p className="text-[11px] text-[color:var(--color-text-muted)]">
+                                Propina: {currency} {share.tipPortion.toFixed(2)}
+                              </p>
+                            ) : null}
+                            <p className="text-accent font-semibold">
+                              Total: {currency} {share.amount.toFixed(2)}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 ) : null}
-                {invoice.tipAmount ? (
-                  <p className="text-xs text-[color:var(--color-text-muted)]">
-                    Propina: {currency} {invoice.tipAmount.toFixed(2)}
-                  </p>
-                ) : null}
-                {invoice.divisionMethod === 'consumption' ? (
-                  <p className="text-[10px] uppercase tracking-wide text-[color:var(--color-text-muted)]">
-                    Metodo: Consumo
-                  </p>
-                ) : (
-                  <p className="text-[10px] uppercase tracking-wide text-[color:var(--color-text-muted)]">
-                    Metodo: Igualitario
-                  </p>
-                )}
               </div>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  className="text-xs font-semibold text-accent hover:text-indigo-500"
-                  onClick={() =>
-                    setDetailInvoiceId((current) =>
-                      current === invoice.id ? null : invoice.id,
-                    )
-                  }
-                >
-                  Ver detalle
-                </button>
-                <button
-                  type="button"
-                  className="text-xs font-semibold text-accent hover:text-indigo-500"
-                  onClick={() => startEdit(invoice)}
-                >
-                  Editar
-                </button>
-                <button
-                  type="button"
-                  className="text-xs font-semibold text-[color:var(--color-text-muted)] hover:text-red-600"
-                  onClick={() => onRemove(invoice.id)}
-                >
-                  Eliminar
-                </button>
-              </div>
-            </div>
-          ))
+            )
+          })
         )}
       </div>
 
-      {detailInvoice ? (
-        <div className="mt-4 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] p-4 text-sm text-[color:var(--color-text-main)]">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <p className="font-semibold text-accent">{detailInvoice.description}</p>
-              <p className="text-xs text-[color:var(--color-text-muted)]">
-                Pago: {resolvePersonName(detailInvoice.payerId, people)} · Monto:{' '}
-                {currency} {detailInvoice.amount.toFixed(2)}
-                {detailInvoice.tipAmount
-                  ? ` · Propina: ${currency} ${detailInvoice.tipAmount.toFixed(2)}`
-                  : ''}
-              </p>
-              <p className="text-[10px] uppercase tracking-wide text-[color:var(--color-text-muted)]">
-                Metodo:{' '}
-                {detailInvoice.divisionMethod === 'consumption'
-                  ? 'Consumo'
-                  : 'Igualitario'}
-              </p>
-              {detailInvoice.birthdayPersonId ? (
-                <p className="text-[11px] font-semibold text-accent">
-                  Cumpleañero: {resolvePersonName(detailInvoice.birthdayPersonId, people)}
-                </p>
-              ) : null}
-            </div>
-            <button
-              type="button"
-              className="text-xs font-semibold text-[color:var(--color-text-muted)] hover:text-slate-700"
-              onClick={() => setDetailInvoiceId(null)}
-            >
-              Cerrar
-            </button>
-          </div>
-          <div className="mt-3 space-y-2">
-            {participantShares.map((share) => (
-              <div
-                key={share.personId}
-                className={`flex items-center justify-between rounded-md bg-[color:var(--color-border-subtle)] px-3 py-2 shadow-sm ${
-                  share.isBirthday ? 'border border-[color:var(--color-primary-light)]' : ''
-                }`}
-              >
-                <span className="font-semibold text-[color:var(--color-text-main)]">
-                  {resolvePersonName(share.personId, people)}
-                  {share.isBirthday ? (
-                    <span className="ml-2 rounded-full accent-chip px-2 py-0.5 text-[10px] font-semibold text-accent">
-                      Cumpleañero
-                    </span>
-                  ) : null}
-                </span>
-                <div className="text-right">
-                  {share.tipPortion ? (
-                    <p className="text-[11px] text-[color:var(--color-text-muted)]">
-                      Propina: {currency} {share.tipPortion.toFixed(2)}
-                    </p>
-                  ) : null}
-                  <p className="text-accent font-semibold">
-                    Total: {currency} {share.amount.toFixed(2)}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
     </SectionCard>
   )
 }
@@ -741,5 +751,15 @@ function buildTipPortion(
     personId === tipReceivers[tipReceivers.length - 1]
   return roundToCents(tipShare + (isLastTip ? tipDiff : 0))
 }
+
+
+
+
+
+
+
+
+
+
 
 

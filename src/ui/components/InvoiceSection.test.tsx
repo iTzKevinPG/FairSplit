@@ -20,12 +20,12 @@ describe('InvoiceSection', () => {
     render(<InvoiceSection {...baseProps} onAdd={onAdd} />)
 
     await userEvent.type(
-      screen.getByPlaceholderText(/descripcion/i),
+      screen.getByPlaceholderText(/concepto del gasto/i),
       'Cena',
     )
     await userEvent.clear(screen.getByPlaceholderText(/monto/i))
     await userEvent.type(screen.getByPlaceholderText(/monto/i), '0')
-    await userEvent.click(screen.getByRole('button', { name: /guardar factura/i }))
+    await userEvent.click(screen.getByRole('button', { name: /guardar gasto/i }))
 
     expect(
       await screen.findByText(/monto debe ser mayor que 0/i),
@@ -38,7 +38,7 @@ describe('InvoiceSection', () => {
     render(<InvoiceSection {...baseProps} onAdd={onAdd} />)
 
     await userEvent.type(
-      screen.getByPlaceholderText(/descripcion/i),
+      screen.getByPlaceholderText(/concepto del gasto/i),
       'Cena',
     )
     await userEvent.clear(screen.getByPlaceholderText(/monto/i))
@@ -48,7 +48,7 @@ describe('InvoiceSection', () => {
       screen.getAllByRole('combobox')[0] as HTMLSelectElement,
       '',
     )
-    await userEvent.click(screen.getByRole('button', { name: /guardar factura/i }))
+    await userEvent.click(screen.getByRole('button', { name: /guardar gasto/i }))
 
     expect(
       await screen.findByText(/seleccionar un pagador/i),
@@ -66,7 +66,7 @@ describe('InvoiceSection', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: /guardar factura/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /guardar gasto/i })).toBeDisabled()
   })
 
   it('shows error when consumptions are zero in consumption mode', async () => {
@@ -74,13 +74,13 @@ describe('InvoiceSection', () => {
     render(<InvoiceSection {...baseProps} onAdd={onAdd} />)
 
     await userEvent.type(
-      screen.getByPlaceholderText(/descripcion/i),
+      screen.getByPlaceholderText(/concepto del gasto/i),
       'Cena',
     )
     await userEvent.clear(screen.getByPlaceholderText(/monto/i))
     await userEvent.type(screen.getByPlaceholderText(/monto/i), '50')
-    await userEvent.selectOptions(screen.getAllByRole('combobox')[1], 'Por consumo')
-    await userEvent.click(screen.getByRole('button', { name: /guardar factura/i }))
+    await userEvent.selectOptions(screen.getAllByRole('combobox')[1], 'Por consumo real')
+    await userEvent.click(screen.getByRole('button', { name: /guardar gasto/i }))
 
     expect(await screen.findByText(/consumos mayores a 0/i)).toBeInTheDocument()
     expect(onAdd).not.toHaveBeenCalled()
@@ -91,12 +91,12 @@ describe('InvoiceSection', () => {
     render(<InvoiceSection {...baseProps} onAdd={onAdd} />)
 
     await userEvent.type(
-      screen.getByPlaceholderText(/descripcion/i),
+      screen.getByPlaceholderText(/concepto del gasto/i),
       'Cena',
     )
     await userEvent.clear(screen.getByPlaceholderText(/monto/i))
     await userEvent.type(screen.getByPlaceholderText(/monto/i), '50')
-    await userEvent.selectOptions(screen.getAllByRole('combobox')[1], 'Por consumo')
+    await userEvent.selectOptions(screen.getAllByRole('combobox')[1], 'Por consumo real')
     const consumptionAna = screen.getByTestId('consumption-p1')
     const consumptionBen = screen.getByTestId('consumption-p2')
     await userEvent.clear(consumptionAna)
@@ -104,7 +104,7 @@ describe('InvoiceSection', () => {
     await userEvent.clear(consumptionBen)
     await userEvent.type(consumptionBen, '5')
 
-    await userEvent.click(screen.getByRole('button', { name: /guardar factura/i }))
+    await userEvent.click(screen.getByRole('button', { name: /guardar gasto/i }))
     expect(
       await screen.findByText(/suma de consumos no coincide/i),
     ).toBeInTheDocument()
@@ -115,7 +115,7 @@ describe('InvoiceSection', () => {
     const onAdd = vi.fn()
     render(<InvoiceSection {...baseProps} onAdd={onAdd} />)
 
-    await userEvent.type(screen.getByPlaceholderText(/descripcion/i), 'Cumple')
+    await userEvent.type(screen.getByPlaceholderText(/concepto del gasto/i), 'Cumple')
     const amountInput = screen.getByPlaceholderText(/monto/i)
     await userEvent.clear(amountInput)
     await userEvent.type(amountInput, '40')
@@ -128,7 +128,7 @@ describe('InvoiceSection', () => {
 
     await userEvent.click(screen.getByLabelText(/Ben/))
 
-    await userEvent.click(screen.getByRole('button', { name: /guardar factura/i }))
+    await userEvent.click(screen.getByRole('button', { name: /guardar gasto/i }))
     expect(
       await screen.findByText(/se necesita al menos otra persona/i),
     ).toBeInTheDocument()

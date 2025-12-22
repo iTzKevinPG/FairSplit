@@ -28,11 +28,11 @@ export function EventSelector({
     const trimmedCurrency = currency.trim()
 
     if (!trimmedName) {
-      setError('El nombre del evento es obligatorio.')
+      setError('Escribe un nombre para tu evento.')
       return
     }
     if (!trimmedCurrency) {
-      setError('La moneda es obligatoria.')
+      setError('Selecciona una moneda para continuar.')
       return
     }
 
@@ -46,7 +46,7 @@ export function EventSelector({
       {showSelector ? (
         <div className="flex flex-wrap items-center gap-3">
           <label className="text-sm font-medium text-[color:var(--color-text-main)]">
-            Evento activo
+            Evento en curso
           </label>
           <select
             className="ds-select min-w-[220px]"
@@ -54,7 +54,7 @@ export function EventSelector({
             onChange={(e) => onSelect(e.target.value)}
           >
             {events.length === 0 ? (
-              <option value="">Crea un evento para empezar</option>
+              <option value="">Crea tu primer evento</option>
             ) : null}
             {events.map((event) => (
               <option key={event.id} value={event.id}>
@@ -71,7 +71,7 @@ export function EventSelector({
       >
         <input
           className="ds-input"
-          placeholder="Nombre del evento"
+          placeholder="Nombre del evento (ej. Viaje a la playa)"
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
