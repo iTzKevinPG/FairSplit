@@ -22,6 +22,7 @@ function EventDetailPage() {
     removePerson,
     addInvoice,
     removeInvoice,
+    updateInvoice,
     updatePerson,
     getBalances,
     getTransfers,
@@ -150,6 +151,9 @@ function EventDetailPage() {
               currency={selectedEvent.currency}
               onAdd={async (invoice) => {
                 await addInvoice(invoice)
+              }}
+              onUpdate={async (invoice) => {
+                await updateInvoice(invoice)
               }}
               onRemove={async (invoiceId) => {
                 await removeInvoice({ invoiceId })
