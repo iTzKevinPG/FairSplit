@@ -6,7 +6,7 @@ export function ModeBanner() {
   const email = useAuthStore((state) => state.email)
 
   const { title, message, tone } = useMemo(() => {
-    if (Boolean(token)) {
+    if (token) {
       return {
         title: 'Perfil activo',
         message: `Guardando en la nube para ${email || 'tu cuenta'}.`,
