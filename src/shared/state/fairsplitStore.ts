@@ -40,6 +40,7 @@ import {
   createInvoiceApi,
   getInvoiceApi,
   listInvoicesApi,
+  updateInvoiceApi,
 } from '../../infra/persistence/http/invoiceApi'
 import { getSummaryApi, getTransfersApi } from '../../infra/persistence/http/summaryApi'
 import { STORAGE_EXPIRED_FLAG } from './authStore'
@@ -425,8 +426,26 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
     if (!eventId) return undefined
     const token = await ensureAuthOrRedirect()
     if (token) {
-      notifyApiUnsupported('actualizar la factura')
-      return undefined
+      try {
+        await updateInvoiceApi(eventId, input.invoiceId, {
+          description: input.description,
+          totalAmount: input.amount,
+          payerId: input.payerId,
+          participantIds: input.participantIds,
+          divisionMethod: input.divisionMethod ?? 'equal',
+          consumptions: input.consumptions,
+          tipAmount: input.tipAmount,
+          birthdayPersonId: input.birthdayPersonId,
+        })
+      } catch (error) {
+        if ((error as Error).message === 'UNAUTHORIZED') {
+          await handleUnauthorizedAndRedirect()
+          return undefined
+        }
+        console.error('Failed to update invoice in backend', error)
+        notifyApiFailure('actualizar la factura')
+        return undefined
+      }
     }
     const event = await updateInvoiceInEvent(
       eventRepository,

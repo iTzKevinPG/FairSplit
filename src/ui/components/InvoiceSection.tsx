@@ -16,6 +16,17 @@ interface InvoiceSectionProps {
     tipAmount?: number
     birthdayPersonId?: string
   }) => Promise<void>
+  onUpdate: (invoice: {
+    invoiceId: string
+    description: string
+    amount: number
+    payerId: string
+    participantIds: string[]
+    divisionMethod?: 'equal' | 'consumption'
+    consumptions?: Record<string, number>
+    tipAmount?: number
+    birthdayPersonId?: string
+  }) => Promise<void>
   onRemove: (invoiceId: string) => Promise<void>
 }
 
@@ -24,6 +35,7 @@ export function InvoiceSection({
   people,
   currency,
   onAdd,
+  onUpdate,
   onRemove,
 }: InvoiceSectionProps) {
   const [description, setDescription] = useState('')
@@ -36,6 +48,7 @@ export function InvoiceSection({
   )
   const [error, setError] = useState<string | null>(null)
   const [detailInvoiceId, setDetailInvoiceId] = useState<string | null>(null)
+  const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null)
   const [divisionMethod, setDivisionMethod] = useState<'equal' | 'consumption'>('equal')
   const [consumptions, setConsumptions] = useState<Record<string, string>>(
     () =>
@@ -60,6 +73,45 @@ export function InvoiceSection({
       )
       return next
     })
+  }
+
+  const resetForm = () => {
+    setDescription('')
+    setAmount('')
+    setPayerId(people[0]?.id ?? undefined)
+    setParticipantIds(people.map((person) => person.id))
+    setConsumptions(
+      people.reduce<Record<string, string>>((acc, person) => {
+        acc[person.id] = ''
+        return acc
+      }, {}),
+    )
+    setDivisionMethod('equal')
+    setIncludeTip(false)
+    setTipAmount('')
+    setBirthdayEnabled(false)
+    setBirthdayPersonId('')
+    setEditingInvoiceId(null)
+  }
+
+  const startEdit = (invoice: InvoiceForUI) => {
+    setEditingInvoiceId(invoice.id)
+    setDescription(invoice.description)
+    setAmount(String(invoice.amount))
+    setPayerId(invoice.payerId)
+    setParticipantIds(invoice.participantIds)
+    setDivisionMethod(invoice.divisionMethod)
+    setIncludeTip(Boolean(invoice.tipAmount && invoice.tipAmount > 0))
+    setTipAmount(invoice.tipAmount ? String(invoice.tipAmount) : '')
+    setBirthdayEnabled(Boolean(invoice.birthdayPersonId))
+    setBirthdayPersonId(invoice.birthdayPersonId ?? '')
+    setConsumptions(
+      people.reduce<Record<string, string>>((acc, person) => {
+        const value = invoice.consumptions?.[person.id]
+        acc[person.id] = value !== undefined ? String(value) : ''
+        return acc
+      }, {}),
+    )
   }
 
   const handleSubmit = async (event: FormEvent) => {
@@ -132,30 +184,31 @@ export function InvoiceSection({
     }
 
     setError(null)
-    await onAdd({
-      description: trimmedDescription,
-      amount: numericAmount,
-      payerId,
-      participantIds,
-      divisionMethod,
-      consumptions: consumptionPayload,
-      tipAmount: includeTip ? numericTip : undefined,
-      birthdayPersonId: birthdayEnabled ? birthdayPersonId : undefined,
-    })
-    setDescription('')
-    setAmount('')
-    setParticipantIds(people.map((person) => person.id))
-    setConsumptions(
-      people.reduce<Record<string, string>>((acc, person) => {
-        acc[person.id] = ''
-        return acc
-      }, {}),
-    )
-    setDivisionMethod('equal')
-    setIncludeTip(false)
-    setTipAmount('')
-    setBirthdayEnabled(false)
-    setBirthdayPersonId('')
+    if (editingInvoiceId) {
+      await onUpdate({
+        invoiceId: editingInvoiceId,
+        description: trimmedDescription,
+        amount: numericAmount,
+        payerId,
+        participantIds,
+        divisionMethod,
+        consumptions: consumptionPayload,
+        tipAmount: includeTip ? numericTip : undefined,
+        birthdayPersonId: birthdayEnabled ? birthdayPersonId : undefined,
+      })
+    } else {
+      await onAdd({
+        description: trimmedDescription,
+        amount: numericAmount,
+        payerId,
+        participantIds,
+        divisionMethod,
+        consumptions: consumptionPayload,
+        tipAmount: includeTip ? numericTip : undefined,
+        birthdayPersonId: birthdayEnabled ? birthdayPersonId : undefined,
+      })
+    }
+    resetForm()
   }
 
   const detailInvoice = invoices.find((invoice) => invoice.id === detailInvoiceId) ?? null
@@ -395,10 +448,22 @@ export function InvoiceSection({
             className="ds-btn ds-btn-primary"
             disabled={people.length === 0}
           >
-            Guardar factura
+            {editingInvoiceId ? 'Guardar cambios' : 'Guardar factura'}
           </button>
         </div>
       </form>
+      {editingInvoiceId ? (
+        <div className="mt-2 flex items-center justify-between text-xs text-[color:var(--color-text-muted)]">
+          <span>Editando factura seleccionada.</span>
+          <button
+            type="button"
+            className="font-semibold text-accent hover:text-indigo-500"
+            onClick={resetForm}
+          >
+            Cancelar edicion
+          </button>
+        </div>
+      ) : null}
 
       <div className="mt-5 space-y-3">
         {invoices.length === 0 ? (
@@ -459,6 +524,13 @@ export function InvoiceSection({
                   }
                 >
                   Ver detalle
+                </button>
+                <button
+                  type="button"
+                  className="text-xs font-semibold text-accent hover:text-indigo-500"
+                  onClick={() => startEdit(invoice)}
+                >
+                  Editar
                 </button>
                 <button
                   type="button"

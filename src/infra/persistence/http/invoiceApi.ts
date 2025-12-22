@@ -67,6 +67,38 @@ export async function createInvoiceApi(
   return response.json();
 }
 
+export async function updateInvoiceApi(
+  eventId: string,
+  invoiceId: string,
+  payload: CreateInvoicePayload
+): Promise<ApiInvoice> {
+  const response = await fetch(`${API_BASE_URL}/events/${eventId}/invoices/${invoiceId}`, {
+    method: 'PATCH',
+    headers: buildHeaders(),
+    body: JSON.stringify(payload)
+  })
+
+  if (!response.ok) {
+    let details: unknown
+    try {
+      details = await response.json()
+    } catch {
+      // ignore
+    }
+    const message =
+      details &&
+      typeof details === 'object' &&
+      details !== null &&
+      'message' in details &&
+      typeof (details as Record<string, unknown>).message === 'string'
+        ? (details as Record<string, string>).message
+        : 'Failed to update invoice'
+    throw new Error(message)
+  }
+
+  return response.json()
+}
+
 export type ApiInvoiceListItem = {
   id: string;
   description: string;

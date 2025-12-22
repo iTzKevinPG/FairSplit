@@ -10,6 +10,7 @@ const baseProps = {
   ],
   currency: 'USD',
   onAdd: vi.fn(),
+  onUpdate: vi.fn(),
   onRemove: vi.fn(),
 }
 
