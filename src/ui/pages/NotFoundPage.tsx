@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { buttonVariants } from '../../components/ui/button'
 import { ThemeToggle } from '../components/ThemeToggle'
 
 type NotFoundPageProps = {
@@ -8,25 +9,27 @@ type NotFoundPageProps = {
 export default function NotFoundPage({ message }: NotFoundPageProps) {
   return (
     <main className="min-h-screen bg-[color:var(--color-app-bg)] text-[color:var(--color-text-main)]">
-      <div className="mx-auto flex max-w-4xl flex-col gap-8 px-6 py-16 text-center">
-        <div className="flex justify-end">
-          <ThemeToggle />
-        </div>
+      <div className="flex items-center justify-end px-6 pt-8 pb-4">
+        <ThemeToggle />
+      </div>
+
+      <div className="mx-auto flex min-h-[calc(100vh-96px)] max-w-3xl flex-col items-center justify-center px-6 pb-16 text-center">
         <div className="space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary-600">404</p>
-          <h1 className="text-3xl font-semibold sm:text-4xl">Página no encontrada</h1>
-          <p className="text-sm text-[color:var(--color-text-muted)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-primary-600">
+            4 0 4
+          </p>
+          <h1 className="text-3xl font-semibold text-[color:var(--color-text-main)] sm:text-4xl">
+            Pagina no encontrada
+          </h1>
+          <p className="max-w-md text-sm text-[color:var(--color-text-muted)]">
             {message ??
               'No pudimos encontrar la ruta solicitada. Vuelve al inicio para seleccionar un evento.'}
           </p>
-        </div>
-        <div className="flex justify-center">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700"
-          >
-            Volver al inicio
-          </Link>
+          <div className="pt-4">
+            <Link to="/" className={buttonVariants({ variant: 'primary', size: 'md' })}>
+              Volver al inicio
+            </Link>
+          </div>
         </div>
       </div>
     </main>

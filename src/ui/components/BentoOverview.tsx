@@ -1,6 +1,8 @@
-﻿import type { Balance } from '../../domain/settlement/Balance'
+import { ArrowRight } from 'lucide-react'
+import type { Balance } from '../../domain/settlement/Balance'
 import type { SettlementTransfer } from '../../domain/settlement/SettlementTransfer'
 import type { InvoiceForUI, PersonForUI } from '../../shared/state/fairsplitStore'
+import { AmountDisplay } from './AmountDisplay'
 
 interface BentoOverviewProps {
   people: PersonForUI[]
@@ -23,22 +25,19 @@ export function BentoOverview({
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <div className="ds-card p-4">
-        <h3 className="text-sm font-semibold text-[color:var(--color-text-main)]">
-          Integrantes
-        </h3>
-        <p className="text-xs text-[color:var(--color-text-muted)]">Total: {people.length}</p>
-        <div className="mt-2 flex flex-wrap gap-2">
+      <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <h4 className="font-semibold text-[color:var(--color-text-main)]">Integrantes</h4>
+          <span className="ds-badge-soft">{people.length}</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
           {people.length === 0 ? (
             <span className="text-sm text-[color:var(--color-text-muted)]">
               Aun no hay integrantes.
             </span>
           ) : (
             people.map((p) => (
-              <span
-                key={p.id}
-                className="rounded-full ds-tag"
-              >
+              <span key={p.id} className="rounded-full ds-tag">
                 {p.name}
               </span>
             ))
@@ -46,13 +45,20 @@ export function BentoOverview({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4 shadow-sm">
-        <h3 className="text-sm font-semibold text-[color:var(--color-text-main)]">Gastos</h3>
-        <p className="text-xs text-[color:var(--color-text-muted)]">
-          Total: {totalInvoices} · Acumulado: {currency} {totalAmount.toFixed(2)}{' '}
-          {totalTips > 0 ? `· Propina: ${currency} ${totalTips.toFixed(2)}` : ''}
-        </p>
-        <div className="mt-2 space-y-2">
+      <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <h4 className="font-semibold text-[color:var(--color-text-main)]">Gastos</h4>
+          <div className="flex items-center gap-2 text-xs text-[color:var(--color-text-muted)]">
+            <span className="ds-badge-soft">{totalInvoices}</span>
+            Acumulado: {currency} {roundToCents(totalAmount).toFixed(2)}
+          </div>
+        </div>
+        {totalTips > 0 ? (
+          <p className="mb-3 text-xs text-[color:var(--color-text-muted)]">
+            Propina: {currency} {roundToCents(totalTips).toFixed(2)}
+          </p>
+        ) : null}
+        <div className="space-y-2">
           {invoices.length === 0 ? (
             <span className="text-sm text-[color:var(--color-text-muted)]">
               Aun no hay gastos.
@@ -61,26 +67,24 @@ export function BentoOverview({
             invoices.slice(0, 4).map((inv) => (
               <div
                 key={inv.id}
-                className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-2 text-xs shadow-sm"
+                className="rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] p-3 text-xs"
               >
-                <p className="font-semibold text-[color:var(--color-text-main)]">{inv.description}</p>
-                <p className="text-[color:var(--color-text-muted)]">
-                  Pagó: {resolvePersonName(inv.payerId, people)} · {currency}{' '}
-                  {inv.amount.toFixed(2)} · Personas: {inv.participantIds.length}
-                </p>
-                {inv.birthdayPersonId ? (
-                  <p className="text-[11px] font-semibold text-accent">
-                    Cumpleañero: {resolvePersonName(inv.birthdayPersonId, people)}
-                  </p>
-                ) : null}
-                {inv.tipAmount ? (
-                  <p className="text-[11px] text-[color:var(--color-text-muted)]">
-                    Propina: {currency} {inv.tipAmount.toFixed(2)}
-                  </p>
-                ) : null}
-                <p className="text-[10px] uppercase tracking-wide text-[color:var(--color-text-muted)]">
-                  Reparto:{' '}
-                  {inv.divisionMethod === 'consumption' ? 'Consumo real' : 'Equitativo'}
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-[color:var(--color-text-main)]">
+                      {inv.description}
+                    </p>
+                    <p className="text-[color:var(--color-text-muted)]">
+                      Pago: {resolvePersonName(inv.payerId, people)} · Personas:{' '}
+                      {inv.participantIds.length}
+                    </p>
+                  </div>
+                  <span className="ds-badge-soft">
+                    {currency} {inv.amount.toFixed(2)}
+                  </span>
+                </div>
+                <p className="mt-1 text-[10px] uppercase tracking-wide text-[color:var(--color-text-muted)]">
+                  Reparto: {inv.divisionMethod === 'consumption' ? 'Consumo real' : 'Equitativo'}
                 </p>
               </div>
             ))
@@ -88,59 +92,49 @@ export function BentoOverview({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4 shadow-sm">
-        <h3 className="text-sm font-semibold text-[color:var(--color-text-main)]">Balance del grupo</h3>
-        <p className="text-xs text-[color:var(--color-text-muted)]">Resumen por persona</p>
-        <div className="mt-2 space-y-2">
+      <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4">
+        <div className="mb-3">
+          <h4 className="font-semibold text-[color:var(--color-text-main)]">Balance del grupo</h4>
+          <p className="text-xs text-[color:var(--color-text-muted)]">Resumen por persona</p>
+        </div>
+        <div className="space-y-2">
           {balances.length === 0 ? (
             <span className="text-sm text-[color:var(--color-text-muted)]">
               Sin saldos: aun no hay gastos.
             </span>
           ) : (
-            balances.map((b) => {
-              const net = normalize(b.net)
-              return (
-                <div
-                  key={b.personId}
-                  className="flex items-center justify-between rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-2 text-xs shadow-sm"
-                >
-                  <div>
-                    <p className="font-semibold text-[color:var(--color-text-main)]">
-                      {resolvePersonName(b.personId, people)}
-                    </p>
-                    <p className="text-[color:var(--color-text-muted)]">
-                      Pagado: {currency} {b.totalPaid.toFixed(2)} · Debe:{' '}
-                      {currency} {b.totalOwed.toFixed(2)}
-                    </p>
-                  </div>
-                  <span
-                    className={`font-semibold ${
-                      net > 0
-                        ? 'text-[color:var(--color-accent-success)]'
-                        : net < 0
-                        ? 'text-[color:var(--color-accent-danger)]'
-                        : 'text-slate-700'
-                    }`}
-                  >
-                    {net > 0 ? '+ ' : net < 0 ? '- ' : ''}
-                    {currency} {net.toFixed(2)}
-                  </span>
+            balances.map((b) => (
+              <div
+                key={b.personId}
+                className="flex items-center justify-between rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] p-3 text-xs"
+              >
+                <div>
+                  <p className="font-semibold text-[color:var(--color-text-main)]">
+                    {resolvePersonName(b.personId, people)}
+                  </p>
+                  <p className="text-[color:var(--color-text-muted)]">
+                    Pagado: {currency} {b.totalPaid.toFixed(2)} · Debe:{' '}
+                    {currency} {b.totalOwed.toFixed(2)}
+                  </p>
                 </div>
-              )
-            })
+                <AmountDisplay amount={b.net} currency={currency} showSign />
+              </div>
+            ))
           )}
         </div>
       </div>
 
-      <div className="rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4 shadow-sm">
-        <h3 className="text-sm font-semibold text-[color:var(--color-text-main)]">
-          Pagos sugeridos
-        </h3>
-        <p className="text-xs text-[color:var(--color-text-muted)]">
-          Quien paga a quien (solo lectura)
-          {totalTips > 0 ? ` · Propina incluida: ${currency} ${totalTips.toFixed(2)}` : ''}
-        </p>
-        <div className="mt-2 space-y-2">
+      <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4">
+        <div className="mb-3">
+          <h4 className="font-semibold text-[color:var(--color-text-main)]">Pagos sugeridos</h4>
+          <p className="text-xs text-[color:var(--color-text-muted)]">
+            Quien paga a quien (solo lectura)
+            {totalTips > 0
+              ? ` · Propina incluida: ${currency} ${roundToCents(totalTips).toFixed(2)}`
+              : ''}
+          </p>
+        </div>
+        <div className="space-y-2">
           {transfers.length === 0 ? (
             <span className="text-sm text-[color:var(--color-text-muted)]">
               No hay deudas pendientes, todo esta balanceado.
@@ -149,18 +143,18 @@ export function BentoOverview({
             transfers.map((t, idx) => (
               <div
                 key={`${t.fromPersonId}-${t.toPersonId}-${idx}`}
-                className="flex items-center justify-between rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-2 text-xs shadow-sm"
+                className="flex items-center justify-between rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] p-3 text-xs"
               >
-                <span className="font-semibold text-[color:var(--color-text-main)]">
-                  {resolvePersonName(t.fromPersonId, people)}
-                </span>
-                <span className="text-[color:var(--color-text-muted)]">-&gt;</span>
-                <span className="font-semibold text-[color:var(--color-text-main)]">
-                  {resolvePersonName(t.toPersonId, people)}
-                </span>
-                <span className="font-semibold text-accent">
-                  {currency} {t.amount.toFixed(2)}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-[color:var(--color-text-main)]">
+                    {resolvePersonName(t.fromPersonId, people)}
+                  </span>
+                  <ArrowRight className="h-4 w-4 text-[color:var(--color-text-muted)]" />
+                  <span className="font-semibold text-[color:var(--color-primary-main)]">
+                    {resolvePersonName(t.toPersonId, people)}
+                  </span>
+                </div>
+                <AmountDisplay amount={t.amount} currency={currency} showSign={false} />
               </div>
             ))
           )}
@@ -174,5 +168,5 @@ function resolvePersonName(id: string, people: PersonForUI[]) {
   return people.find((person) => person.id === id)?.name ?? 'Desconocido'
 }
 
-const normalize = (value: number) => (Math.abs(value) < 0.01 ? 0 : value)
-
+const roundToCents = (value: number) =>
+  Math.round((value + Number.EPSILON) * 100) / 100

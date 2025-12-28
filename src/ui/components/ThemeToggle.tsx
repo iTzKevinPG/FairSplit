@@ -1,17 +1,21 @@
+import { Moon, Sun } from 'lucide-react'
 import { useTheme } from '../../shared/hooks/useTheme'
+import { Button } from '../../components/ui/button'
 
 export function ThemeToggle() {
   const { theme, toggleTheme } = useTheme()
   const isDark = theme === 'dark'
 
   return (
-    <button
+    <Button
       type="button"
+      variant="toggle"
+      size="sm"
       onClick={toggleTheme}
-      className="ds-btn ds-btn-secondary !py-2 !px-3 text-xs"
       aria-label="Cambiar tema"
     >
-      {isDark ? 'Modo claro' : 'Modo oscuro'}
-    </button>
+      {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+      <span className="hidden sm:inline">{isDark ? 'Modo claro' : 'Modo oscuro'}</span>
+    </Button>
   )
 }

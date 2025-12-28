@@ -1,17 +1,40 @@
-import { useEffect, useMemo } from 'react'
+import {
+  ArrowLeft,
+  ArrowRightLeft,
+  BarChart3,
+  LayoutGrid,
+  Receipt,
+  Users,
+  Wallet,
+} from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Badge } from '../../components/ui/badge'
+import { buttonVariants } from '../../components/ui/button'
 import { useFairSplitStore } from '../../shared/state/fairsplitStore'
 import { useEvents } from '../hooks/useEvents'
-import { PeopleSection } from '../components/PeopleSection'
-import { InvoiceSection } from '../components/InvoiceSection'
-import { SummarySection } from '../components/SummarySection'
-import { TransfersSection } from '../components/TransfersSection'
-import { useState } from 'react'
 import { BentoOverview } from '../components/BentoOverview'
-import { ThemeToggle } from '../components/ThemeToggle'
 import { Footer } from '../components/Footer'
-import NotFoundPage from './NotFoundPage'
+import { InvoiceSection } from '../components/InvoiceSection'
 import { ModeBanner } from '../components/ModeBanner'
+import { PeopleSection } from '../components/PeopleSection'
+import { SummarySection } from '../components/SummarySection'
+import { TabNav } from '../components/TabNav'
+import { ThemeToggle } from '../components/ThemeToggle'
+import { TransfersSection } from '../components/TransfersSection'
+import NotFoundPage from './NotFoundPage'
+
+const tabs = [
+  { id: 'invoices', label: 'Gastos', icon: <Receipt className="h-4 w-4" /> },
+  { id: 'people', label: 'Integrantes', icon: <Users className="h-4 w-4" /> },
+  { id: 'summary', label: 'Resumen', icon: <BarChart3 className="h-4 w-4" /> },
+  {
+    id: 'transfers',
+    label: 'Transferencias',
+    icon: <ArrowRightLeft className="h-4 w-4" />,
+  },
+  { id: 'overview', label: 'Vista general', icon: <LayoutGrid className="h-4 w-4" /> },
+]
 
 function EventDetailPage() {
   const { eventId } = useParams<{ eventId: string }>()
@@ -31,7 +54,7 @@ function EventDetailPage() {
 
   const [activeTab, setActiveTab] = useState<
     'people' | 'invoices' | 'summary' | 'transfers' | 'overview'
-  >('people')
+  >('invoices')
 
   useEffect(() => {
     void loadEvents()
@@ -67,121 +90,109 @@ function EventDetailPage() {
     [selectedEvent],
   )
 
-  if (!eventId) {
-    return <NotFoundPage />
-  }
-
-  if (!selectedEvent) {
+  if (!eventId || !selectedEvent) {
     return <NotFoundPage />
   }
 
   return (
-    <main className="min-h-screen bg-[color:var(--color-app-bg)]">
-      <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-10">
-        <header className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary-600">
-              Evento
-            </p>
-            <h1 className="text-3xl font-semibold text-[color:var(--color-text-main)] sm:text-4xl">
-              {selectedEvent.name}
-            </h1>
-            <p className="text-sm text-[color:var(--color-text-muted)]">
-              Moneda: {selectedEvent.currency} · Integrantes:{' '}
-              {selectedEvent.people.length} · Gastos:{' '}
-              {selectedEvent.invoices.length}
-            </p>
+    <div className="min-h-screen bg-[color:var(--color-app-bg)]">
+      <header className="sticky top-0 z-40 border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-app-bg)]/95 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[color:var(--color-primary-main)] text-[color:var(--color-text-on-primary)]">
+              <Wallet className="h-5 w-5" />
+            </div>
+            <span className="text-lg font-semibold text-[color:var(--color-text-main)]">
+              FairSplit
+            </span>
           </div>
-          <Link
-            to="/"
-            className="ds-btn ds-btn-secondary !py-2 !px-3 text-xs"
-          >
-            Volver a eventos
-          </Link>
-          <ThemeToggle />
-        </header>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/"
+              className={buttonVariants({ variant: 'outline', size: 'sm' })}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Volver a eventos</span>
+            </Link>
+            <ThemeToggle />
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto flex max-w-5xl flex-1 flex-col gap-6 px-6 py-10">
+        <section className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[color:var(--color-primary-main)]">
+            Evento
+          </p>
+          <h1 className="text-3xl font-semibold text-[color:var(--color-text-main)] sm:text-4xl">
+            {selectedEvent.name}
+          </h1>
+          <div className="flex flex-wrap items-center gap-3 text-sm text-[color:var(--color-text-muted)]">
+            <span className="inline-flex items-center gap-1">
+              Moneda:
+              <Badge variant="outline">{selectedEvent.currency}</Badge>
+            </span>
+            <span>Integrantes: {selectedEvent.people.length}</span>
+            <span>Gastos: {selectedEvent.invoices.length}</span>
+          </div>
+        </section>
 
         <ModeBanner />
 
-        <div className="flex flex-wrap gap-2">
-          {[
-            { id: 'people', label: 'Integrantes' },
-            { id: 'invoices', label: 'Gastos' },
-            { id: 'summary', label: 'Resumen' },
-            { id: 'transfers', label: 'Transferencias' },
-            { id: 'overview', label: 'Resumen total' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              className={`ds-btn ${
-                activeTab === tab.id ? 'ds-btn-primary' : 'ds-btn-secondary'
-              } !text-sm !py-2 !px-4`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        <TabNav
+          tabs={tabs}
+          activeTab={activeTab}
+          onTabChange={(tabId) => setActiveTab(tabId as typeof activeTab)}
+        />
 
         {activeTab === 'people' && (
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="space-y-6 lg:col-span-1">
-              <PeopleSection
-                people={selectedEvent.people}
-                onAdd={async (name) => {
-                  await addPerson({ name })
-                }}
-                onRemove={async (personId) => {
-                  await removePerson({ personId })
-                }}
-                onEdit={async (personId, name) => {
-                  await updatePerson({ personId, name })
-                }}
-              />
-            </div>
-          </div>
+          <PeopleSection
+            people={selectedEvent.people}
+            onAdd={async (name) => {
+              await addPerson({ name })
+            }}
+            onRemove={async (personId) => {
+              await removePerson({ personId })
+            }}
+            onEdit={async (personId, name) => {
+              await updatePerson({ personId, name })
+            }}
+          />
         )}
 
         {activeTab === 'invoices' && (
-          <div className="space-y-6">
-            <InvoiceSection
-              invoices={selectedEvent.invoices}
-              people={selectedEvent.people}
-              currency={selectedEvent.currency}
-              onAdd={async (invoice) => {
-                await addInvoice(invoice)
-              }}
-              onUpdate={async (invoice) => {
-                await updateInvoice(invoice)
-              }}
-              onRemove={async (invoiceId) => {
-                await removeInvoice({ invoiceId })
-              }}
-            />
-          </div>
+          <InvoiceSection
+            invoices={selectedEvent.invoices}
+            people={selectedEvent.people}
+            currency={selectedEvent.currency}
+            onAdd={async (invoice) => {
+              await addInvoice(invoice)
+            }}
+            onUpdate={async (invoice) => {
+              await updateInvoice(invoice)
+            }}
+            onRemove={async (invoiceId) => {
+              await removeInvoice({ invoiceId })
+            }}
+          />
         )}
 
         {activeTab === 'summary' && (
-          <div className="grid gap-6 md:grid-cols-1">
-            <SummarySection
-              balances={balances}
-              people={selectedEvent.people}
-              currency={selectedEvent.currency}
-              tipTotal={tipTotal}
-            />
-          </div>
+          <SummarySection
+            balances={balances}
+            people={selectedEvent.people}
+            currency={selectedEvent.currency}
+            tipTotal={tipTotal}
+          />
         )}
 
         {activeTab === 'transfers' && (
-          <div className="grid gap-6 md:grid-cols-1">
-            <TransfersSection
-              transfers={transfers}
-              people={selectedEvent.people}
-              currency={selectedEvent.currency}
-              tipTotal={tipTotal}
-            />
-          </div>
+          <TransfersSection
+            transfers={transfers}
+            people={selectedEvent.people}
+            currency={selectedEvent.currency}
+            tipTotal={tipTotal}
+          />
         )}
 
         {activeTab === 'overview' && (
@@ -193,10 +204,10 @@ function EventDetailPage() {
             currency={selectedEvent.currency}
           />
         )}
+      </main>
 
-        <Footer />
-      </div>
-    </main>
+      <Footer />
+    </div>
   )
 }
 

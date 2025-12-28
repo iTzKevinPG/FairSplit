@@ -1,4 +1,7 @@
-﻿import { type FormEvent, useState } from 'react'
+import { UserPlus } from 'lucide-react'
+import { type FormEvent, useState } from 'react'
+import { Button } from '../../components/ui/button'
+import { Input } from '../../components/ui/input'
 import { SectionCard } from './SectionCard'
 import type { PersonForUI } from '../../shared/state/fairsplitStore'
 
@@ -67,38 +70,35 @@ export function PeopleSection({
     <SectionCard
       title="Integrantes"
       description="Invita a las personas del grupo para asignar pagos y consumos."
+      badge={people.length > 0 ? `${people.length} integrantes` : undefined}
     >
-      <form
-        onSubmit={handleSubmit}
-        className="flex flex-col gap-3 sm:flex-row sm:items-center"
-      >
-        <input
-          className="ds-input"
+      <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row">
+        <Input
           placeholder="Nombre o alias"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          className="flex-1"
         />
-        <button
-          type="submit"
-          className="ds-btn ds-btn-primary"
-          disabled={!name.trim()}
-        >
+        <Button type="submit" variant="outline" size="sm" disabled={!name.trim()}>
+          <UserPlus className="h-4 w-4" />
           Agregar
-        </button>
+        </Button>
       </form>
 
       {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
         {people.length === 0 ? (
-          <p className="text-sm text-[color:var(--color-text-muted)]">
-            Aun no tienes integrantes. Agrega al menos uno para registrar gastos.
-          </p>
+          <div className="rounded-lg border border-dashed border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-6 text-center">
+            <p className="text-sm text-[color:var(--color-text-muted)]">
+              Aun no tienes integrantes. Agrega al menos uno para registrar gastos.
+            </p>
+          </div>
         ) : (
           people.map((person) => (
             <div
               key={person.id}
-              className="flex min-h-[90px] flex-col gap-2 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-3 text-sm text-[color:var(--color-text-main)] shadow-sm"
+              className="card-interactive flex min-h-[84px] items-center justify-between gap-3 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-3 text-sm text-[color:var(--color-text-main)]"
             >
               {editingId === person.id ? (
                 <div
@@ -110,22 +110,21 @@ export function PeopleSection({
                     }
                   }}
                 >
-                  <input
-                    className="ds-input"
+                  <Input
                     value={editingName}
                     onChange={(e) => setEditingName(e.target.value)}
                   />
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
-                      className="text-xs font-semibold text-indigo-700 hover:text-indigo-600"
+                      className="text-xs font-semibold text-[color:var(--color-primary-main)] hover:text-[color:var(--color-primary-dark)]"
                       onClick={handleEditSave}
                     >
                       Guardar
                     </button>
                     <button
                       type="button"
-                      className="text-xs font-semibold text-slate-500 hover:text-slate-700"
+                      className="text-xs font-semibold text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-main)]"
                       onClick={() => {
                         setEditingId(null)
                         setEditingName('')
@@ -140,17 +139,17 @@ export function PeopleSection({
                   <span className="truncate font-semibold text-[color:var(--color-text-main)]">
                     {person.name}
                   </span>
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-2 text-xs">
                     <button
                       type="button"
-                      className="text-xs font-semibold text-accent hover:text-indigo-600"
+                      className="font-semibold text-[color:var(--color-primary-main)] hover:underline"
                       onClick={() => startEditing(person)}
                     >
                       Editar
                     </button>
                     <button
                       type="button"
-                      className="text-xs font-semibold text-slate-500 hover:text-red-600"
+                      className="font-semibold text-[color:var(--color-accent-danger)] hover:underline"
                       onClick={() => handleRemove(person.id)}
                     >
                       Eliminar
@@ -165,4 +164,3 @@ export function PeopleSection({
     </SectionCard>
   )
 }
-

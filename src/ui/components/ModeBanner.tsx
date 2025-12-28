@@ -1,3 +1,4 @@
+import { Cloud, User } from 'lucide-react'
 import { useMemo } from 'react'
 import { useAuthStore } from '../../shared/state/authStore'
 
@@ -15,22 +16,31 @@ export function ModeBanner() {
     }
     return {
       title: 'Modo invitado',
-      message: 'Los datos se guardan solo en esta sesión (se pierden al recargar).',
+      message: 'Los datos se guardan solo en esta sesion (se pierden al recargar).',
       tone: 'warning',
     }
   }, [token, email])
 
   const toneClasses =
     tone === 'success'
-      ? 'dark:bg-green-800/30 dark:text-green-700 dark:border-green-700'
-      : 'dark:bg-amber-800/30 dark:text-amber-700 dark:border-amber-700'
+      ? 'border-[color:var(--color-accent-success)] bg-[color:var(--color-success-bg)]'
+      : 'border-[color:var(--color-accent-warning)] bg-[color:var(--color-warning-bg)]'
 
   return (
     <div
-      className={`flex flex-col gap-1 rounded-md border px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between ${toneClasses}`}
+      className={`flex flex-col gap-2 rounded-md border px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between ${toneClasses}`}
     >
-      <div className="font-semibold">{title}</div>
-      <div className="text-[color:inherit] sm:text-right">{message}</div>
+      <div className="flex items-center gap-2 font-semibold text-[color:var(--color-text-main)]">
+        {tone === 'success' ? (
+          <Cloud className="h-4 w-4 text-[color:var(--color-accent-success)]" />
+        ) : (
+          <User className="h-4 w-4 text-[color:var(--color-accent-warning)]" />
+        )}
+        <span>{title}</span>
+      </div>
+      <div className="text-[color:var(--color-text-muted)] sm:text-right">
+        {message}
+      </div>
     </div>
   )
 }

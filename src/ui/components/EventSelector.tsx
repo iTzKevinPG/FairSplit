@@ -1,4 +1,14 @@
+import { Plus } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
+import { Button } from '../../components/ui/button'
+import { Input } from '../../components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select'
 import type { EventForUI } from '../../shared/state/fairsplitStore'
 
 interface EventSelectorProps {
@@ -48,20 +58,34 @@ export function EventSelector({
           <label className="text-sm font-medium text-[color:var(--color-text-main)]">
             Evento en curso
           </label>
-          <select
-            className="ds-select min-w-[220px]"
-            value={selectedEventId ?? ''}
-            onChange={(e) => onSelect(e.target.value)}
+          <Select
+            value={selectedEventId}
+            onValueChange={onSelect}
+            disabled={events.length === 0}
           >
-            {events.length === 0 ? (
-              <option value="">Crea tu primer evento</option>
-            ) : null}
-            {events.map((event) => (
-              <option key={event.id} value={event.id}>
-                {event.name} ({event.currency})
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="min-w-[220px]">
+              <SelectValue
+                placeholder={
+                  events.length === 0
+                    ? 'Crea tu primer evento'
+                    : 'Selecciona un evento'
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {events.length === 0 ? (
+                <SelectItem value="__empty" disabled>
+                  Crea tu primer evento
+                </SelectItem>
+              ) : (
+                events.map((event) => (
+                  <SelectItem key={event.id} value={event.id}>
+                    {event.name} ({event.currency})
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
         </div>
       ) : null}
 
@@ -69,29 +93,27 @@ export function EventSelector({
         onSubmit={handleCreate}
         className="grid gap-3 rounded-xl border border-dashed border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)]/70 p-4 sm:grid-cols-[2fr_1fr_auto]"
       >
-        <input
-          className="ds-input"
+        <Input
           placeholder="Nombre del evento (ej. Viaje a la playa)"
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
-        <select
-          className="ds-select"
-          value={currency}
-          onChange={(e) => setCurrency(e.target.value)}
-        >
-          {currencyOptions.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-        <button
-          type="submit"
-          className="ds-btn ds-btn-primary"
-        >
+        <Select value={currency} onValueChange={setCurrency}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {currencyOptions.map((option) => (
+              <SelectItem key={option} value={option}>
+                {option}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button type="submit">
+          <Plus className="h-4 w-4" />
           Crear evento
-        </button>
+        </Button>
       </form>
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
