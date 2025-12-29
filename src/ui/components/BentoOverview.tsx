@@ -25,7 +25,7 @@ export function BentoOverview({
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4">
+      <div className="animate-fade-in rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4">
         <div className="mb-3 flex items-center justify-between">
           <h4 className="font-semibold text-[color:var(--color-text-main)]">Integrantes</h4>
           <span className="ds-badge-soft">{people.length}</span>
@@ -45,7 +45,7 @@ export function BentoOverview({
         </div>
       </div>
 
-      <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4">
+      <div className="animate-fade-in rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4">
         <div className="mb-3 flex items-center justify-between">
           <h4 className="font-semibold text-[color:var(--color-text-main)]">Gastos</h4>
           <div className="flex items-center gap-2 text-xs text-[color:var(--color-text-muted)]">
@@ -92,7 +92,7 @@ export function BentoOverview({
         </div>
       </div>
 
-      <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4">
+      <div className="animate-fade-in rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4">
         <div className="mb-3">
           <h4 className="font-semibold text-[color:var(--color-text-main)]">Balance del grupo</h4>
           <p className="text-xs text-[color:var(--color-text-muted)]">Resumen por persona</p>
@@ -124,7 +124,7 @@ export function BentoOverview({
         </div>
       </div>
 
-      <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4">
+      <div className="animate-fade-in rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4">
         <div className="mb-3">
           <h4 className="font-semibold text-[color:var(--color-text-main)]">Pagos sugeridos</h4>
           <p className="text-xs text-[color:var(--color-text-muted)]">

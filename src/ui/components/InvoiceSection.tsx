@@ -251,7 +251,7 @@ export function InvoiceSection({
       }
     >
       <div className="space-y-5">
-        <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] p-4">
+        <div className="animate-fade-in rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] p-4">
           <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-4">
             <Input
               placeholder="Concepto del gasto"
