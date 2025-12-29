@@ -26,7 +26,10 @@ export default function NotFoundPage({ message }: NotFoundPageProps) {
               'No pudimos encontrar la ruta solicitada. Vuelve al inicio para seleccionar un evento.'}
           </p>
           <div className="pt-4">
-            <Link to="/" className={buttonVariants({ variant: 'primary', size: 'md' })}>
+            <Link
+              to="/"
+              className={buttonVariants({ variant: 'default', size: 'lg' })}
+            >
               Volver al inicio
             </Link>
           </div>

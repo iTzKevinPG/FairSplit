@@ -9,7 +9,7 @@ export function ThemeToggle() {
   return (
     <Button
       type="button"
-      variant="toggle"
+      variant="outline"
       size="sm"
       onClick={toggleTheme}
       aria-label="Cambiar tema"

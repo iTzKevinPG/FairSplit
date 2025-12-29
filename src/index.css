@@ -36,6 +36,7 @@
     --color-surface-muted: var(--color-neutral-100);
     --color-surface-input: var(--color-surface-card);
     --color-border-subtle: var(--color-neutral-200);
+    --color-border-strong: var(--color-neutral-700);
     --color-text-main: var(--color-neutral-900);
     --color-text-muted: var(--color-neutral-500);
     --color-text-on-primary: #ffffff;
@@ -95,6 +96,7 @@
     --color-surface-muted: #162239;
     --color-surface-input: #0d1526;
     --color-border-subtle: #212c40;
+    --color-border-strong: var(--color-border-subtle);
     --color-text-main: #e2e8f0;
     --color-text-muted: #cbd5e1;
     --color-text-on-primary: #0b1020;

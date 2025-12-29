@@ -26,21 +26,28 @@ export function ModeBanner() {
       ? 'border-[color:var(--color-accent-success)] bg-[color:var(--color-success-bg)]'
       : 'border-[color:var(--color-accent-warning)] bg-[color:var(--color-warning-bg)]'
 
+  const titleClass =
+    tone === 'success'
+      ? 'text-[color:var(--color-accent-success)]'
+      : 'text-white'
+  const messageClass =
+    tone === 'success'
+      ? 'text-[color:var(--color-text-muted)]'
+      : 'text-white'
+
   return (
     <div
       className={`flex flex-col gap-2 rounded-md border px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between ${toneClasses}`}
     >
-      <div className="flex items-center gap-2 font-semibold text-[color:var(--color-text-main)]">
+      <div className={`flex items-center gap-2 font-semibold ${titleClass}`}>
         {tone === 'success' ? (
           <Cloud className="h-4 w-4 text-[color:var(--color-accent-success)]" />
         ) : (
-          <User className="h-4 w-4 text-[color:var(--color-accent-warning)]" />
+          <User className="h-4 w-4 text-white" />
         )}
         <span>{title}</span>
       </div>
-      <div className="text-[color:var(--color-text-muted)] sm:text-right">
-        {message}
-      </div>
+      <div className={`${messageClass} sm:text-right`}>{message}</div>
     </div>
   )
 }

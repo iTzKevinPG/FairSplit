@@ -27,9 +27,9 @@ export function TabNav({ tabs, activeTab, onTabChange, className }: TabNavProps)
             key={tab.id}
             type="button"
             onClick={() => onTabChange(tab.id)}
-            variant={isActive ? 'primary' : 'outline'}
+            variant={isActive ? 'default' : 'outline'}
             size="sm"
-            className="shrink-0"
+            className={`shrink-0 ${isActive ? 'ring-1 ring-[color:var(--color-primary-light)] ring-offset-0' : ''}`}
           >
             {tab.icon}
             {tab.label}

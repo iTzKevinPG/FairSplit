@@ -1,61 +1,57 @@
-import type { ButtonHTMLAttributes } from 'react'
+import * as React from "react";
+import { Slot } from "@radix-ui/react-slot";
+import { cva, type VariantProps } from "class-variance-authority";
 
-export type ButtonVariant = 'primary' | 'outline' | 'ghost' | 'toggle'
-export type ButtonSize = 'sm' | 'md' | 'lg' | 'icon'
+import { cn } from "@/lib/utils";
 
-type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: ButtonVariant
-  size?: ButtonSize
+const buttonVariants = cva(
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-[color:var(--color-app-bg)] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-focus-ring)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  {
+    variants: {
+      variant: {
+        default:
+          "bg-[color:var(--color-primary-main)] text-[color:var(--color-text-on-primary)] hover:bg-[color:var(--color-primary-dark)] active:scale-[0.98] shadow-sm hover:shadow-md",
+        destructive:
+          "bg-[color:var(--color-accent-danger)] text-[color:var(--color-text-on-primary)] hover:bg-[color:var(--color-accent-danger)]/90 active:scale-[0.98]",
+        outline:
+          "border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] text-[color:var(--color-text-main)] hover:border-[color:var(--color-primary-light)]",
+        secondary:
+          "bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-main)] hover:bg-[color:var(--color-surface-muted)]/80",
+        ghost: "hover:bg-[color:var(--color-primary-soft)] hover:text-[color:var(--color-primary-main)]",
+        link: "text-[color:var(--color-primary-main)] underline-offset-4 hover:underline",
+        success:
+          "bg-[color:var(--color-accent-success)] text-[color:var(--color-text-on-primary)] hover:bg-[color:var(--color-accent-success)]/90 active:scale-[0.98]",
+        soft:
+          "bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-main)] hover:bg-[color:var(--color-primary-soft)]/80 border border-[color:var(--color-primary-main)]/20",
+      },
+      size: {
+        default: "h-10 px-4 py-2",
+        sm: "h-9 rounded-md px-3 text-sm",
+        lg: "h-11 rounded-md px-6 text-base",
+        xl: "h-12 rounded-lg px-8 text-base font-semibold",
+        icon: "h-10 w-10",
+        "icon-sm": "h-8 w-8",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  }
+);
+
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean;
 }
 
-const baseClasses =
-  'inline-flex items-center justify-center gap-2 rounded-md text-sm font-semibold transition ' +
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-focus-ring)] ' +
-  'focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-app-bg)] disabled:cursor-not-allowed disabled:opacity-60'
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button";
+    return <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />;
+  }
+);
+Button.displayName = "Button";
 
-const variantClasses: Record<ButtonVariant, string> = {
-  primary:
-    'bg-[color:var(--color-primary-main)] text-[color:var(--color-text-on-primary)] ' +
-    'border border-[color:var(--color-primary-main)] hover:bg-[color:var(--color-primary-dark)]',
-  outline:
-    'bg-[color:var(--color-surface-card)] text-[color:var(--color-text-main)] ' +
-    'border border-[color:var(--color-border-subtle)] hover:border-[color:var(--color-primary-light)]',
-  ghost:
-    'bg-transparent text-[color:var(--color-primary-main)] border border-transparent ' +
-    'hover:bg-[color:var(--color-primary-soft)]',
-  toggle:
-    'rounded-full bg-[color:var(--color-surface-card)] text-[color:var(--color-text-main)] ' +
-    'border border-[color:var(--color-border-subtle)] shadow-sm ' +
-    'hover:border-[color:var(--color-primary-light)] hover:text-[color:var(--color-primary-main)]',
-}
-
-const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'h-8 px-3 text-xs',
-  md: 'h-10 px-4 text-sm',
-  lg: 'h-12 px-5 text-base',
-  icon: 'h-10 w-10',
-}
-
-export function buttonVariants(options?: {
-  variant?: ButtonVariant
-  size?: ButtonSize
-  className?: string
-}) {
-  const variant = options?.variant ?? 'primary'
-  const size = options?.size ?? 'md'
-  const className = options?.className
-  return [baseClasses, variantClasses[variant], sizeClasses[size], className]
-    .filter(Boolean)
-    .join(' ')
-}
-
-export function Button({
-  className,
-  variant = 'primary',
-  size = 'md',
-  ...props
-}: ButtonProps) {
-  const classes = buttonVariants({ variant, size, className })
-
-  return <button className={classes} {...props} />
-}
+export { Button, buttonVariants };

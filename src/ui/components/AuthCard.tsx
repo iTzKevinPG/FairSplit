@@ -63,7 +63,7 @@ export function AuthCard() {
     >
       <AccordionItem value="profile" className="border-b-0">
         <AccordionTrigger className="px-4 py-4 text-left hover:no-underline">
-          <div className="flex w-full items-start justify-between gap-3">
+          <div className="flex w-full items-center justify-between gap-3">
             <div>
               <h3 className="font-semibold text-[color:var(--color-text-main)]">Tu perfil</h3>
               <p className="text-sm text-[color:var(--color-text-muted)]">
@@ -72,7 +72,11 @@ export function AuthCard() {
                   : 'Ingresa tu correo y codigo para guardar tus datos.'}
               </p>
             </div>
-            {authenticated ? <Badge variant="active">Sesion activa</Badge> : null}
+            {authenticated ? (
+              <Badge variant="active" className="mr-2">
+                Sesion activa
+              </Badge>
+            ) : null}
           </div>
         </AccordionTrigger>
         <AccordionContent className="border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-4 pt-4">
@@ -95,9 +99,9 @@ export function AuthCard() {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               {fixedCodeMode ? (
-                <div className="rounded-lg border border-[color:var(--color-accent-warning)] bg-[color:var(--color-warning-bg)] px-3 py-3 text-sm text-[color:var(--color-text-main)]">
+                <div className="rounded-lg border border-[color:var(--color-accent-warning)] bg-[color:var(--color-warning-bg)] px-3 py-3 text-sm text-white">
                   <p className="font-semibold">Modo codigo fijo</p>
-                  <p className="text-[color:var(--color-text-muted)]">
+                  <p className="text-white/90">
                     Usa el codigo compartido para acceder a tu cuenta.
                   </p>
                 </div>
