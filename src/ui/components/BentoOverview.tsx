@@ -1,7 +1,9 @@
-import { ArrowRight } from 'lucide-react'
+﻿import { ArrowRight } from 'lucide-react'
 import type { Balance } from '../../domain/settlement/Balance'
 import type { SettlementTransfer } from '../../domain/settlement/SettlementTransfer'
+import type { TransferStatus } from '../../domain/settlement/TransferStatus'
 import type { InvoiceForUI, PersonForUI } from '../../shared/state/fairsplitStore'
+import { Checkbox } from '../../shared/components/ui/checkbox'
 import { AmountDisplay } from './AmountDisplay'
 
 interface BentoOverviewProps {
@@ -9,6 +11,8 @@ interface BentoOverviewProps {
   invoices: InvoiceForUI[]
   balances: Balance[]
   transfers: SettlementTransfer[]
+  transferStatusMap: Record<string, TransferStatus>
+  settledByPersonId: Record<string, boolean>
   currency: string
 }
 
@@ -17,6 +21,8 @@ export function BentoOverview({
   invoices,
   balances,
   transfers,
+  transferStatusMap,
+  settledByPersonId,
   currency,
 }: BentoOverviewProps) {
   const totalInvoices = invoices.length
@@ -117,7 +123,14 @@ export function BentoOverview({
                     {currency} {b.totalOwed.toFixed(2)}
                   </p>
                 </div>
-                <AmountDisplay amount={b.net} currency={currency} showSign />
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={Boolean(settledByPersonId[b.personId])}
+                    disabled
+                    aria-label={`Transferencias completadas: ${resolvePersonName(b.personId, people)}`}
+                  />
+                  <AmountDisplay amount={b.net} currency={currency} showSign />
+                </div>
               </div>
             ))
           )}
@@ -146,6 +159,11 @@ export function BentoOverview({
                 className="flex items-center justify-between rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] p-3 text-xs"
               >
                 <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={Boolean(transferStatusMap[buildTransferKey(t.fromPersonId, t.toPersonId)]?.isSettled)}
+                    disabled
+                    aria-label={`Transferencia completada: ${resolvePersonName(t.fromPersonId, people)} a ${resolvePersonName(t.toPersonId, people)}`}
+                  />
                   <span className="font-semibold text-[color:var(--color-text-main)]">
                     {resolvePersonName(t.fromPersonId, people)}
                   </span>
@@ -166,6 +184,10 @@ export function BentoOverview({
 
 function resolvePersonName(id: string, people: PersonForUI[]) {
   return people.find((person) => person.id === id)?.name ?? 'Desconocido'
+}
+
+function buildTransferKey(fromPersonId: string, toPersonId: string) {
+  return `${fromPersonId}::${toPersonId}`
 }
 
 const roundToCents = (value: number) =>

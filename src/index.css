@@ -319,6 +319,15 @@
     }
   }
 
+  @keyframes fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
   @keyframes accordion-down {
     from {
       height: 0;
@@ -339,6 +348,10 @@
 
   .animate-fade-in {
     animation: fade-in-up 220ms ease-out both;
+  }
+
+  .animate-fade-out {
+    animation: fade-out 160ms ease-in both;
   }
 
   .animate-accordion-down {

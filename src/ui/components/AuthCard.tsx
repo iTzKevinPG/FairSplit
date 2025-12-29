@@ -95,7 +95,7 @@ export function AuthCard() {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => clearAuth({ redirect: true })}
+                onClick={() => clearAuth({ redirect: true, expired: false })}
               >
                 <LogOut className="h-4 w-4" />
                 Cerrar sesion

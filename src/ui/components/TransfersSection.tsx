@@ -3,12 +3,17 @@ import type { SettlementTransfer } from '../../domain/settlement/SettlementTrans
 import type { PersonForUI } from '../../shared/state/fairsplitStore'
 import { AmountDisplay } from './AmountDisplay'
 import { SectionCard } from './SectionCard'
+import { Checkbox } from '../../shared/components/ui/checkbox'
+
+type TransferStatusMap = Record<string, { isSettled: boolean }>
 
 interface TransfersSectionProps {
   transfers: SettlementTransfer[]
   people: PersonForUI[]
   currency: string
   tipTotal?: number
+  transferStatusMap: TransferStatusMap
+  onToggleStatus: (transfer: SettlementTransfer, isSettled: boolean) => void
 }
 
 export function TransfersSection({
@@ -16,8 +21,15 @@ export function TransfersSection({
   people,
   currency,
   tipTotal,
+  transferStatusMap,
+  onToggleStatus,
 }: TransfersSectionProps) {
   const hasTransfers = transfers.length > 0
+
+  const isSettled = (transfer: SettlementTransfer) => {
+    const key = `${transfer.fromPersonId}::${transfer.toPersonId}`
+    return Boolean(transferStatusMap[key]?.isSettled)
+  }
 
   return (
     <SectionCard
@@ -36,6 +48,7 @@ export function TransfersSection({
           <table className="w-full border-separate border-spacing-0 text-sm">
             <thead>
               <tr className="text-left text-xs uppercase tracking-wide text-[color:var(--color-text-muted)]">
+                <th className="px-3 py-2 w-10"></th>
                 <th className="px-3 py-2">De</th>
                 <th className="px-3 py-2 text-center"></th>
                 <th className="px-3 py-2">Hacia</th>
@@ -48,6 +61,15 @@ export function TransfersSection({
                   key={`${transfer.fromPersonId}-${transfer.toPersonId}-${index}`}
                   className="transition hover:bg-[color:var(--color-surface-muted)]"
                 >
+                  <td className="px-3 py-3">
+                    <Checkbox
+                      checked={isSettled(transfer)}
+                      onCheckedChange={(checked) =>
+                        onToggleStatus(transfer, Boolean(checked))
+                      }
+                      aria-label="Marcar transferencia como realizada"
+                    />
+                  </td>
                   <td className="px-3 py-3 font-semibold text-[color:var(--color-text-main)]">
                     {resolvePersonName(transfer.fromPersonId, people)}
                   </td>

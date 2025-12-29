@@ -50,6 +50,8 @@ function EventDetailPage() {
     getBalances,
     getTransfers,
     getSelectedEvent,
+    transferStatusesByEvent,
+    setTransferStatus,
   } = useFairSplitStore()
 
   const [activeTab, setActiveTab] = useState<
@@ -81,6 +83,10 @@ function EventDetailPage() {
     () => (selectedEvent ? getTransfers() : []),
     [getTransfers, selectedEvent],
   )
+  const transferStatusMap = useMemo(() => {
+    if (!selectedEvent) return {}
+    return transferStatusesByEvent[selectedEvent.id] ?? {}
+  }, [selectedEvent, transferStatusesByEvent])
   const tipTotal = useMemo(
     () =>
       selectedEvent?.invoices.reduce(
@@ -89,6 +95,23 @@ function EventDetailPage() {
       ) ?? 0,
     [selectedEvent],
   )
+  const settledByPersonId = useMemo(() => {
+    if (!selectedEvent) return {}
+    const totals = new Map<string, { total: number; settled: number }>()
+    transfers.forEach((transfer) => {
+      const key = `${transfer.fromPersonId}::${transfer.toPersonId}`
+      const isSettled = Boolean(transferStatusMap[key]?.isSettled)
+      const entry = totals.get(transfer.fromPersonId) ?? { total: 0, settled: 0 }
+      entry.total += 1
+      if (isSettled) entry.settled += 1
+      totals.set(transfer.fromPersonId, entry)
+    })
+    const result: Record<string, boolean> = {}
+    totals.forEach((value, personId) => {
+      result[personId] = value.total > 0 && value.settled === value.total
+    })
+    return result
+  }, [selectedEvent, transfers, transferStatusMap])
 
   if (!eventId || !selectedEvent) {
     return <NotFoundPage />
@@ -192,6 +215,15 @@ function EventDetailPage() {
             people={selectedEvent.people}
             currency={selectedEvent.currency}
             tipTotal={tipTotal}
+            transferStatusMap={transferStatusMap}
+            onToggleStatus={(transfer, isSettled) => {
+              void setTransferStatus({
+                eventId: selectedEvent.id,
+                fromPersonId: transfer.fromPersonId,
+                toPersonId: transfer.toPersonId,
+                isSettled,
+              })
+            }}
           />
         )}
 
@@ -202,6 +234,8 @@ function EventDetailPage() {
             balances={balances}
             transfers={transfers}
             currency={selectedEvent.currency}
+            transferStatusMap={transferStatusMap}
+            settledByPersonId={settledByPersonId}
           />
         )}
       </main>

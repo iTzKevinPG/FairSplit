@@ -574,7 +574,7 @@ export function InvoiceSection({
                   </div>
 
                   {isExpanded && detailInvoice ? (
-                    <div className="border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] p-4 text-sm text-[color:var(--color-text-main)]">
+                    <div className="animate-fade-in border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] p-4 text-sm text-[color:var(--color-text-main)]">
                       <div className="flex items-center justify-between gap-2">
                         <div>
                           <p className="font-semibold text-[color:var(--color-text-main)]">

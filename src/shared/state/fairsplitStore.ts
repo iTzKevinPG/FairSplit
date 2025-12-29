@@ -6,6 +6,7 @@ import type { Invoice } from '../../domain/invoice/Invoice'
 import type { Person } from '../../domain/person/Person'
 import { calculateBalances, suggestTransfers } from '../../domain/settlement/SettlementService'
 import type { SettlementTransfer } from '../../domain/settlement/SettlementTransfer'
+import type { TransferStatus } from '../../domain/settlement/TransferStatus'
 import { addInvoiceToEvent } from '../../application/use-cases/addInvoiceToEvent'
 import { addPersonToEvent } from '../../application/use-cases/addPersonToEvent'
 import { calculateSettlement } from '../../application/use-cases/calculateSettlement'
@@ -43,6 +44,7 @@ import {
   updateInvoiceApi,
 } from '../../infra/persistence/http/invoiceApi'
 import { getSummaryApi, getTransfersApi } from '../../infra/persistence/http/summaryApi'
+import { getTransferStatusApi, upsertTransferStatusApi } from '../../infra/persistence/http/transferStatusApi'
 import { STORAGE_EXPIRED_FLAG } from './authStore'
 import { toast } from '../../shared/components/ui/sonner'
 
@@ -136,7 +138,7 @@ async function ensureAuthOrRedirect(): Promise<string | null> {
 async function handleUnauthorizedAndRedirect() {
   try {
     const { useAuthStore } = await import('./authStore')
-    useAuthStore.getState().clearAuth({ redirect: false })
+    useAuthStore.getState().clearAuth({ redirect: false, expired: true })
   } catch {
     // ignore
   }
@@ -154,6 +156,7 @@ interface FairSplitState {
   events: Event[]
   selectedEventId?: EventId
   hasSeededDemo: boolean
+  transferStatusesByEvent: Record<string, Record<string, TransferStatus>>
   hydrate: () => Promise<void>
   seedDemoData: () => Promise<void>
   selectEvent: (eventId: EventId) => Promise<void>
@@ -177,6 +180,14 @@ interface FairSplitState {
   getSelectedEvent: () => Event | undefined
   getBalances: () => Balance[]
   getTransfers: () => SettlementTransfer[]
+  getTransferStatusMap: (eventId: EventId) => Record<string, TransferStatus>
+  loadTransferStatuses: (eventId: EventId) => Promise<void>
+  setTransferStatus: (input: {
+    eventId: EventId
+    fromPersonId: string
+    toPersonId: string
+    isSettled: boolean
+  }) => Promise<void>
   getSettlement: () => Promise<{
     balances: Balance[]
     transfers: SettlementTransfer[]
@@ -188,6 +199,7 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
   events: [],
   selectedEventId: undefined,
   hasSeededDemo: false,
+  transferStatusesByEvent: {},
   hydrate: async () => {
     // Fetch event headers only; load details lazily per event to reduce calls.
     const token = getAuthToken()
@@ -212,7 +224,7 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
           try {
             // lazy import to avoid circular deps
             const { useAuthStore } = await import('./authStore')
-            useAuthStore.getState().clearAuth({ redirect: false })
+            useAuthStore.getState().clearAuth({ redirect: false, expired: true })
           } catch {
             // ignore
           }
@@ -231,6 +243,9 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
 
     if (selected) {
       void loadEventData(selected, set)
+      if (token) {
+        void get().loadTransferStatuses(selected)
+      }
     }
   },
   seedDemoData: async () => {
@@ -290,6 +305,10 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
     set({ selectedEventId: eventId })
     if (!loadedEventData.has(eventId)) {
       void loadEventData(eventId, set)
+    }
+    const token = getAuthToken()
+    if (token) {
+      void get().loadTransferStatuses(eventId)
     }
   },
   createEvent: async (input) => {
@@ -545,6 +564,95 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
     const balances = get().getBalances()
     return suggestTransfers(balances)
   },
+  getTransferStatusMap: (eventId: EventId) => {
+    return get().transferStatusesByEvent[eventId] ?? {}
+  },
+  loadTransferStatuses: async (eventId: EventId) => {
+    const token = await ensureAuthOrRedirect()
+    if (!token) return
+    try {
+      const statuses = await getTransferStatusApi(eventId)
+      const map = statuses.reduce<Record<string, TransferStatus>>((acc, status) => {
+        const key = buildTransferStatusKey(
+          status.fromParticipantId,
+          status.toParticipantId,
+        )
+        acc[key] = {
+          eventId,
+          fromPersonId: status.fromParticipantId,
+          toPersonId: status.toParticipantId,
+          isSettled: status.isSettled,
+          settledAt: status.settledAt ?? null,
+        }
+        return acc
+      }, {})
+      set((state) => ({
+        transferStatusesByEvent: {
+          ...state.transferStatusesByEvent,
+          [eventId]: map,
+        },
+      }))
+    } catch (error) {
+      if ((error as Error).message === 'UNAUTHORIZED') {
+        await handleUnauthorizedAndRedirect()
+        return
+      }
+      console.warn('Failed to fetch transfer statuses', error)
+    }
+  },
+  setTransferStatus: async (input) => {
+    const { eventId, fromPersonId, toPersonId, isSettled } = input
+    const key = buildTransferStatusKey(fromPersonId, toPersonId)
+    set((state) => ({
+      transferStatusesByEvent: {
+        ...state.transferStatusesByEvent,
+        [eventId]: {
+          ...(state.transferStatusesByEvent[eventId] ?? {}),
+          [key]: {
+            eventId,
+            fromPersonId,
+            toPersonId,
+            isSettled,
+            settledAt: isSettled ? new Date().toISOString() : null,
+          },
+        },
+      },
+    }))
+
+    const token = await ensureAuthOrRedirect()
+    if (!token) {
+      return
+    }
+    try {
+      const updated = await upsertTransferStatusApi(eventId, {
+        fromParticipantId: fromPersonId,
+        toParticipantId: toPersonId,
+        isSettled,
+      })
+      set((state) => ({
+        transferStatusesByEvent: {
+          ...state.transferStatusesByEvent,
+          [eventId]: {
+            ...(state.transferStatusesByEvent[eventId] ?? {}),
+            [key]: {
+              eventId,
+              fromPersonId,
+              toPersonId,
+              isSettled: updated.isSettled,
+              settledAt: updated.settledAt ?? null,
+            },
+          },
+        },
+      }))
+    } catch (error) {
+      if ((error as Error).message === 'UNAUTHORIZED') {
+        await handleUnauthorizedAndRedirect()
+        return
+      }
+      console.error('Failed to update transfer status', error)
+      notifyApiFailure('actualizar el estado de transferencia')
+    }
+  },
   getSettlement: async () => {
     const eventId = get().selectedEventId
     if (!eventId) return null
@@ -587,9 +695,14 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
       events: [],
       selectedEventId: undefined,
       hasSeededDemo: false,
+      transferStatusesByEvent: {},
     })
   },
 }))
+
+function buildTransferStatusKey(fromPersonId: string, toPersonId: string) {
+  return `${fromPersonId}::${toPersonId}`
+}
 
 async function loadEventData(
   eventId: EventId,
