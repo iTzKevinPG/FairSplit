@@ -1,6 +1,6 @@
+import { useTheme } from "@/shared/hooks/useTheme";
 import * as React from "react";
 import { Toaster as Sonner, toast } from "sonner";
-import { useTheme } from "../../shared/hooks/useTheme";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
