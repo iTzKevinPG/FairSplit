@@ -10,13 +10,24 @@ import { AuthCard } from '../components/AuthCard'
 import { ModeBanner } from '../components/ModeBanner'
 
 function EventListPage() {
-  const { events, selectedEventId, loadEvents, selectEvent, createAndSelect } =
-    useEvents()
+  const {
+    events,
+    selectedEventId,
+    loadEvents,
+    selectEvent,
+    createAndSelect,
+    loadEventDetailsForList,
+  } = useEvents()
   const navigate = useNavigate()
 
   useEffect(() => {
     void loadEvents()
   }, [loadEvents])
+
+  useEffect(() => {
+    if (events.length === 0) return
+    void loadEventDetailsForList(events.map((event) => event.id))
+  }, [events, loadEventDetailsForList])
 
   const handleSelect = (eventId: string) => {
     selectEvent(eventId)

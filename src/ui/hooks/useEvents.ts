@@ -3,7 +3,14 @@ import type { CreateEventInput } from '../../application/dto/eventDtos'
 import { useFairSplitStore } from '../../shared/state/fairsplitStore'
 
 export function useEvents() {
-  const { events, selectedEventId, hydrate, selectEvent, createEvent } =
+  const {
+    events,
+    selectedEventId,
+    hydrate,
+    selectEvent,
+    createEvent,
+    loadEventDetailsForList,
+  } = useFairSplitStore()
     useFairSplitStore()
 
   const loadEvents = useCallback(async () => {
@@ -26,5 +33,6 @@ export function useEvents() {
     loadEvents,
     selectEvent,
     createAndSelect,
+    loadEventDetailsForList,
   }
 }

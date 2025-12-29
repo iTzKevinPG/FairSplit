@@ -182,6 +182,7 @@ interface FairSplitState {
   getTransfers: () => SettlementTransfer[]
   getTransferStatusMap: (eventId: EventId) => Record<string, TransferStatus>
   loadTransferStatuses: (eventId: EventId) => Promise<void>
+  loadEventDetailsForList: (eventIds: EventId[]) => Promise<void>
   setTransferStatus: (input: {
     eventId: EventId
     fromPersonId: string
@@ -599,6 +600,12 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
       }
       console.warn('Failed to fetch transfer statuses', error)
     }
+  },
+  loadEventDetailsForList: async (eventIds: EventId[]) => {
+    if (eventIds.length === 0) return
+    const pending = eventIds.filter((id) => !loadedEventData.has(id))
+    if (pending.length === 0) return
+    await Promise.all(pending.map((id) => loadEventData(id, set)))
   },
   setTransferStatus: async (input) => {
     const { eventId, fromPersonId, toPersonId, isSettled } = input
