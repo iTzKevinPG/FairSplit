@@ -91,7 +91,12 @@ export function AuthCard() {
                   <p className="text-sm text-[color:var(--color-text-muted)]">Conectado</p>
                 </div>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={clearAuth}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => clearAuth({ redirect: true })}
+              >
                 <LogOut className="h-4 w-4" />
                 Cerrar sesion
               </Button>

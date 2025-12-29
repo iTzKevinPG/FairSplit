@@ -44,7 +44,7 @@ import {
 } from '../../infra/persistence/http/invoiceApi'
 import { getSummaryApi, getTransfersApi } from '../../infra/persistence/http/summaryApi'
 import { STORAGE_EXPIRED_FLAG } from './authStore'
-import { showToast } from './toastStore'
+import { toast } from '../../components/ui/sonner'
 
 const eventRepository = new InMemoryEventRepository()
 const personRepository = new InMemoryPersonRepository(eventRepository)
@@ -58,12 +58,55 @@ function getAuthToken(): string | null {
     : null
 }
 
+function showToast(
+  message: string,
+  tone: 'info' | 'success' | 'warning' | 'error' = 'info',
+  durationMs?: number,
+) {
+  const style =
+    tone === 'success'
+      ? {
+          borderColor: 'var(--color-accent-success)',
+          backgroundColor: 'var(--color-success-bg)',
+          color: 'var(--color-text-main)',
+        }
+      : tone === 'warning'
+      ? {
+          borderColor: 'var(--color-accent-warning)',
+          backgroundColor: 'var(--color-warning-bg)',
+          color: '#ffffff',
+        }
+      : tone === 'error'
+      ? {
+          borderColor: 'var(--color-accent-danger)',
+          backgroundColor: 'var(--color-danger-bg)',
+          color: 'var(--color-text-main)',
+        }
+      : undefined
+  const options = {
+    ...(durationMs ? { duration: durationMs } : {}),
+    ...(style ? { style } : {}),
+  }
+  if (tone === 'success') {
+    toast.success(message, options)
+  } else if (tone === 'warning') {
+    toast.warning(message, options)
+  } else if (tone === 'error') {
+    toast.error(message, options)
+  } else {
+    toast(message, options)
+  }
+}
+
 function notifyApiFailure(action: string) {
   showToast(`No se pudo ${action} en la nube. No se aplicaron cambios locales.`, 'error')
 }
 
 function notifyApiUnsupported(action: string) {
-  showToast(`No se pudo ${action} en modo perfil activo. Intenta mas tarde.`, 'warning')
+  showToast(
+    `Accion no permitida: no puedes ${action} en modo sesion activa/perfil.`,
+    'warning',
+  )
 }
 
 function notifySessionExpired() {
@@ -93,7 +136,7 @@ async function ensureAuthOrRedirect(): Promise<string | null> {
 async function handleUnauthorizedAndRedirect() {
   try {
     const { useAuthStore } = await import('./authStore')
-    useAuthStore.getState().clearAuth()
+    useAuthStore.getState().clearAuth({ redirect: false })
   } catch {
     // ignore
   }
@@ -138,6 +181,7 @@ interface FairSplitState {
     balances: Balance[]
     transfers: SettlementTransfer[]
   } | null>
+  resetForLogout: () => Promise<void>
 }
 
 export const useFairSplitStore = create<FairSplitState>((set, get) => ({
@@ -168,7 +212,7 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
           try {
             // lazy import to avoid circular deps
             const { useAuthStore } = await import('./authStore')
-            useAuthStore.getState().clearAuth()
+            useAuthStore.getState().clearAuth({ redirect: false })
           } catch {
             // ignore
           }
@@ -533,6 +577,17 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
       }
       return calculateSettlement(eventRepository, eventId)
     }
+  },
+  resetForLogout: async () => {
+    const existing = await eventRepository.list()
+    await Promise.all(existing.map((event) => eventRepository.delete(event.id)))
+    loadedEventData.clear()
+    demoSeeded = false
+    set({
+      events: [],
+      selectedEventId: undefined,
+      hasSeededDemo: false,
+    })
   },
 }))
 

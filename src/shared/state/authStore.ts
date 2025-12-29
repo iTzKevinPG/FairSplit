@@ -15,7 +15,7 @@ type AuthState = {
   verifyCode: (code: string) => Promise<boolean>
   isCooldownActive: () => number
   isAuthenticated: () => boolean
-  clearAuth: () => void
+  clearAuth: (options?: { redirect?: boolean }) => void
 }
 
 const STORAGE_KEY = 'fairsplit_auth_token'
@@ -101,13 +101,25 @@ export const useAuthStore = create<AuthState>((set, get) => {
       return remaining > 0 ? remaining : 0
     },
     isAuthenticated: () => Boolean(get().token),
-    clearAuth: () => {
+    clearAuth: (options) => {
+      const shouldRedirect = options?.redirect ?? true
       if (typeof window !== 'undefined') {
         localStorage.removeItem(STORAGE_KEY)
         localStorage.removeItem(STORAGE_EMAIL_KEY)
         localStorage.setItem(STORAGE_EXPIRED_FLAG, 'true')
       }
       set({ token: undefined, email: '', error: undefined })
+      void (async () => {
+        try {
+          const { useFairSplitStore } = await import('./fairsplitStore')
+          await useFairSplitStore.getState().resetForLogout()
+        } catch {
+          // ignore
+        }
+      })()
+      if (shouldRedirect && typeof window !== 'undefined') {
+        window.location.assign('/')
+      }
     },
   }
 })
