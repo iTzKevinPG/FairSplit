@@ -1,5 +1,5 @@
 import { Check, X } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/utils/cn'
 
 interface MemberChipProps {
   name: string
