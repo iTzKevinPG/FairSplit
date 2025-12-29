@@ -1,5 +1,5 @@
 import type { PropsWithChildren, ReactNode } from 'react'
-import { Badge } from '../../components/ui/badge'
+import { Badge } from '../../shared/components/ui/badge'
 
 interface SectionCardProps extends PropsWithChildren {
   title: string

@@ -1,7 +1,7 @@
 import { Receipt, Users, Wallet } from 'lucide-react'
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Badge } from '../../components/ui/badge'
+import { Badge } from '../../shared/components/ui/badge'
 import { EventSelector } from '../components/EventSelector'
 import { useEvents } from '../hooks/useEvents'
 import { ThemeToggle } from '../components/ThemeToggle'

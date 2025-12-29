@@ -44,7 +44,7 @@ import {
 } from '../../infra/persistence/http/invoiceApi'
 import { getSummaryApi, getTransfersApi } from '../../infra/persistence/http/summaryApi'
 import { STORAGE_EXPIRED_FLAG } from './authStore'
-import { toast } from '../../components/ui/sonner'
+import { toast } from '../../shared/components/ui/sonner'
 
 const eventRepository = new InMemoryEventRepository()
 const personRepository = new InMemoryPersonRepository(eventRepository)

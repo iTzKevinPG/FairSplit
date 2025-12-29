@@ -1,8 +1,8 @@
 import { KeyRound, LogOut, Mail } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { Badge } from '../../components/ui/badge'
-import { Button } from '../../components/ui/button'
-import { Input } from '../../components/ui/input'
+import { Badge } from '../../shared/components/ui/badge'
+import { Button } from '../../shared/components/ui/button'
+import { Input } from '../../shared/components/ui/input'
 import { useAuthStore } from '../../shared/state/authStore'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './Accordion'
 

@@ -1,16 +1,16 @@
 import { ChevronDown, ChevronUp, Edit2, Plus, Trash2 } from 'lucide-react'
-import { Badge } from '../../components/ui/badge'
+import { Badge } from '../../shared/components/ui/badge'
 import { type FormEvent, useMemo, useState } from 'react'
-import { Button } from '../../components/ui/button'
-import { Checkbox } from '../../components/ui/checkbox'
-import { Input } from '../../components/ui/input'
+import { Button } from '../../shared/components/ui/button'
+import { Checkbox } from '../../shared/components/ui/checkbox'
+import { Input } from '../../shared/components/ui/input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../components/ui/select'
+} from '../../shared/components/ui/select'
 import { MemberChip } from './MemberChip'
 import { SectionCard } from './SectionCard'
 import type { InvoiceForUI, PersonForUI } from '../../shared/state/fairsplitStore'
