@@ -9,7 +9,13 @@ const people = [
 describe('TransfersSection', () => {
   it('shows empty state when no transfers', () => {
     render(
-      <TransfersSection transfers={[]} people={people} currency="USD" />,
+      <TransfersSection
+        transfers={[]}
+        people={people}
+        currency="USD"
+        transferStatusMap={{}}
+        onToggleStatus={async () => {}}
+      />,
     )
 
     expect(
@@ -25,6 +31,8 @@ describe('TransfersSection', () => {
         ]}
         people={people}
         currency="USD"
+        transferStatusMap={{}}
+        onToggleStatus={async () => {}}
       />,
     )
 
