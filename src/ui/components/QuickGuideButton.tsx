@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useTour, type PopoverContentProps, type StepType } from '@reactour/tour'
 import { Sparkles } from 'lucide-react'
@@ -143,8 +143,6 @@ const eventSteps: GuideStepConfig[] = [
   },
 ]
 
-let latestConfigs: GuideStepConfig[] = []
-
 function hasVisibleSection(selector: string) {
   if (typeof document === 'undefined') return false
   return Boolean(document.querySelector(selector))
@@ -281,6 +279,19 @@ function GuideStepContent({
   const isLastStep = steps && currentStep === steps.length - 1
   const autoAdvance = config.requirement === 'event-created'
 
+  const handleStepChange = useCallback(
+    (nextIndex: number) => {
+      const target = steps?.[nextIndex] as (StepType & { tabId?: string }) | undefined
+      if (target?.tabId) {
+        window.dispatchEvent(
+          new CustomEvent('tour:go-tab', { detail: { tabId: target.tabId } }),
+        )
+      }
+      setCurrentStep(nextIndex)
+    },
+    [setCurrentStep, steps],
+  )
+
   useEffect(() => {
     if (
       config.requirement !== 'invoice-added' ||
@@ -293,17 +304,7 @@ function GuideStepContent({
     if (lastAutoAdvanceRef.current === currentStep) return
     lastAutoAdvanceRef.current = currentStep
     handleStepChange(currentStep + 1)
-  }, [config.requirement, currentStep, requirementMet, steps])
-
-  const handleStepChange = (nextIndex: number) => {
-    const target = latestConfigs[nextIndex]
-    if (target?.tabId) {
-      window.dispatchEvent(
-        new CustomEvent('tour:go-tab', { detail: { tabId: target.tabId } }),
-      )
-    }
-    setCurrentStep(nextIndex)
-  }
+  }, [config.requirement, currentStep, requirementMet, steps, handleStepChange])
 
   return (
     <div className="space-y-3">
@@ -374,7 +375,6 @@ export function QuickGuideButton() {
 
   const steps = useMemo(() => {
     const configs = getConfigsForPath(location.pathname)
-    latestConfigs = configs
     const interactiveRequirements: RequirementKey[] = [
       'event-created',
       'people-added',
@@ -407,6 +407,7 @@ export function QuickGuideButton() {
         highlightedSelectors: highlightedSelectors.length ? highlightedSelectors : undefined,
         mutationObservables: mutationObservables.length ? mutationObservables : undefined,
         resizeObservables: resizeObservables.length ? resizeObservables : undefined,
+        tabId: config.tabId,
       }
     })
   }, [location.pathname])
