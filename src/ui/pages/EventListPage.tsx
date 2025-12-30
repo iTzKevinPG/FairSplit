@@ -8,6 +8,7 @@ import { ThemeToggle } from '../components/ThemeToggle'
 import { Footer } from '../components/Footer'
 import { AuthCard } from '../components/AuthCard'
 import { ModeBanner } from '../components/ModeBanner'
+import { QuickGuideButton } from '../components/QuickGuideButton'
 
 function EventListPage() {
   const {
@@ -53,7 +54,10 @@ function EventListPage() {
               FairSplit
             </span>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <QuickGuideButton />
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
@@ -71,19 +75,25 @@ function EventListPage() {
           </p>
         </section>
 
-        <ModeBanner />
+        <div data-tour="mode-banner">
+          <ModeBanner />
+        </div>
 
-        <AuthCard />
+        <div data-tour="profile-card">
+          <AuthCard />
+        </div>
 
-        <EventSelector
-          events={events}
-          selectedEventId={selectedEventId}
-          onSelect={handleSelect}
-          onCreate={handleCreate}
-          showSelector={false}
-        />
+        <div data-tour="event-create">
+          <EventSelector
+            events={events}
+            selectedEventId={selectedEventId}
+            onSelect={handleSelect}
+            onCreate={handleCreate}
+            showSelector={false}
+          />
+        </div>
 
-        <section className="space-y-4">
+        <section className="space-y-4" data-tour="events-list">
           <h2 className="text-lg font-semibold text-[color:var(--color-text-main)]">
             Tus eventos recientes
           </h2>

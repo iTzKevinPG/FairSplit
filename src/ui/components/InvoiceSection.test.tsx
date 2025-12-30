@@ -111,7 +111,7 @@ describe('InvoiceSection', () => {
     expect(onAdd).not.toHaveBeenCalled()
   })
 
-  it('validates birthday needs another participant', async () => {
+  it('validates special guest needs another participant', async () => {
     const onAdd = vi.fn()
     render(<InvoiceSection {...baseProps} onAdd={onAdd} />)
 
@@ -120,9 +120,9 @@ describe('InvoiceSection', () => {
     await userEvent.clear(amountInput)
     await userEvent.type(amountInput, '40')
 
-    await userEvent.click(screen.getByLabelText(/marcar cumple/i))
+    await userEvent.click(screen.getByLabelText(/invitado especial/i))
     await userEvent.selectOptions(
-      screen.getByLabelText('Selecciona cumpleañero', { selector: 'select' }),
+      screen.getByLabelText('Selecciona invitado especial', { selector: 'select' }),
       'p1',
     )
 

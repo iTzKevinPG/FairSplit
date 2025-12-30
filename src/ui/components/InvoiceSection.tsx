@@ -150,16 +150,16 @@ export function InvoiceSection({
     }
     if (birthdayEnabled) {
       if (!birthdayPersonId) {
-        setError('Selecciona a la persona cumpleanera.')
+        setError('Selecciona a la persona invitada especial.')
         return
       }
       if (!participantIds.includes(birthdayPersonId)) {
-        setError('El cumpleanero debe estar en la lista de participantes.')
+        setError('El invitado especial debe estar en la lista de participantes.')
         return
       }
       if (participantIds.length < 2) {
         setError(
-          'Se necesita al menos otra persona para repartir el consumo del cumpleanero.',
+          'Se necesita al menos otra persona para repartir el consumo del invitado especial.',
         )
         return
       }
@@ -196,7 +196,7 @@ export function InvoiceSection({
         return
       }
       if (birthdayEnabled && birthdayPersonId && consumptions[birthdayPersonId] === undefined) {
-        setError('El cumpleanero debe tener un consumo declarado (puede ser 0).')
+        setError('El invitado especial debe tener un consumo declarado (puede ser 0).')
         return
       }
       consumptionPayload = numericConsumptions
@@ -240,7 +240,7 @@ export function InvoiceSection({
   return (
     <SectionCard
       title="Gastos"
-      description="Registra cada gasto con su pagador y participantes. Elige reparto equitativo o por consumo real, con propina y cumpleanero opcional."
+      description="Registra cada gasto con su pagador y participantes. Elige reparto equitativo o por consumo real, con propina y invitado especial opcional."
       badge={`${invoices.length} gasto${invoices.length === 1 ? '' : 's'}`}
       action={
         invoices.length > 0 ? (
@@ -258,6 +258,7 @@ export function InvoiceSection({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="md:col-span-2"
+              data-tour="invoice-description"
             />
             <div className="flex items-center md:col-span-2">
               <div className="flex h-10 items-center rounded-l-md border border-[color:var(--color-border-subtle)] border-r-0 bg-[color:var(--color-surface-muted)] px-3 text-xs font-semibold text-[color:var(--color-text-muted)]">
@@ -271,6 +272,7 @@ export function InvoiceSection({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 className="flex-1 rounded-l-none border-l-0 shadow-none"
+                data-tour="invoice-amount"
               />
             </div>
 
@@ -297,7 +299,7 @@ export function InvoiceSection({
                   disabled={participantIds.length === 0}
                 />
                 <span>
-                  Cumpleanero{' '}
+                  Invitado especial{' '}
                   <span className="text-xs text-[color:var(--color-text-muted)]">
                     (redistribuir su consumo)
                   </span>
@@ -331,9 +333,9 @@ export function InvoiceSection({
                   onValueChange={setBirthdayPersonId}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecciona cumpleanero" />
+                    <SelectValue placeholder="Selecciona invitado especial" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent data-tour-select-content>
                     {participantIds.map((id) => (
                       <SelectItem key={id} value={id}>
                         {resolvePersonName(id, people)}
@@ -351,10 +353,10 @@ export function InvoiceSection({
               onValueChange={setPayerId}
               disabled={people.length === 0}
             >
-              <SelectTrigger>
+              <SelectTrigger data-tour="invoice-payer">
                 <SelectValue placeholder="Selecciona pagador" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent data-tour="invoice-payer-options" data-tour-select-content>
                 {people.length === 0 ? (
                   <SelectItem value="__empty" disabled>
                     No hay personas
@@ -376,13 +378,13 @@ export function InvoiceSection({
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent data-tour-select-content>
                 <SelectItem value="equal">Reparto equitativo</SelectItem>
                 <SelectItem value="consumption">Por consumo real</SelectItem>
               </SelectContent>
             </Select>
 
-            <div className="md:col-span-4 space-y-2">
+            <div className="md:col-span-4 space-y-2" data-tour="invoice-participants">
               <p className="text-xs font-semibold tracking-wide text-[color:var(--color-text-muted)]">
                 Personas incluidas
               </p>
@@ -479,7 +481,11 @@ export function InvoiceSection({
                   Cancelar edicion
                 </button>
               ) : null}
-              <Button type="submit" disabled={people.length === 0}>
+              <Button
+                type="submit"
+                disabled={people.length === 0}
+                data-tour="invoice-save"
+              >
                 <Plus className="h-4 w-4" />
                 {editingInvoiceId ? 'Guardar cambios' : 'Guardar gasto'}
               </Button>
@@ -595,7 +601,7 @@ export function InvoiceSection({
                           </p>
                           {detailInvoice.birthdayPersonId ? (
                             <p className="text-[11px] font-semibold text-[color:var(--color-primary-main)]">
-                              Cumpleanero:{' '}
+                              Invitado especial:{' '}
                               {resolvePersonName(detailInvoice.birthdayPersonId, people)}
                             </p>
                           ) : null}
@@ -622,7 +628,7 @@ export function InvoiceSection({
                               {resolvePersonName(share.personId, people)}
                               {share.isBirthday ? (
                                 <span className="ml-2 rounded-full accent-chip px-2 py-0.5 text-[10px] font-semibold text-accent">
-                                  Cumpleanero
+                                  Invitado especial
                                 </span>
                               ) : null}
                             </span>

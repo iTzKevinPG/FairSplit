@@ -30,6 +30,7 @@ export function TabNav({ tabs, activeTab, onTabChange, className }: TabNavProps)
             variant={isActive ? 'default' : 'outline'}
             size="sm"
             className={`shrink-0 ${isActive ? 'ring-1 ring-[color:var(--color-primary-light)] ring-offset-0' : ''}`}
+            data-tour-tab={tab.id}
           >
             {tab.icon}
             {tab.label}

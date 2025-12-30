@@ -92,6 +92,11 @@ export function BentoOverview({
                 <p className="mt-1 text-[10px] uppercase tracking-wide text-[color:var(--color-text-muted)]">
                   Reparto: {inv.divisionMethod === 'consumption' ? 'Consumo real' : 'Equitativo'}
                 </p>
+                {inv.birthdayPersonId ? (
+                  <p className="mt-1 text-[11px] font-semibold text-[color:var(--color-primary-main)]">
+                    Invitado especial: {resolvePersonName(inv.birthdayPersonId, people)}
+                  </p>
+                ) : null}
               </div>
             ))
           )}

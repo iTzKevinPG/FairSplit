@@ -72,7 +72,7 @@ export function EventSelector({
                 }
               />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent data-tour-select-content>
               {events.length === 0 ? (
                 <SelectItem value="__empty" disabled>
                   Crea tu primer evento
@@ -102,7 +102,7 @@ export function EventSelector({
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent data-tour-select-content>
             {currencyOptions.map((option) => (
               <SelectItem key={option} value={option}>
                 {option}

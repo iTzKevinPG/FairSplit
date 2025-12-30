@@ -1,3 +1,4 @@
+@import '@reactour/tour/dist/index.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

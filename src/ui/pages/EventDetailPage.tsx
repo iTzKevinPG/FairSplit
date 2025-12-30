@@ -22,11 +22,12 @@ import { SummarySection } from '../components/SummarySection'
 import { TabNav } from '../components/TabNav'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { TransfersSection } from '../components/TransfersSection'
+import { QuickGuideButton } from '../components/QuickGuideButton'
 import NotFoundPage from './NotFoundPage'
 
 const tabs = [
-  { id: 'invoices', label: 'Gastos', icon: <Receipt className="h-4 w-4" /> },
   { id: 'people', label: 'Integrantes', icon: <Users className="h-4 w-4" /> },
+  { id: 'invoices', label: 'Gastos', icon: <Receipt className="h-4 w-4" /> },
   { id: 'summary', label: 'Resumen', icon: <BarChart3 className="h-4 w-4" /> },
   {
     id: 'transfers',
@@ -56,11 +57,36 @@ function EventDetailPage() {
 
   const [activeTab, setActiveTab] = useState<
     'people' | 'invoices' | 'summary' | 'transfers' | 'overview'
-  >('invoices')
+  >('people')
 
   useEffect(() => {
     void loadEvents()
   }, [loadEvents])
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      if (!(event instanceof CustomEvent)) return
+      const tabId = event.detail?.tabId as
+        | 'people'
+        | 'invoices'
+        | 'summary'
+        | 'transfers'
+        | 'overview'
+        | undefined
+      if (!tabId) return
+      setActiveTab(tabId)
+    }
+    window.addEventListener('tour:go-tab', handler)
+    return () => {
+      window.removeEventListener('tour:go-tab', handler)
+    }
+  }, [])
+
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent('tour:active-tab', { detail: { tabId: activeTab } }),
+    )
+  }, [activeTab])
 
   useEffect(() => {
     if (eventId) {
@@ -137,12 +163,16 @@ function EventDetailPage() {
               <ArrowLeft className="h-4 w-4" />
               <span className="hidden sm:inline">Volver a eventos</span>
             </Link>
+            <QuickGuideButton />
             <ThemeToggle />
           </div>
         </div>
       </header>
 
-      <main className="mx-auto flex max-w-5xl flex-1 flex-col gap-6 px-6 py-10">
+      <main
+        className="mx-auto flex max-w-5xl flex-1 flex-col gap-6 px-6 py-10"
+        data-tour-active-tab={activeTab}
+      >
         <section className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[color:var(--color-primary-main)]">
             Evento
@@ -162,81 +192,93 @@ function EventDetailPage() {
 
         <ModeBanner />
 
-        <TabNav
-          tabs={tabs}
-          activeTab={activeTab}
-          onTabChange={(tabId) => setActiveTab(tabId as typeof activeTab)}
-        />
+        <div data-tour="tab-nav">
+          <TabNav
+            tabs={tabs}
+            activeTab={activeTab}
+            onTabChange={(tabId) => setActiveTab(tabId as typeof activeTab)}
+          />
+        </div>
 
         {activeTab === 'people' && (
-          <PeopleSection
-            people={selectedEvent.people}
-            onAdd={async (name) => {
-              await addPerson({ name })
-            }}
-            onRemove={async (personId) => {
-              await removePerson({ personId })
-            }}
-            onEdit={async (personId, name) => {
-              await updatePerson({ personId, name })
-            }}
-          />
+          <div data-tour="people-section">
+            <PeopleSection
+              people={selectedEvent.people}
+              onAdd={async (name) => {
+                await addPerson({ name })
+              }}
+              onRemove={async (personId) => {
+                await removePerson({ personId })
+              }}
+              onEdit={async (personId, name) => {
+                await updatePerson({ personId, name })
+              }}
+            />
+          </div>
         )}
 
         {activeTab === 'invoices' && (
-          <InvoiceSection
-            invoices={selectedEvent.invoices}
-            people={selectedEvent.people}
-            currency={selectedEvent.currency}
-            onAdd={async (invoice) => {
-              await addInvoice(invoice)
-            }}
-            onUpdate={async (invoice) => {
-              await updateInvoice(invoice)
-            }}
-            onRemove={async (invoiceId) => {
-              await removeInvoice({ invoiceId })
-            }}
-          />
+          <div data-tour="invoice-section">
+            <InvoiceSection
+              invoices={selectedEvent.invoices}
+              people={selectedEvent.people}
+              currency={selectedEvent.currency}
+              onAdd={async (invoice) => {
+                await addInvoice(invoice)
+              }}
+              onUpdate={async (invoice) => {
+                await updateInvoice(invoice)
+              }}
+              onRemove={async (invoiceId) => {
+                await removeInvoice({ invoiceId })
+              }}
+            />
+          </div>
         )}
 
         {activeTab === 'summary' && (
-          <SummarySection
-            balances={balances}
-            people={selectedEvent.people}
-            currency={selectedEvent.currency}
-            tipTotal={tipTotal}
-          />
+          <div data-tour="summary-section">
+            <SummarySection
+              balances={balances}
+              people={selectedEvent.people}
+              currency={selectedEvent.currency}
+              tipTotal={tipTotal}
+            />
+          </div>
         )}
 
         {activeTab === 'transfers' && (
-          <TransfersSection
-            transfers={transfers}
-            people={selectedEvent.people}
-            currency={selectedEvent.currency}
-            tipTotal={tipTotal}
-            transferStatusMap={transferStatusMap}
-            onToggleStatus={(transfer, isSettled) => {
-              void setTransferStatus({
-                eventId: selectedEvent.id,
-                fromPersonId: transfer.fromPersonId,
-                toPersonId: transfer.toPersonId,
-                isSettled,
-              })
-            }}
-          />
+          <div data-tour="transfers-section">
+            <TransfersSection
+              transfers={transfers}
+              people={selectedEvent.people}
+              currency={selectedEvent.currency}
+              tipTotal={tipTotal}
+              transferStatusMap={transferStatusMap}
+              onToggleStatus={(transfer, isSettled) => {
+                void setTransferStatus({
+                  eventId: selectedEvent.id,
+                  fromPersonId: transfer.fromPersonId,
+                  toPersonId: transfer.toPersonId,
+                  isSettled,
+                })
+              }}
+            />
+          </div>
         )}
 
         {activeTab === 'overview' && (
-          <BentoOverview
-            people={selectedEvent.people}
-            invoices={selectedEvent.invoices}
-            balances={balances}
-            transfers={transfers}
-            currency={selectedEvent.currency}
-            transferStatusMap={transferStatusMap}
-            settledByPersonId={settledByPersonId}
-          />
+          <div data-tour="overview-section">
+            <BentoOverview
+              people={selectedEvent.people}
+              invoices={selectedEvent.invoices}
+              balances={balances}
+              transfers={transfers}
+              currency={selectedEvent.currency}
+              transferStatusMap={transferStatusMap}
+              settledByPersonId={settledByPersonId}
+            />
+          </div>
         )}
       </main>
 
