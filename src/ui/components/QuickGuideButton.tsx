@@ -104,7 +104,6 @@ const eventSteps: GuideStepConfig[] = [
     description: 'Selecciona a quienes se les reparte el gasto.',
     requirement: 'none',
     tabId: 'invoices',
-    padding: { mask: 16, popover: 12, wrapper: 8 },
     bypassElem: true,
   },
   {
