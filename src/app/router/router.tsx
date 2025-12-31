@@ -1,20 +1,26 @@
 import { createBrowserRouter } from 'react-router-dom'
-import EventDetailPage from '../../ui/pages/EventDetailPage'
-import EventListPage from '../../ui/pages/EventListPage'
-import NotFoundPage from '../../ui/pages/NotFoundPage'
 
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <EventListPage />,
+    lazy: async () => {
+      const { default: EventListPage } = await import('../../ui/pages/EventListPage')
+      return { Component: EventListPage }
+    },
   },
   {
     path: '/events/:eventId',
-    element: <EventDetailPage />,
+    lazy: async () => {
+      const { default: EventDetailPage } = await import('../../ui/pages/EventDetailPage')
+      return { Component: EventDetailPage }
+    },
   },
   {
     path: '*',
-    element: <NotFoundPage />,
+    lazy: async () => {
+      const { default: NotFoundPage } = await import('../../ui/pages/NotFoundPage')
+      return { Component: NotFoundPage }
+    },
   },
 ])
 
