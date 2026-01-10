@@ -156,9 +156,6 @@ async function ensureAuthOrRedirect(): Promise<string | null> {
   if (expired && typeof window !== 'undefined') {
     localStorage.removeItem(STORAGE_EXPIRED_FLAG)
     notifySessionExpired()
-    window.setTimeout(() => {
-      window.location.assign('/')
-    }, 3000)
   }
   return null
 }

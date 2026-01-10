@@ -7,7 +7,7 @@ import {
   Users,
   Wallet,
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { buttonVariants } from '../../shared/components/ui/button'
 import { useFairSplitStore } from '../../shared/state/fairsplitStore'
@@ -43,7 +43,13 @@ const tabs = [
 function EventDetailPage() {
   const { eventId } = useParams<{ eventId: string }>()
   const navigate = useNavigate()
-  const { events, selectEvent, loadEventDetailsForList } = useEvents()
+  const {
+    events,
+    selectedEventId,
+    selectEvent,
+    loadEventDetailsForList,
+    loadEvents,
+  } = useEvents()
   const {
     addPerson,
     removePerson,
@@ -63,6 +69,13 @@ function EventDetailPage() {
   >('people')
   const [showProfile, setShowProfile] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const hasLoadedRef = useRef(false)
+
+  useEffect(() => {
+    if (hasLoadedRef.current || events.length > 0) return
+    hasLoadedRef.current = true
+    void loadEvents({ loadDetails: false })
+  }, [events.length, loadEvents])
 
   useEffect(() => {
     if (!eventId) return
@@ -101,10 +114,11 @@ function EventDetailPage() {
   }, [activeTab])
 
   useEffect(() => {
-    if (eventId) {
-      selectEvent(eventId)
-    }
-  }, [eventId, selectEvent, events.length])
+    if (!eventId) return
+    if (selectedEventId === eventId) return
+    if (!events.some((event) => event.id === eventId)) return
+    void selectEvent(eventId)
+  }, [eventId, events, selectedEventId, selectEvent])
 
   useEffect(() => {
     if (eventId && events.length > 0 && !getSelectedEvent()) {

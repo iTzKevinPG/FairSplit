@@ -19,7 +19,7 @@ export function TabNav({ tabs, activeTab, onTabChange, className }: TabNavProps)
   const wrapperClass = className ? `${baseClass} ${className}` : baseClass
 
   return (
-    <div className={wrapperClass}>
+    <div className={wrapperClass} style={{ padding: '0.3rem 0.3rem' }}>
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id
         return (

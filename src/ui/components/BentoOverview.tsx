@@ -41,13 +41,13 @@ export function BentoOverview({
   }, 0)
   const pendingTransfers = totalTransfers - settledTransfers
   const previewInvoices = invoices.slice(0, 3)
-  const previewBalances = balances.slice(0, 5)
+  const previewBalances = balances
   const orderedTransfers = [...transfers].sort((a, b) => {
     const aSettled = transferStatusMap[buildTransferKey(a.fromPersonId, a.toPersonId)]?.isSettled
     const bSettled = transferStatusMap[buildTransferKey(b.fromPersonId, b.toPersonId)]?.isSettled
     return Number(Boolean(aSettled)) - Number(Boolean(bSettled))
   })
-  const previewTransfers = orderedTransfers.slice(0, 5)
+  const previewTransfers = orderedTransfers
   const shareUrl =
     typeof window !== 'undefined'
       ? `${window.location.origin}/events/${eventId}/overview`
@@ -287,11 +287,6 @@ export function BentoOverview({
             ))
           )}
         </div>
-        {transfers.length > previewTransfers.length ? (
-          <p className="mt-3 text-xs text-[color:var(--color-text-muted)]">
-            Hay mas transferencias en la pestana Transferencias.
-          </p>
-        ) : null}
       </div>
     </div>
   )

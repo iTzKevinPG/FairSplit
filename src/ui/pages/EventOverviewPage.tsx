@@ -1,5 +1,5 @@
 import { Wallet } from 'lucide-react'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Badge } from '../../shared/components/ui/badge'
 import { useFairSplitStore } from '../../shared/state/fairsplitStore'
@@ -11,13 +11,26 @@ import NotFoundPage from './NotFoundPage'
 function EventOverviewPage() {
   const { eventId } = useParams<{ eventId: string }>()
   const navigate = useNavigate()
-  const { events, selectEvent, loadEventDetailsForList } = useEvents()
+  const {
+    events,
+    selectedEventId,
+    selectEvent,
+    loadEventDetailsForList,
+    loadEvents,
+  } = useEvents()
   const {
     getBalances,
     getTransfers,
     getSelectedEvent,
     transferStatusesByEvent,
   } = useFairSplitStore()
+  const hasLoadedRef = useRef(false)
+
+  useEffect(() => {
+    if (hasLoadedRef.current || events.length > 0) return
+    hasLoadedRef.current = true
+    void loadEvents({ loadDetails: false })
+  }, [events.length, loadEvents])
 
   useEffect(() => {
     if (!eventId) return
@@ -25,10 +38,11 @@ function EventOverviewPage() {
   }, [eventId, loadEventDetailsForList])
 
   useEffect(() => {
-    if (eventId) {
-      selectEvent(eventId)
-    }
-  }, [eventId, selectEvent, events.length])
+    if (!eventId) return
+    if (selectedEventId === eventId) return
+    if (!events.some((event) => event.id === eventId)) return
+    void selectEvent(eventId)
+  }, [eventId, events, selectedEventId, selectEvent])
 
   useEffect(() => {
     if (eventId && events.length > 0 && !getSelectedEvent()) {
