@@ -38,6 +38,9 @@ function EventListPage() {
   const [showProfile, setShowProfile] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const hasLoadedRef = useRef(false)
+  const hasAuthToken =
+    typeof window !== 'undefined' &&
+    Boolean(window.localStorage.getItem('fairsplit_auth_token'))
 
   useEffect(() => {
     if (hasLoadedRef.current) return
@@ -280,13 +283,13 @@ function EventListPage() {
                     </Badge>
                     <span className="inline-flex items-center gap-1.5">
                       <Users className="h-3.5 w-3.5" />
-                      {loaded || typeof event.peopleCount === 'number'
+                      {loaded || typeof event.peopleCount === 'number' || !hasAuthToken
                         ? `${peopleCount} integrantes`
                         : 'Integrantes: —'}
                     </span>
                     <span className="inline-flex items-center gap-1.5">
                       <Receipt className="h-3.5 w-3.5" />
-                      {loaded || typeof event.invoiceCount === 'number'
+                      {loaded || typeof event.invoiceCount === 'number' || !hasAuthToken
                         ? `${invoiceCount} gastos`
                         : 'Gastos: —'}
                     </span>
