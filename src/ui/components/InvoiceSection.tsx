@@ -1,6 +1,7 @@
 import { ChevronDown, ChevronUp, Edit2, Plus, Trash2 } from 'lucide-react'
 import { Badge } from '../../shared/components/ui/badge'
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { useTour } from '@reactour/tour'
 import { Button } from '../../shared/components/ui/button'
 import { Input } from '../../shared/components/ui/input'
 import {
@@ -50,6 +51,7 @@ export function InvoiceSection({
   onUpdate,
   onRemove,
 }: InvoiceSectionProps) {
+  const { isOpen: isTourOpen, meta: tourMeta, steps, setCurrentStep } = useTour()
   const optionsMenuRef = useRef<HTMLDetailsElement | null>(null)
   const formRef = useRef<HTMLDivElement | null>(null)
   const [showForm, setShowForm] = useState(false)
@@ -145,6 +147,9 @@ export function InvoiceSection({
     event.preventDefault()
     const trimmedDescription = description.trim()
     const numericAmount = Number(amount)
+    const effectiveParticipants = showParticipants
+      ? participantIds
+      : people.map((person) => person.id)
 
     if (!trimmedDescription) {
       setError('La descripcion es obligatoria.')
@@ -163,18 +168,18 @@ export function InvoiceSection({
         setError('Selecciona a la persona invitada especial.')
         return
       }
-      if (!participantIds.includes(birthdayPersonId)) {
+      if (!effectiveParticipants.includes(birthdayPersonId)) {
         setError('El invitado especial debe estar en la lista de participantes.')
         return
       }
-      if (participantIds.length < 2) {
+      if (effectiveParticipants.length < 2) {
         setError(
           'Se necesita al menos otra persona para repartir el consumo del invitado especial.',
         )
         return
       }
     }
-    if (participantIds.length === 0) {
+    if (effectiveParticipants.length === 0) {
       setError('Selecciona al menos un participante.')
       return
     }
@@ -186,7 +191,7 @@ export function InvoiceSection({
 
     let consumptionPayload: Record<string, number> | undefined
     if (divisionMethod === 'consumption') {
-      const numericConsumptions = participantIds.reduce<Record<string, number>>(
+      const numericConsumptions = effectiveParticipants.reduce<Record<string, number>>(
         (acc, id) => {
           const value = Number(consumptions[id] ?? 0)
           acc[id] = value
@@ -219,7 +224,7 @@ export function InvoiceSection({
         description: trimmedDescription,
         amount: numericAmount,
         payerId,
-        participantIds,
+        participantIds: effectiveParticipants,
         divisionMethod,
         consumptions: consumptionPayload,
         tipAmount: includeTip ? numericTip : undefined,
@@ -230,12 +235,18 @@ export function InvoiceSection({
         description: trimmedDescription,
         amount: numericAmount,
         payerId,
-        participantIds,
+        participantIds: effectiveParticipants,
         divisionMethod,
         consumptions: consumptionPayload,
         tipAmount: includeTip ? numericTip : undefined,
         birthdayPersonId: birthdayEnabled ? birthdayPersonId : undefined,
       })
+    }
+    if (typeof window !== 'undefined' && isTourOpen && tourMeta === 'guided') {
+      window.dispatchEvent(new CustomEvent('tour:go-tab', { detail: { tabId: 'summary' } }))
+      if (steps && setCurrentStep) {
+        setCurrentStep((current) => Math.min(current + 1, steps.length - 1))
+      }
     }
     resetForm()
   }

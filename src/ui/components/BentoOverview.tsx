@@ -28,9 +28,54 @@ export function BentoOverview({
   const totalInvoices = invoices.length
   const totalAmount = invoices.reduce((acc, inv) => acc + inv.amount, 0)
   const totalTips = invoices.reduce((acc, inv) => acc + (inv.tipAmount ?? 0), 0)
+  const totalTransfers = transfers.length
+  const settledTransfers = transfers.reduce((acc, transfer) => {
+    const key = buildTransferKey(transfer.fromPersonId, transfer.toPersonId)
+    return acc + (transferStatusMap[key]?.isSettled ? 1 : 0)
+  }, 0)
+  const pendingTransfers = totalTransfers - settledTransfers
+  const previewInvoices = invoices.slice(0, 3)
+  const previewBalances = balances.slice(0, 5)
+  const orderedTransfers = [...transfers].sort((a, b) => {
+    const aSettled = transferStatusMap[buildTransferKey(a.fromPersonId, a.toPersonId)]?.isSettled
+    const bSettled = transferStatusMap[buildTransferKey(b.fromPersonId, b.toPersonId)]?.isSettled
+    return Number(Boolean(aSettled)) - Number(Boolean(bSettled))
+  })
+  const previewTransfers = orderedTransfers.slice(0, 5)
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
+      <div className="animate-fade-in rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4 md:col-span-2">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[color:var(--color-text-muted)]">
+              Vista general
+            </p>
+            <h4 className="text-lg font-semibold text-[color:var(--color-text-main)]">
+              Estado del evento
+            </h4>
+            <p className="text-sm text-[color:var(--color-text-muted)]">
+              Lo esencial para cerrar cuentas sin abrir mas pantallas.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs">
+            <span className="ds-badge-soft">Integrantes: {people.length}</span>
+            <span className="ds-badge-soft">Gastos: {totalInvoices}</span>
+            <span className="ds-badge-soft">
+              Total: {currency} {roundToCents(totalAmount).toFixed(2)}
+            </span>
+            {totalTransfers > 0 ? (
+              <span className="ds-badge-soft">Pendientes: {pendingTransfers}</span>
+            ) : null}
+            {totalTips > 0 ? (
+              <span className="ds-badge-soft">
+                Propina: {currency} {roundToCents(totalTips).toFixed(2)}
+              </span>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
       <div className="animate-fade-in rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4">
         <div className="mb-3 flex items-center justify-between">
           <h4 className="font-semibold text-[color:var(--color-text-main)]">Integrantes</h4>
@@ -70,7 +115,7 @@ export function BentoOverview({
               Aun no hay gastos.
             </span>
           ) : (
-            invoices.slice(0, 4).map((inv) => (
+            previewInvoices.map((inv) => (
               <div
                 key={inv.id}
                 className="rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] p-3 text-xs"
@@ -81,7 +126,7 @@ export function BentoOverview({
                       {inv.description}
                     </p>
                     <p className="text-[color:var(--color-text-muted)]">
-                      Pago: {resolvePersonName(inv.payerId, people)} · Personas:{' '}
+                      Pago: {resolvePersonName(inv.payerId, people)} - Personas:{' '}
                       {inv.participantIds.length}
                     </p>
                   </div>
@@ -106,7 +151,9 @@ export function BentoOverview({
       <div className="animate-fade-in rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4">
         <div className="mb-3">
           <h4 className="font-semibold text-[color:var(--color-text-main)]">Balance del grupo</h4>
-          <p className="text-xs text-[color:var(--color-text-muted)]">Resumen por persona</p>
+          <p className="text-xs text-[color:var(--color-text-muted)]">
+            Quien queda a favor y quien debe.
+          </p>
         </div>
         <div className="space-y-2">
           {balances.length === 0 ? (
@@ -114,7 +161,7 @@ export function BentoOverview({
               Sin saldos: aun no hay gastos.
             </span>
           ) : (
-            balances.map((b) => (
+            previewBalances.map((b) => (
               <div
                 key={b.personId}
                 className="flex items-center justify-between rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] p-3 text-xs"
@@ -124,8 +171,7 @@ export function BentoOverview({
                     {resolvePersonName(b.personId, people)}
                   </p>
                   <p className="text-[color:var(--color-text-muted)]">
-                    Pagado: {currency} {b.totalPaid.toFixed(2)} · Debe:{' '}
-                    {currency} {b.totalOwed.toFixed(2)}
+                    {b.net > 0 ? 'A favor' : b.net < 0 ? 'Debe' : 'En cero'}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -148,7 +194,7 @@ export function BentoOverview({
           <p className="text-xs text-[color:var(--color-text-muted)]">
             Quien paga a quien (solo lectura)
             {totalTips > 0
-              ? ` · Propina incluida: ${currency} ${roundToCents(totalTips).toFixed(2)}`
+              ? ` - Propina incluida: ${currency} ${roundToCents(totalTips).toFixed(2)}`
               : ''}
           </p>
         </div>
@@ -158,7 +204,7 @@ export function BentoOverview({
               No hay deudas pendientes, todo esta balanceado.
             </span>
           ) : (
-            transfers.map((t, idx) => (
+            previewTransfers.map((t, idx) => (
               <div
                 key={`${t.fromPersonId}-${t.toPersonId}-${idx}`}
                 className="flex items-center justify-between rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] p-3 text-xs"
@@ -182,6 +228,11 @@ export function BentoOverview({
             ))
           )}
         </div>
+        {transfers.length > previewTransfers.length ? (
+          <p className="mt-3 text-xs text-[color:var(--color-text-muted)]">
+            Hay mas transferencias en la pestana Transferencias.
+          </p>
+        ) : null}
       </div>
     </div>
   )

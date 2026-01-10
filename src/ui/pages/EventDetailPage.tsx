@@ -135,21 +135,42 @@ function EventDetailPage() {
   )
   const settledByPersonId = useMemo(() => {
     if (!selectedEvent) return {}
+    const netByPersonId = new Map<string, number>()
+    balances.forEach((balance) => {
+      netByPersonId.set(balance.personId, balance.net)
+    })
+
     const totals = new Map<string, { total: number; settled: number }>()
     transfers.forEach((transfer) => {
       const key = `${transfer.fromPersonId}::${transfer.toPersonId}`
       const isSettled = Boolean(transferStatusMap[key]?.isSettled)
-      const entry = totals.get(transfer.fromPersonId) ?? { total: 0, settled: 0 }
-      entry.total += 1
-      if (isSettled) entry.settled += 1
-      totals.set(transfer.fromPersonId, entry)
+      const fromEntry = totals.get(transfer.fromPersonId) ?? { total: 0, settled: 0 }
+      fromEntry.total += 1
+      if (isSettled) fromEntry.settled += 1
+      totals.set(transfer.fromPersonId, fromEntry)
+
+      const toEntry = totals.get(transfer.toPersonId) ?? { total: 0, settled: 0 }
+      toEntry.total += 1
+      if (isSettled) toEntry.settled += 1
+      totals.set(transfer.toPersonId, toEntry)
     })
+
     const result: Record<string, boolean> = {}
-    totals.forEach((value, personId) => {
-      result[personId] = value.total > 0 && value.settled === value.total
+    selectedEvent.people.forEach((person) => {
+      const net = netByPersonId.get(person.id) ?? 0
+      if (Math.abs(net) < 0.01) {
+        result[person.id] = true
+        return
+      }
+      const entry = totals.get(person.id)
+      if (!entry || entry.total === 0) {
+        result[person.id] = false
+        return
+      }
+      result[person.id] = entry.settled === entry.total
     })
     return result
-  }, [selectedEvent, transfers, transferStatusMap])
+  }, [balances, selectedEvent, transfers, transferStatusMap])
 
   if (!eventId || !selectedEvent) {
     return <NotFoundPage />

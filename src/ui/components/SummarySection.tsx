@@ -18,11 +18,24 @@ export function SummarySection({
 }: SummarySectionProps) {
   const normalize = (value: number) =>
     Math.abs(value) < 0.01 ? 0 : value
+  const peopleById = new Map(people.map((person) => [person.id, person.name]))
+  const normalizedBalances = balances.map((balance) => ({
+    ...balance,
+    net: normalize(balance.net),
+    name: peopleById.get(balance.personId) ?? 'Desconocido',
+  }))
+  const receivers = normalizedBalances
+    .filter((balance) => balance.net > 0)
+    .sort((a, b) => b.net - a.net)
+  const payers = normalizedBalances
+    .filter((balance) => balance.net < 0)
+    .sort((a, b) => a.net - b.net)
+  const settled = normalizedBalances.filter((balance) => balance.net === 0)
 
   return (
     <SectionCard
       title="Resumen por persona"
-      description="Saldos netos por persona: positivo significa que le deben; negativo, que debe."
+      description="Objetivo: entender quien queda a favor y quien debe, antes de ir a transferencias."
       action={
         tipTotal && tipTotal > 0 ? (
           <span className="ds-badge-soft">
@@ -38,41 +51,92 @@ export function SummarySection({
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full border-separate border-spacing-0">
-            <thead>
-              <tr className="text-left text-xs uppercase tracking-wide text-[color:var(--color-text-muted)]">
-                <th className="px-3 py-2">Persona</th>
-                <th className="px-3 py-2 text-right">Pagado</th>
-                <th className="px-3 py-2 text-right">Debia</th>
-                <th className="px-3 py-2 text-right">Saldo neto</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[color:var(--color-border-subtle)] text-sm">
-              {balances.map((balance) => {
-                const personName =
-                  people.find((person) => person.id === balance.personId)?.name ??
-                  'Desconocido'
-                const net = normalize(balance.net)
-                return (
-                  <tr key={balance.personId} className="transition hover:bg-[color:var(--color-surface-muted)]">
-                    <td className="px-3 py-3 font-semibold text-[color:var(--color-text-main)]">
-                      {personName}
-                    </td>
-                    <td className="px-3 py-3 text-right text-[color:var(--color-text-muted)] tabular-nums">
-                      {currency} {balance.totalPaid.toFixed(2)}
-                    </td>
-                    <td className="px-3 py-3 text-right text-[color:var(--color-text-muted)] tabular-nums">
-                      {currency} {balance.totalOwed.toFixed(2)}
-                    </td>
-                    <td className="px-3 py-3 text-right">
-                      <AmountDisplay amount={net} currency={currency} showSign />
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+        <div className="space-y-4">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="rounded-xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[color:var(--color-text-muted)]">
+                Cobran
+              </p>
+              <p className="mt-1 text-sm text-[color:var(--color-text-muted)]">
+                Personas a quienes el grupo les debe.
+              </p>
+              <div className="mt-3 space-y-2">
+                {receivers.length === 0 ? (
+                  <p className="text-sm text-[color:var(--color-text-muted)]">
+                    Nadie a favor por ahora.
+                  </p>
+                ) : (
+                  receivers.map((balance) => (
+                    <div
+                      key={balance.personId}
+                      className="flex items-center justify-between rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-3 py-2"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
+                          {balance.name}
+                        </p>
+                        <p className="text-xs text-[color:var(--color-text-muted)]">
+                          Pago {currency} {balance.totalPaid.toFixed(2)}
+                        </p>
+                      </div>
+                      <AmountDisplay amount={balance.net} currency={currency} showSign />
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[color:var(--color-text-muted)]">
+                Deben
+              </p>
+              <p className="mt-1 text-sm text-[color:var(--color-text-muted)]">
+                Personas que deben pagar para equilibrar el grupo.
+              </p>
+              <div className="mt-3 space-y-2">
+                {payers.length === 0 ? (
+                  <p className="text-sm text-[color:var(--color-text-muted)]">
+                    Nadie por debajo, todo esta equilibrado.
+                  </p>
+                ) : (
+                  payers.map((balance) => (
+                    <div
+                      key={balance.personId}
+                      className="flex items-center justify-between rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-3 py-2"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
+                          {balance.name}
+                        </p>
+                        <p className="text-xs text-[color:var(--color-text-muted)]">
+                          Debia {currency} {balance.totalOwed.toFixed(2)}
+                        </p>
+                      </div>
+                      <AmountDisplay amount={balance.net} currency={currency} showSign />
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+          {settled.length > 0 ? (
+            <div className="rounded-xl border border-dashed border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[color:var(--color-text-muted)]">
+                En equilibrio
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {settled.map((balance) => (
+                  <span
+                    key={balance.personId}
+                    className="rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-1 text-xs font-semibold text-[color:var(--color-text-muted)]"
+                  >
+                    {balance.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
       )}
     </SectionCard>

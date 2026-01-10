@@ -55,12 +55,6 @@ const homeSteps: GuideStepConfig[] = [
     requirement: 'none',
   },
   {
-    selector: '[data-tour="events-list"]',
-    title: 'Tus eventos',
-    description: 'Accede rapido a tus eventos recientes desde esta lista.',
-    requirement: 'none',
-  },
-  {
     selector: '[data-tour="event-create"]',
     title: 'Crear evento',
     description: 'Crea un evento con nombre y moneda para empezar.',
@@ -127,9 +121,8 @@ const eventSteps: GuideStepConfig[] = [
     selector: '[data-tour="invoice-advanced-toggle"]',
     title: 'Opciones avanzadas',
     description: 'Elige propina, cumpleanero, participantes o consumo.',
-    requirement: 'invoice-advanced',
+    requirement: 'none',
     tabId: 'invoices',
-    hint: 'Selecciona una opcion para continuar.',
     mutationObservables: ['[data-tour-active-tab]'],
     resizeObservables: ['[data-tour-active-tab]'],
   },
@@ -137,16 +130,6 @@ const eventSteps: GuideStepConfig[] = [
     selector: '[data-tour="invoice-payer"]',
     title: 'Pagador',
     description: 'Selecciona quien pago este gasto.',
-    requirement: 'none',
-    tabId: 'invoices',
-    bypassElem: true,
-    mutationObservables: ['[data-tour-active-tab]'],
-    resizeObservables: ['[data-tour-active-tab]'],
-  },
-  {
-    selector: '[data-tour="invoice-participants"]',
-    title: 'Participantes',
-    description: 'Selecciona a quienes se les reparte el gasto.',
     requirement: 'none',
     tabId: 'invoices',
     bypassElem: true,
@@ -390,6 +373,10 @@ function GuideStepContent({
   )
 
   const isLastStep = steps && currentStep === steps.length - 1
+  const disablePrev =
+    config.selector === '[data-tour-tab="summary"]' ||
+    config.selector === '[data-tour-tab="transfers"]' ||
+    config.selector === '[data-tour-tab="overview"]'
   const autoAdvance = config.requirement === 'event-created'
   const autoAdvanceRequirements: RequirementKey[] = ['invoice-added', 'invoice-form-open']
 
@@ -510,7 +497,7 @@ function GuideStepContent({
           Salir
         </button>
         <div className="flex items-center gap-2">
-          {!autoAdvance && currentStep > 0 ? (
+          {!autoAdvance && currentStep > 0 && !disablePrev ? (
             <button
               type="button"
               className="text-xs font-semibold text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-main)]"
