@@ -1,8 +1,7 @@
-import { ArrowLeft, Wallet } from 'lucide-react'
+import { Wallet } from 'lucide-react'
 import { useEffect, useMemo } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Badge } from '../../shared/components/ui/badge'
-import { buttonVariants } from '../../shared/components/ui/button'
 import { useFairSplitStore } from '../../shared/state/fairsplitStore'
 import { BentoOverview } from '../components/BentoOverview'
 import { Footer } from '../components/Footer'
@@ -12,7 +11,7 @@ import NotFoundPage from './NotFoundPage'
 function EventOverviewPage() {
   const { eventId } = useParams<{ eventId: string }>()
   const navigate = useNavigate()
-  const { events, loadEvents, selectEvent } = useEvents()
+  const { events, selectEvent, loadEventDetailsForList } = useEvents()
   const {
     getBalances,
     getTransfers,
@@ -21,8 +20,9 @@ function EventOverviewPage() {
   } = useFairSplitStore()
 
   useEffect(() => {
-    void loadEvents()
-  }, [loadEvents])
+    if (!eventId) return
+    void loadEventDetailsForList([eventId])
+  }, [eventId, loadEventDetailsForList])
 
   useEffect(() => {
     if (eventId) {

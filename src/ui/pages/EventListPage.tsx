@@ -28,11 +28,13 @@ function EventListPage() {
     loadEvents,
     selectEvent,
     createAndSelect,
-    loadEventDetailsForList,
     isEventLoaded,
   } = useEvents()
   const navigate = useNavigate()
-  const [showIntro, setShowIntro] = useState(false)
+  const [showIntro, setShowIntro] = useState(() => {
+    const seen = window.localStorage.getItem('fairsplit-intro-seen')
+    return !seen
+  })
   const [showProfile, setShowProfile] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const hasLoadedRef = useRef(false)
@@ -43,16 +45,6 @@ function EventListPage() {
     void loadEvents({ loadDetails: false })
   }, [loadEvents])
 
-  useEffect(() => {
-    const seen = window.localStorage.getItem('fairsplit-intro-seen')
-    if (!seen) {
-      setShowIntro(true)
-    }
-  }, [])
-
-  useEffect(() => {
-    // Details are loaded on event selection, not on the home list.
-  }, [])
 
   const handleSelect = (eventId: string) => {
     selectEvent(eventId)

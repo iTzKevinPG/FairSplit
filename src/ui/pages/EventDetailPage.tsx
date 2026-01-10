@@ -9,7 +9,6 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Badge } from '../../shared/components/ui/badge'
 import { buttonVariants } from '../../shared/components/ui/button'
 import { useFairSplitStore } from '../../shared/state/fairsplitStore'
 import { useEvents } from '../hooks/useEvents'

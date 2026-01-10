@@ -34,12 +34,14 @@ type GuideStepConfig = {
   hint?: string
 }
 
-const mobileDockPosition: StepType['position'] = ({ windowWidth, windowHeight, height }) => {
+const mobileDockPosition: StepType['position'] = ({ windowWidth }) => {
   if (windowWidth <= 640) {
     return 'bottom'
   }
   return 'bottom'
 }
+
+const autoAdvanceRequirements: RequirementKey[] = ['invoice-added', 'invoice-form-open']
 
 const homeSteps: GuideStepConfig[] = [
   {
@@ -215,7 +217,13 @@ function GuideStepContent({
   const { isOpen } = useTour()
   const pathname = typeof window !== 'undefined' ? window.location.pathname : ''
   const selectedEvent = useFairSplitStore((state) => state.getSelectedEvent())
-  const [activeTab, setActiveTab] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<string | null>(() => {
+    if (typeof document === 'undefined') return null
+    return (
+      document.querySelector('[data-tour-active-tab]')?.getAttribute('data-tour-active-tab') ??
+      null
+    )
+  })
   const lastAutoAdvanceRef = useRef<number | null>(null)
   const lastTabDispatchRef = useRef<string | null>(null)
   const pendingStepRef = useRef<number | null>(null)
@@ -234,14 +242,6 @@ function GuideStepContent({
       setActiveTab(tabId)
     }
     window.addEventListener('tour:active-tab', handler)
-    if (typeof document !== 'undefined') {
-      const initialTab = document
-        .querySelector('[data-tour-active-tab]')
-        ?.getAttribute('data-tour-active-tab')
-      if (initialTab) {
-        setActiveTab(initialTab)
-      }
-    }
     return () => {
       window.removeEventListener('tour:active-tab', handler)
     }
@@ -378,8 +378,6 @@ function GuideStepContent({
     config.selector === '[data-tour-tab="transfers"]' ||
     config.selector === '[data-tour-tab="overview"]'
   const autoAdvance = config.requirement === 'event-created'
-  const autoAdvanceRequirements: RequirementKey[] = ['invoice-added', 'invoice-form-open']
-
   const handleStepChange = useCallback(
     (nextIndex: number) => {
       const target = steps?.[nextIndex] as (StepType & { tabId?: string }) | undefined
@@ -412,7 +410,7 @@ function GuideStepContent({
       }
       setCurrentStep(nextIndex)
     },
-    [activeTab, clearPendingStep, currentStep, setCurrentStep, steps],
+    [activeTab, clearPendingStep, setCurrentStep, steps],
   )
 
   useEffect(() => {
