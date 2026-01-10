@@ -82,12 +82,19 @@ export function InvoiceSection({
   const [showConsumption, setShowConsumption] = useState(false)
 
   const totalAmount = invoices.reduce((acc, inv) => acc + inv.amount, 0)
-  const birthdayOptions = showParticipants
-    ? participantIds
-    : people.map((person) => person.id)
+  const availablePersonIds = people.map((person) => person.id)
+  const resolvedPayerId =
+    payerId && availablePersonIds.includes(payerId) ? payerId : availablePersonIds[0]
+  const sanitizedParticipantIds = participantIds.filter((id) =>
+    availablePersonIds.includes(id),
+  )
+  const effectiveParticipantIds = showParticipants
+    ? sanitizedParticipantIds
+    : availablePersonIds
+  const birthdayOptions = showParticipants ? sanitizedParticipantIds : availablePersonIds
 
   const handleToggleParticipant = (id: string) => {
-    if (id === payerId) return
+    if (id === resolvedPayerId) return
     setParticipantIds((current) => {
       const next = current.includes(id)
         ? current.filter((item) => item !== id)
@@ -150,9 +157,8 @@ export function InvoiceSection({
     event.preventDefault()
     const trimmedDescription = description.trim()
     const numericAmount = Number(amount)
-    const effectiveParticipants = showParticipants
-      ? participantIds
-      : people.map((person) => person.id)
+    const effectiveParticipants = effectiveParticipantIds
+    const effectivePayerId = resolvedPayerId
 
     if (!trimmedDescription) {
       setError('La descripcion es obligatoria.')
@@ -162,7 +168,7 @@ export function InvoiceSection({
       setError('El monto debe ser mayor que 0.')
       return
     }
-    if (!payerId) {
+    if (!effectivePayerId) {
       setError('Debes seleccionar un pagador.')
       return
     }
@@ -226,7 +232,7 @@ export function InvoiceSection({
         invoiceId: editingInvoiceId,
         description: trimmedDescription,
         amount: numericAmount,
-        payerId,
+        payerId: effectivePayerId,
         participantIds: effectiveParticipants,
         divisionMethod,
         consumptions: consumptionPayload,
@@ -237,7 +243,7 @@ export function InvoiceSection({
       await onAdd({
         description: trimmedDescription,
         amount: numericAmount,
-        payerId,
+        payerId: effectivePayerId,
         participantIds: effectiveParticipants,
         divisionMethod,
         consumptions: consumptionPayload,
@@ -258,8 +264,11 @@ export function InvoiceSection({
   const participantShares = detailInvoice ? calculateShares(detailInvoice, people) : []
   const consumptionSum = useMemo(() => {
     if (divisionMethod !== 'consumption') return 0
-    return participantIds.reduce((acc, id) => acc + Number(consumptions[id] ?? 0), 0)
-  }, [divisionMethod, participantIds, consumptions])
+    return effectiveParticipantIds.reduce(
+      (acc, id) => acc + Number(consumptions[id] ?? 0),
+      0,
+    )
+  }, [divisionMethod, effectiveParticipantIds, consumptions])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -275,26 +284,6 @@ export function InvoiceSection({
       document.removeEventListener('click', handleClickOutside)
     }
   }, [])
-
-  useEffect(() => {
-    const ids = people.map((person) => person.id)
-    setConsumptions((current) => {
-      if (ids.length === 0) return {}
-      const next: Record<string, string> = {}
-      ids.forEach((id) => {
-        next[id] = current[id] ?? ''
-      })
-      return next
-    })
-    setParticipantIds((current) => {
-      if (!showParticipants || current.length === 0) return ids
-      return current.filter((id) => ids.includes(id))
-    })
-    setPayerId((current) => {
-      if (current && ids.includes(current)) return current
-      return ids[0]
-    })
-  }, [people, showParticipants])
 
   useEffect(() => {
     if (!showForm) return
@@ -395,7 +384,7 @@ export function InvoiceSection({
 
 
             <Select
-              value={payerId || undefined}
+              value={resolvedPayerId || undefined}
               onValueChange={setPayerId}
               disabled={people.length === 0}
             >
@@ -480,8 +469,8 @@ export function InvoiceSection({
                     </span>
                   ) : (
                     people.map((person) => {
-                      const checked = participantIds.includes(person.id)
-                      const isPayer = person.id === payerId
+                      const checked = sanitizedParticipantIds.includes(person.id)
+                      const isPayer = person.id === resolvedPayerId
                       return (
                         <MemberChip
                           key={person.id}
@@ -513,7 +502,7 @@ export function InvoiceSection({
                     </span>
                   </p>
                 </div>
-                {participantIds.length === 0 ? (
+                {effectiveParticipantIds.length === 0 ? (
                   <div className="rounded-lg border border-dashed border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4 text-center">
                     <p className="text-sm text-[color:var(--color-text-muted)]">
                       Selecciona al menos una persona para registrar su consumo.
@@ -521,7 +510,7 @@ export function InvoiceSection({
                   </div>
                 ) : (
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {participantIds.map((id) => (
+                    {effectiveParticipantIds.map((id) => (
                       <div
                         key={id}
                         className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-3 text-sm"
