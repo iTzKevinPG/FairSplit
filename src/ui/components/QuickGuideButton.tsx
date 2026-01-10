@@ -122,7 +122,7 @@ const eventSteps: GuideStepConfig[] = [
   {
     selector: '[data-tour="invoice-advanced-toggle"]',
     title: 'Opciones avanzadas',
-    description: 'Elige propina, cumpleanero, participantes o consumo.',
+    description: 'Elige propina, invitado especial, participantes o consumo.',
     requirement: 'none',
     tabId: 'invoices',
     mutationObservables: ['[data-tour-active-tab]'],

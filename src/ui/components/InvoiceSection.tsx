@@ -82,6 +82,9 @@ export function InvoiceSection({
   const [showConsumption, setShowConsumption] = useState(false)
 
   const totalAmount = invoices.reduce((acc, inv) => acc + inv.amount, 0)
+  const birthdayOptions = showParticipants
+    ? participantIds
+    : people.map((person) => person.id)
 
   const handleToggleParticipant = (id: string) => {
     if (id === payerId) return
@@ -274,6 +277,26 @@ export function InvoiceSection({
   }, [])
 
   useEffect(() => {
+    const ids = people.map((person) => person.id)
+    setConsumptions((current) => {
+      if (ids.length === 0) return {}
+      const next: Record<string, string> = {}
+      ids.forEach((id) => {
+        next[id] = current[id] ?? ''
+      })
+      return next
+    })
+    setParticipantIds((current) => {
+      if (!showParticipants || current.length === 0) return ids
+      return current.filter((id) => ids.includes(id))
+    })
+    setPayerId((current) => {
+      if (current && ids.includes(current)) return current
+      return ids[0]
+    })
+  }, [people, showParticipants])
+
+  useEffect(() => {
     if (!showForm) return
     const node = formRef.current
     if (!node) return
@@ -399,40 +422,50 @@ export function InvoiceSection({
             ) : null}
 
             {includeTip ? (
-              <div className="md:col-span-2 flex items-center">
-                <div className="flex w-full items-center rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-input)] focus-within:border-[color:var(--color-primary-main)] focus-within:ring-1 focus-within:ring-[color:var(--color-focus-ring)]">
-                  <span className="flex h-10 items-center rounded-l-md border border-[color:var(--color-border-subtle)] border-r-0 bg-[color:var(--color-surface-muted)] px-3 text-xs font-semibold text-[color:var(--color-text-muted)]">
-                    {currency}
-                  </span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="Propina"
-                    value={tipAmount}
-                    onChange={(e) => setTipAmount(e.target.value)}
-                    className="w-full appearance-none rounded-r-md border-0 bg-transparent px-3 text-sm text-[color:var(--color-text-main)] outline-none focus:outline-none focus-visible:ring-0"
-                  />
+              <div className="md:col-span-2 space-y-2">
+                <p className="text-xs font-semibold tracking-wide text-[color:var(--color-text-muted)]">
+                  Propina
+                </p>
+                <div className="flex items-center">
+                  <div className="flex w-full items-center rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-input)] focus-within:border-[color:var(--color-primary-main)] focus-within:ring-1 focus-within:ring-[color:var(--color-focus-ring)]">
+                    <span className="flex h-10 items-center rounded-l-md border border-[color:var(--color-border-subtle)] border-r-0 bg-[color:var(--color-surface-muted)] px-3 text-xs font-semibold text-[color:var(--color-text-muted)]">
+                      {currency}
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="Monto de la propina"
+                      value={tipAmount}
+                      onChange={(e) => setTipAmount(e.target.value)}
+                      className="w-full appearance-none rounded-r-md border-0 bg-transparent px-3 text-sm text-[color:var(--color-text-main)] outline-none focus:outline-none focus-visible:ring-0"
+                    />
+                  </div>
                 </div>
               </div>
             ) : null}
 
             {birthdayEnabled ? (
-              <Select
-                value={birthdayPersonId || undefined}
-                onValueChange={setBirthdayPersonId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona cumpleanero" />
-                </SelectTrigger>
-                <SelectContent data-tour-select-content>
-                  {participantIds.map((id) => (
-                    <SelectItem key={id} value={id}>
-                      {resolvePersonName(id, people)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <p className="text-xs font-semibold tracking-wide text-[color:var(--color-text-muted)]">
+                  Invitado especial
+                </p>
+                <Select
+                  value={birthdayPersonId || undefined}
+                  onValueChange={setBirthdayPersonId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona invitado especial" />
+                  </SelectTrigger>
+                  <SelectContent data-tour-select-content>
+                    {birthdayOptions.map((id) => (
+                      <SelectItem key={id} value={id}>
+                        {resolvePersonName(id, people)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             ) : null}
 
             {showParticipants ? (
@@ -569,7 +602,7 @@ export function InvoiceSection({
                         : 'text-[color:var(--color-text-muted)] hover:bg-[color:var(--color-surface-muted)]'
                     }`}
                   >
-                    Cumpleanero
+                    Invitado especial
                   </button>
                   <button
                     type="button"
