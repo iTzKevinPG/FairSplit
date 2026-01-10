@@ -36,7 +36,7 @@ type GuideStepConfig = {
 
 const mobileDockPosition: StepType['position'] = ({ windowWidth, windowHeight, height }) => {
   if (windowWidth <= 640) {
-    return [16, Math.max(16, windowHeight - height - 16)]
+    return 'bottom'
   }
   return 'bottom'
 }
@@ -52,6 +52,12 @@ const homeSteps: GuideStepConfig[] = [
     selector: '[data-tour="menu-button"]',
     title: 'Menu',
     description: 'Abre el menu para gestionar tu perfil y preferencias.',
+    requirement: 'none',
+  },
+  {
+    selector: '[data-tour="events-list"]',
+    title: 'Tus eventos',
+    description: 'Accede rapido a tus eventos recientes desde esta lista.',
     requirement: 'none',
   },
   {
@@ -191,7 +197,12 @@ const eventSteps: GuideStepConfig[] = [
 
 function hasVisibleSection(selector: string) {
   if (typeof document === 'undefined') return false
-  return Boolean(document.querySelector(selector))
+  const element = document.querySelector<HTMLElement>(selector)
+  if (!element) return false
+  if (element.getAttribute('aria-hidden') === 'true') return false
+  const style = window.getComputedStyle(element)
+  if (style.display === 'none' || style.visibility === 'hidden') return false
+  return element.getClientRects().length > 0
 }
 
 function getInputValue(selector: string) {
@@ -224,8 +235,6 @@ function GuideStepContent({
   const [activeTab, setActiveTab] = useState<string | null>(null)
   const lastAutoAdvanceRef = useRef<number | null>(null)
   const lastTabDispatchRef = useRef<string | null>(null)
-  const scrollRetryRef = useRef(0)
-  const pendingFocusRef = useRef<{ selector: string; tabId?: string } | null>(null)
   const pendingStepRef = useRef<number | null>(null)
   const pendingSelectorRef = useRef<string | null>(null)
   const pendingTabRef = useRef<string | null>(null)
@@ -342,58 +351,6 @@ function GuideStepContent({
     })
   }, [isOpen, requirementTick])
 
-  const runFocus = useCallback((selector: string) => {
-    scrollRetryRef.current = 0
-    const focusTarget = (target: Element) => {
-      if (selector.startsWith('[data-tour-tab')) {
-        const tabNav = target.closest('[data-tour="tab-nav"]')
-        if (tabNav instanceof HTMLElement) {
-          tabNav.scrollTo({ left: 0, behavior: 'smooth' })
-        }
-      }
-      window.requestAnimationFrame(() => {
-        target.scrollIntoView({
-          behavior: 'smooth',
-          block: 'nearest',
-          inline: 'center',
-        })
-        window.setTimeout(() => {
-          target.scrollIntoView({
-            behavior: 'smooth',
-            block: 'nearest',
-            inline: 'center',
-          })
-        }, 180)
-      })
-    }
-
-    const attemptScroll = () => {
-      const target = document.querySelector(selector)
-      if (!target) return false
-      focusTarget(target)
-      return true
-    }
-
-    if (attemptScroll()) return
-
-    const observer = new MutationObserver(() => {
-      if (attemptScroll()) {
-        observer.disconnect()
-      } else if (scrollRetryRef.current < 8) {
-        scrollRetryRef.current += 1
-      } else {
-        observer.disconnect()
-      }
-    })
-    observer.observe(document.body, { childList: true, subtree: true })
-    const timeoutId = window.setTimeout(() => observer.disconnect(), 1500)
-
-    window.setTimeout(() => {
-      observer.disconnect()
-      window.clearTimeout(timeoutId)
-    }, 1600)
-  }, [])
-
   const clearPendingStep = useCallback(() => {
     if (pendingTimeoutRef.current) {
       window.clearTimeout(pendingTimeoutRef.current)
@@ -431,41 +388,6 @@ function GuideStepContent({
     },
     [],
   )
-
-  useEffect(() => {
-    if (!isOpen) return
-    const selector = config.selector
-    if (!selector) return
-    if (config.tabId) {
-      pendingFocusRef.current = { selector, tabId: config.tabId }
-      const fallbackId = window.setTimeout(() => {
-        if (pendingFocusRef.current?.selector === selector) {
-          runFocus(selector)
-          pendingFocusRef.current = null
-        }
-      }, 600)
-      return () => window.clearTimeout(fallbackId)
-    }
-    runFocus(selector)
-  }, [config.selector, config.tabId, currentStep, isOpen, runFocus])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const handler = (event: Event) => {
-      if (!(event instanceof CustomEvent)) return
-      const tabId = event.detail?.tabId as string | undefined
-      if (!tabId) return
-      const pending = pendingFocusRef.current
-      if (!pending || pending.tabId !== tabId) return
-      if (!isOpen) return
-      runFocus(pending.selector)
-      pendingFocusRef.current = null
-    }
-    window.addEventListener('tour:tab-rendered', handler)
-    return () => {
-      window.removeEventListener('tour:tab-rendered', handler)
-    }
-  }, [isOpen, runFocus])
 
   const isLastStep = steps && currentStep === steps.length - 1
   const autoAdvance = config.requirement === 'event-created'
@@ -558,7 +480,12 @@ function GuideStepContent({
 
   return (
     <div className="space-y-3">
-      <div>
+      <div className="space-y-1">
+        {steps ? (
+          <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[color:var(--color-text-muted)]">
+            Paso {currentStep + 1} de {steps.length}
+          </p>
+        ) : null}
         <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
           {config.title}
         </p>

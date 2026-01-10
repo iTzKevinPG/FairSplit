@@ -1,26 +1,6 @@
-import { type PropsWithChildren, useEffect, useRef } from 'react'
-import { TourProvider, useTour } from '@reactour/tour'
+import { type PropsWithChildren } from 'react'
+import { TourProvider } from '@reactour/tour'
 import { Toaster as Sonner } from '../../shared/components/ui/sonner'
-
-function TourScrollLock() {
-  const { isOpen } = useTour()
-  const previousOverflow = useRef<string | null>(null)
-
-  useEffect(() => {
-    if (typeof document === 'undefined') return
-    if (isOpen) {
-      if (previousOverflow.current === null) {
-        previousOverflow.current = document.body.style.overflow || ''
-      }
-      document.body.style.overflow = 'hidden'
-    } else if (previousOverflow.current !== null) {
-      document.body.style.overflow = previousOverflow.current
-      previousOverflow.current = null
-    }
-  }, [isOpen])
-
-  return null
-}
 
 export function AppProviders({ children }: PropsWithChildren) {
   return (
@@ -65,7 +45,6 @@ export function AppProviders({ children }: PropsWithChildren) {
         }),
       }}
     >
-      <TourScrollLock />
       {children}
       <Sonner />
     </TourProvider>

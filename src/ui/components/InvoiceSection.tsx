@@ -267,7 +267,6 @@ export function InvoiceSection({
     const node = formRef.current
     if (!node) return
     const timeoutId = window.setTimeout(() => {
-      node.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }, 80)
     window.dispatchEvent(new CustomEvent('tour:invoice-form-open'))
     return () => window.clearTimeout(timeoutId)
