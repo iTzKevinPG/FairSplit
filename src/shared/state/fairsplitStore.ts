@@ -53,6 +53,34 @@ const personRepository = new InMemoryPersonRepository(eventRepository)
 const invoiceRepository = new InMemoryInvoiceRepository(eventRepository)
 let demoSeeded = false
 const loadedEventData = new Set<string>()
+const LOCAL_STORAGE_KEY = 'fairsplit_local_state'
+
+type LocalState = Pick<
+  FairSplitState,
+  'events' | 'selectedEventId' | 'transferStatusesByEvent' | 'hasSeededDemo'
+>
+
+function readLocalState(): LocalState | null {
+  if (typeof window === 'undefined') return null
+  const raw = window.localStorage.getItem(LOCAL_STORAGE_KEY)
+  if (!raw) return null
+  try {
+    return JSON.parse(raw) as LocalState
+  } catch {
+    return null
+  }
+}
+
+function writeLocalState(state: FairSplitState) {
+  if (typeof window === 'undefined') return
+  const payload: LocalState = {
+    events: state.events,
+    selectedEventId: state.selectedEventId,
+    transferStatusesByEvent: state.transferStatusesByEvent,
+    hasSeededDemo: state.hasSeededDemo,
+  }
+  window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(payload))
+}
 
 function getAuthToken(): string | null {
   return typeof window !== 'undefined'
@@ -204,6 +232,10 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
   hydrate: async () => {
     // Fetch event headers only; load details lazily per event to reduce calls.
     const token = getAuthToken()
+    const localState = token ? null : readLocalState()
+    const hasInMemoryEvents = get().events.length > 0
+    const shouldApplyLocalState = Boolean(localState) && !hasInMemoryEvents
+
     if (token) {
       try {
         const existing = await eventRepository.list()
@@ -233,13 +265,28 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
           console.warn('Falling back to local events; backend list failed', error)
         }
       }
+    } else if (shouldApplyLocalState && localState) {
+      const existing = await eventRepository.list()
+      await Promise.all(existing.map((event) => eventRepository.delete(event.id)))
+      loadedEventData.clear()
+      await Promise.all(localState.events.map((event) => eventRepository.save(event)))
     }
 
     const events = await eventRepository.list()
-    const selected = get().selectedEventId ?? events[0]?.id ?? undefined
+    const selected =
+      localState?.selectedEventId &&
+      events.some((event) => event.id === localState.selectedEventId)
+        ? localState.selectedEventId
+        : get().selectedEventId ?? events[0]?.id ?? undefined
     set({
       events,
       selectedEventId: selected,
+      transferStatusesByEvent: shouldApplyLocalState
+        ? localState?.transferStatusesByEvent ?? {}
+        : get().transferStatusesByEvent,
+      hasSeededDemo: shouldApplyLocalState
+        ? localState?.hasSeededDemo ?? false
+        : get().hasSeededDemo,
     })
 
     if (selected) {
@@ -706,6 +753,20 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
     })
   },
 }))
+
+if (typeof window !== 'undefined') {
+  let saveTimeout: number | null = null
+  useFairSplitStore.subscribe((state) => {
+    if (getAuthToken()) return
+    if (saveTimeout !== null) {
+      window.clearTimeout(saveTimeout)
+    }
+    saveTimeout = window.setTimeout(() => {
+      writeLocalState(state)
+      saveTimeout = null
+    }, 200)
+  })
+}
 
 function buildTransferStatusKey(fromPersonId: string, toPersonId: string) {
   return `${fromPersonId}::${toPersonId}`

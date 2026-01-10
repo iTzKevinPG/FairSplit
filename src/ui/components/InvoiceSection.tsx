@@ -1,8 +1,7 @@
 import { ChevronDown, ChevronUp, Edit2, Plus, Trash2 } from 'lucide-react'
 import { Badge } from '../../shared/components/ui/badge'
-import { type FormEvent, useMemo, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '../../shared/components/ui/button'
-import { Checkbox } from '../../shared/components/ui/checkbox'
 import { Input } from '../../shared/components/ui/input'
 import {
   Select,
@@ -51,6 +50,9 @@ export function InvoiceSection({
   onUpdate,
   onRemove,
 }: InvoiceSectionProps) {
+  const optionsMenuRef = useRef<HTMLDetailsElement | null>(null)
+  const formRef = useRef<HTMLDivElement | null>(null)
+  const [showForm, setShowForm] = useState(false)
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
   const [payerId, setPayerId] = useState<string | undefined>(
@@ -74,6 +76,8 @@ export function InvoiceSection({
   const [tipAmount, setTipAmount] = useState('')
   const [birthdayEnabled, setBirthdayEnabled] = useState(false)
   const [birthdayPersonId, setBirthdayPersonId] = useState<string>('')
+  const [showParticipants, setShowParticipants] = useState(false)
+  const [showConsumption, setShowConsumption] = useState(false)
 
   const totalAmount = invoices.reduce((acc, inv) => acc + inv.amount, 0)
 
@@ -106,10 +110,14 @@ export function InvoiceSection({
     setTipAmount('')
     setBirthdayEnabled(false)
     setBirthdayPersonId('')
+    setShowParticipants(false)
+    setShowConsumption(false)
     setEditingInvoiceId(null)
+    setShowForm(false)
   }
 
   const startEdit = (invoice: InvoiceForUI) => {
+    setShowForm(true)
     setEditingInvoiceId(invoice.id)
     setDescription(invoice.description)
     setAmount(String(invoice.amount))
@@ -118,10 +126,12 @@ export function InvoiceSection({
     const method =
       invoice.divisionMethod ?? (invoice.consumptions ? 'consumption' : 'equal')
     setDivisionMethod(method)
+    setShowConsumption(method === 'consumption')
     setIncludeTip(Boolean(invoice.tipAmount && invoice.tipAmount > 0))
     setTipAmount(invoice.tipAmount ? String(invoice.tipAmount) : '')
     setBirthdayEnabled(Boolean(invoice.birthdayPersonId))
     setBirthdayPersonId(invoice.birthdayPersonId ?? '')
+    setShowParticipants(true)
     setConsumptions(
       people.reduce<Record<string, string>>((acc, person) => {
         const value = invoice.consumptions?.[person.id]
@@ -237,6 +247,56 @@ export function InvoiceSection({
     return participantIds.reduce((acc, id) => acc + Number(consumptions[id] ?? 0), 0)
   }, [divisionMethod, participantIds, consumptions])
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const menu = optionsMenuRef.current
+      if (!menu || !menu.hasAttribute('open')) return
+      const target = event.target as Node
+      if (!menu.contains(target)) {
+        menu.removeAttribute('open')
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => {
+      document.removeEventListener('click', handleClickOutside)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!showForm) return
+    const node = formRef.current
+    if (!node) return
+    const timeoutId = window.setTimeout(() => {
+      node.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 80)
+    window.dispatchEvent(new CustomEvent('tour:invoice-form-open'))
+    return () => window.clearTimeout(timeoutId)
+  }, [showForm])
+
+  const closeOptionsMenu = () => {
+    optionsMenuRef.current?.removeAttribute('open')
+  }
+
+  const toggleConsumption = () => {
+    setShowConsumption((current) => {
+      const next = !current
+      setDivisionMethod(next ? 'consumption' : 'equal')
+      if (next) {
+        setShowParticipants(true)
+      }
+      if (!next) {
+        setConsumptions(
+          people.reduce<Record<string, string>>((acc, person) => {
+            acc[person.id] = ''
+            return acc
+          }, {}),
+        )
+        setError(null)
+      }
+      return next
+    })
+  }
+
   return (
     <SectionCard
       title="Gastos"
@@ -251,8 +311,30 @@ export function InvoiceSection({
       }
     >
       <div className="space-y-5">
-        <div className="animate-fade-in rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] p-4">
-          <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-4">
+        <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)]/80 px-4 py-3 text-sm text-[color:var(--color-text-muted)]">
+          Registra cada gasto con pagador, participantes y tipo de reparto. Puedes
+          incluir propina o invitado especial.
+        </div>
+
+        <div className="flex items-center justify-end">
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => setShowForm((current) => !current)}
+            data-tour="invoice-add"
+          >
+            <Plus className="h-4 w-4" />
+            {showForm ? 'Cerrar formulario' : 'Agregar gasto'}
+          </Button>
+        </div>
+
+        {showForm ? (
+          <div
+            className="animate-fade-in rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] p-4"
+            data-tour="invoice-form"
+            ref={formRef}
+          >
+            <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-4">
             <Input
               placeholder="Concepto del gasto"
               value={description}
@@ -261,92 +343,23 @@ export function InvoiceSection({
               data-tour="invoice-description"
             />
             <div className="flex items-center md:col-span-2">
-              <div className="flex h-10 items-center rounded-l-md border border-[color:var(--color-border-subtle)] border-r-0 bg-[color:var(--color-surface-muted)] px-3 text-xs font-semibold text-[color:var(--color-text-muted)]">
-                {currency}
+              <div className="flex w-full items-center rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-input)] focus-within:border-[color:var(--color-primary-main)] focus-within:ring-1 focus-within:ring-[color:var(--color-focus-ring)]">
+                <span className="flex h-10 items-center rounded-l-md border border-[color:var(--color-border-subtle)] border-r-0 bg-[color:var(--color-surface-muted)] px-3 text-xs font-semibold text-[color:var(--color-text-muted)]">
+                  {currency}
+                </span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Monto"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="w-full appearance-none rounded-r-md border-0 bg-transparent px-3 text-sm text-[color:var(--color-text-main)] outline-none focus:outline-none focus-visible:ring-0"
+                  data-tour="invoice-amount"
+                />
               </div>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="Monto"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="flex-1 rounded-l-none border-l-0 shadow-none"
-                data-tour="invoice-amount"
-              />
             </div>
 
-            <div className="md:col-span-4 flex flex-wrap items-center gap-4 text-sm text-[color:var(--color-text-muted)]">
-              <label className="flex items-center gap-2">
-                <Checkbox
-                  checked={includeTip}
-                  onCheckedChange={(value) => setIncludeTip(Boolean(value))}
-                  id="include-tip"
-                  disabled={people.length === 0}
-                />
-                <span>
-                  Agregar propina{' '}
-                  <span className="text-xs text-[color:var(--color-text-muted)]">
-                    (se distribuye entre participantes)
-                  </span>
-                </span>
-              </label>
-              <label className="flex items-center gap-2">
-                <Checkbox
-                  checked={birthdayEnabled}
-                  onCheckedChange={(value) => setBirthdayEnabled(Boolean(value))}
-                  id="birthday-toggle"
-                  disabled={participantIds.length === 0}
-                />
-                <span>
-                  Invitado especial{' '}
-                  <span className="text-xs text-[color:var(--color-text-muted)]">
-                    (redistribuir su consumo)
-                  </span>
-                </span>
-              </label>
-            </div>
-
-            <div className="md:col-span-4 grid gap-3 sm:grid-cols-2">
-              {includeTip ? (
-                <div className="flex items-center">
-                  <div className="flex h-10 items-center rounded-l-md border border-[color:var(--color-border-subtle)] border-r-0 bg-[color:var(--color-surface-muted)] px-3 text-xs font-semibold text-[color:var(--color-text-muted)] shadow-[var(--shadow-sm)]">
-                    {currency}
-                  </div>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="Propina"
-                    value={tipAmount}
-                    onChange={(e) => setTipAmount(e.target.value)}
-                    className="w-full rounded-l-none border-l-0 shadow-none"
-                  />
-                </div>
-              ) : (
-                <div className="hidden sm:block" aria-hidden="true" />
-              )}
-
-              {birthdayEnabled ? (
-                <Select
-                  value={birthdayPersonId || undefined}
-                  onValueChange={setBirthdayPersonId}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona invitado especial" />
-                  </SelectTrigger>
-                  <SelectContent data-tour-select-content>
-                    {participantIds.map((id) => (
-                      <SelectItem key={id} value={id}>
-                        {resolvePersonName(id, people)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <div className="hidden sm:block" aria-hidden="true" />
-              )}
-            </div>
 
             <Select
               value={payerId || undefined}
@@ -371,50 +384,80 @@ export function InvoiceSection({
               </SelectContent>
             </Select>
 
-            <Select
-              value={divisionMethod}
-              onValueChange={(value) => setDivisionMethod(value as 'equal' | 'consumption')}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent data-tour-select-content>
-                <SelectItem value="equal">Reparto equitativo</SelectItem>
-                <SelectItem value="consumption">Por consumo real</SelectItem>
-              </SelectContent>
-            </Select>
+            {(includeTip || birthdayEnabled || showParticipants || showConsumption) ? (
+              <span className="hidden" data-tour="invoice-advanced" />
+            ) : null}
 
-            <div className="md:col-span-4 space-y-2" data-tour="invoice-participants">
-              <p className="text-xs font-semibold tracking-wide text-[color:var(--color-text-muted)]">
-                Personas incluidas
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {people.length === 0 ? (
-                  <span className="text-sm text-[color:var(--color-text-muted)]">
-                    Agrega personas para asignar participantes.
+            {includeTip ? (
+              <div className="md:col-span-2 flex items-center">
+                <div className="flex w-full items-center rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-input)] focus-within:border-[color:var(--color-primary-main)] focus-within:ring-1 focus-within:ring-[color:var(--color-focus-ring)]">
+                  <span className="flex h-10 items-center rounded-l-md border border-[color:var(--color-border-subtle)] border-r-0 bg-[color:var(--color-surface-muted)] px-3 text-xs font-semibold text-[color:var(--color-text-muted)]">
+                    {currency}
                   </span>
-                ) : (
-                  people.map((person) => {
-                    const checked = participantIds.includes(person.id)
-                    const isPayer = person.id === payerId
-                    return (
-                      <MemberChip
-                        key={person.id}
-                        name={person.name}
-                        isPayer={isPayer}
-                        isSelected={checked}
-                        isEditable
-                        onToggle={
-                          isPayer ? undefined : () => handleToggleParticipant(person.id)
-                        }
-                      />
-                    )
-                  })
-                )}
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="Propina"
+                    value={tipAmount}
+                    onChange={(e) => setTipAmount(e.target.value)}
+                    className="w-full appearance-none rounded-r-md border-0 bg-transparent px-3 text-sm text-[color:var(--color-text-main)] outline-none focus:outline-none focus-visible:ring-0"
+                  />
+                </div>
               </div>
-            </div>
+            ) : null}
 
-            {divisionMethod === 'consumption' ? (
+            {birthdayEnabled ? (
+              <Select
+                value={birthdayPersonId || undefined}
+                onValueChange={setBirthdayPersonId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona cumpleanero" />
+                </SelectTrigger>
+                <SelectContent data-tour-select-content>
+                  {participantIds.map((id) => (
+                    <SelectItem key={id} value={id}>
+                      {resolvePersonName(id, people)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
+
+            {showParticipants ? (
+              <div className="md:col-span-4 space-y-2" data-tour="invoice-participants">
+                <p className="text-xs font-semibold tracking-wide text-[color:var(--color-text-muted)]">
+                  Personas incluidas
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {people.length === 0 ? (
+                    <span className="text-sm text-[color:var(--color-text-muted)]">
+                      Agrega personas para asignar participantes.
+                    </span>
+                  ) : (
+                    people.map((person) => {
+                      const checked = participantIds.includes(person.id)
+                      const isPayer = person.id === payerId
+                      return (
+                        <MemberChip
+                          key={person.id}
+                          name={person.name}
+                          isPayer={isPayer}
+                          isSelected={checked}
+                          isEditable
+                          onToggle={
+                            isPayer ? undefined : () => handleToggleParticipant(person.id)
+                          }
+                        />
+                      )
+                    })
+                  )}
+                </div>
+              </div>
+            ) : null}
+
+            {showConsumption ? (
               <div className="md:col-span-4 space-y-4">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-xs font-semibold tracking-wide text-[color:var(--color-text-muted)]">
@@ -451,7 +494,7 @@ export function InvoiceSection({
                             type="number"
                             min="0"
                             step="0.01"
-                            className="w-full rounded-r-md border-0 bg-transparent px-2 text-sm text-[color:var(--color-text-main)] outline-none"
+                            className="w-full appearance-none rounded-r-md border-0 bg-transparent px-2 text-sm text-[color:var(--color-text-main)] outline-none focus:outline-none focus-visible:ring-0"
                             data-testid={`consumption-${id}`}
                             value={consumptions[id] ?? ''}
                             onChange={(e) =>
@@ -472,6 +515,86 @@ export function InvoiceSection({
             {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
             <div className="md:col-span-4 flex flex-wrap items-center justify-end gap-3">
+              <details className="relative w-full sm:w-auto" ref={optionsMenuRef}>
+                <summary
+                  className="cursor-pointer list-none rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-1.5 text-xs font-semibold text-[color:var(--color-text-muted)] hover:border-[color:var(--color-primary-light)] hover:text-[color:var(--color-text-main)] sm:ml-auto sm:inline-flex"
+                  data-tour="invoice-advanced-toggle"
+                >
+                  Opciones
+                </summary>
+                <div className="absolute left-0 right-0 z-10 mt-2 w-full rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-2 shadow-md sm:left-auto sm:right-0 sm:w-52">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setIncludeTip((current) => {
+                        const next = !current
+                        if (!next) setTipAmount('')
+                        setError(null)
+                        closeOptionsMenu()
+                        return next
+                      })
+                    }
+                    className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-xs font-semibold ${
+                      includeTip
+                        ? 'bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-main)]'
+                        : 'text-[color:var(--color-text-muted)] hover:bg-[color:var(--color-surface-muted)]'
+                    }`}
+                  >
+                    Propina
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setBirthdayEnabled((current) => {
+                        const next = !current
+                        if (!next) setBirthdayPersonId('')
+                        setError(null)
+                        closeOptionsMenu()
+                        return next
+                      })
+                    }
+                    className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-xs font-semibold ${
+                      birthdayEnabled
+                        ? 'bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-main)]'
+                        : 'text-[color:var(--color-text-muted)] hover:bg-[color:var(--color-surface-muted)]'
+                    }`}
+                  >
+                    Cumpleanero
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowParticipants((current) => {
+                        const next = !current
+                        if (!next) setError(null)
+                        return next
+                      })
+                      closeOptionsMenu()
+                    }}
+                    className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-xs font-semibold ${
+                      showParticipants
+                        ? 'bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-main)]'
+                        : 'text-[color:var(--color-text-muted)] hover:bg-[color:var(--color-surface-muted)]'
+                    }`}
+                  >
+                    Participantes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      toggleConsumption()
+                      closeOptionsMenu()
+                    }}
+                    className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-xs font-semibold ${
+                      showConsumption
+                        ? 'bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-main)]'
+                        : 'text-[color:var(--color-text-muted)] hover:bg-[color:var(--color-surface-muted)]'
+                    }`}
+                  >
+                    Consumo
+                  </button>
+                </div>
+              </details>
               {editingInvoiceId ? (
                 <button
                   type="button"
@@ -492,6 +615,7 @@ export function InvoiceSection({
             </div>
           </form>
         </div>
+        ) : null}
 
         {editingInvoiceId ? (
           <div className="flex items-center justify-between text-xs text-[color:var(--color-text-muted)]">
@@ -503,7 +627,7 @@ export function InvoiceSection({
           {invoices.length === 0 ? (
             <div className="rounded-lg border border-dashed border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-6 text-center">
               <p className="text-sm text-[color:var(--color-text-muted)]">
-                Aun no has registrado gastos. Agrega la primera arriba.
+                Aun no has registrado gastos. Usa "Agregar gasto" para crear el primero.
               </p>
             </div>
           ) : (

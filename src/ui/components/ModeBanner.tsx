@@ -29,21 +29,21 @@ export function ModeBanner() {
   const titleClass =
     tone === 'success'
       ? 'text-[color:var(--color-accent-success)]'
-      : 'text-white'
+      : 'text-[color:var(--color-text-main)]'
   const messageClass =
     tone === 'success'
       ? 'text-[color:var(--color-text-muted)]'
-      : 'text-white'
+      : 'text-[color:var(--color-text-main)]'
 
   return (
     <div
-      className={`flex flex-col gap-2 rounded-md border px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between ${toneClasses}`}
+      className={`flex flex-col gap-2 rounded-md border px-4 py-3 text-sm shadow-sm sm:flex-row sm:items-center sm:justify-between ${toneClasses}`}
     >
       <div className={`flex items-center gap-2 font-semibold ${titleClass}`}>
         {tone === 'success' ? (
           <Cloud className="h-4 w-4 text-[color:var(--color-accent-success)]" />
         ) : (
-          <User className="h-4 w-4 text-white" />
+          <User className="h-4 w-4 text-[color:var(--color-accent-warning)]" />
         )}
         <span>{title}</span>
       </div>

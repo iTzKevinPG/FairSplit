@@ -91,29 +91,39 @@ export function EventSelector({
 
       <form
         onSubmit={handleCreate}
-        className="grid gap-3 rounded-xl border border-dashed border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)]/70 p-4 sm:grid-cols-[2fr_1fr_auto]"
+        className="grid gap-4 rounded-xl border border-dashed border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)]/70 p-4"
       >
-        <Input
-          placeholder="Nombre del evento (ej. Viaje a la playa)"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <Select value={currency} onValueChange={setCurrency}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent data-tour-select-content>
-            {currencyOptions.map((option) => (
-              <SelectItem key={option} value={option}>
-                {option}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button type="submit">
-          <Plus className="h-4 w-4" />
-          Crear evento
-        </Button>
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
+          <label className="grid gap-1 text-sm font-medium text-[color:var(--color-text-main)]">
+            Nombre del evento
+            <Input
+              placeholder="Ej. Viaje a la playa"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </label>
+          <label className="grid gap-1 text-sm font-medium text-[color:var(--color-text-main)]">
+            Moneda
+            <Select value={currency} onValueChange={setCurrency}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent data-tour-select-content>
+                {currencyOptions.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </label>
+        </div>
+        <div className="flex justify-end">
+          <Button type="submit">
+            <Plus className="h-4 w-4" />
+            Crear evento
+          </Button>
+        </div>
       </form>
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}

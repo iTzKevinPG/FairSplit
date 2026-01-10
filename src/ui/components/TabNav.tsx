@@ -15,7 +15,7 @@ interface TabNavProps {
 }
 
 export function TabNav({ tabs, activeTab, onTabChange, className }: TabNavProps) {
-  const baseClass = 'flex gap-2 overflow-x-auto pb-1'
+  const baseClass = 'no-scrollbar flex gap-2 overflow-x-auto pb-1'
   const wrapperClass = className ? `${baseClass} ${className}` : baseClass
 
   return (

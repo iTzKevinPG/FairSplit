@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 @import '@reactour/tour/dist/index.css';
 @tailwind base;
 @tailwind components;
@@ -5,47 +6,47 @@
 
 @layer base {
   :root {
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
-      sans-serif;
-    font-size: 17px;
+    font-family: 'Manrope', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-size: 16px;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 
     /* Color tokens */
-    --color-primary-main: #6d28d9;
-    --color-primary-dark: #4c1d95;
-    --color-primary-light: #6d28d9;
-    --color-primary-soft: #f3e8ff;
+    --color-primary-main: #0f766e;
+    --color-primary-dark: #115e59;
+    --color-primary-light: #14b8a6;
+    --color-primary-soft: #ccfbf1;
 
     --color-neutral-50: #f9fafb;
     --color-neutral-100: #f3f4f6;
     --color-neutral-200: #e5e7eb;
-    --color-neutral-500: #6b7280;
-    --color-neutral-700: #374151;
-    --color-neutral-900: #111827;
+    --color-neutral-500: #64748b;
+    --color-neutral-700: #334155;
+    --color-neutral-900: #0f172a;
 
     --color-accent-warning: #f59e0b;
     --color-accent-danger: #dc2626;
-    --color-accent-success: #16a34a;
+    --color-accent-success: #10b981;
     --color-accent-info: #0ea5e9;
 
     /* Semantic */
-    --color-app-bg: var(--color-neutral-50);
+    --color-app-bg: #f4f6fb;
     --color-surface-card: #ffffff;
-    --color-surface-muted: var(--color-neutral-100);
-    --color-surface-input: var(--color-surface-card);
-    --color-border-subtle: var(--color-neutral-200);
+    --color-surface-muted: #eef2f6;
+    --color-surface-input: #fdfdfd;
+    --color-border-subtle: #e1e6ef;
     --color-border-strong: var(--color-neutral-700);
     --color-text-main: var(--color-neutral-900);
     --color-text-muted: var(--color-neutral-500);
     --color-text-on-primary: #ffffff;
     --color-danger-bg: #fef2f2;
-    --color-warning-bg: var(--color-accent-warning);
-    --color-success-bg: #ecfdf3;
-    --color-info-bg: var(--color-accent-info);
+    --color-warning-bg: #fff4d6;
+    --color-success-bg: #ecfdf5;
+    --color-info-bg: #e0f2fe;
     --color-focus-ring: var(--color-primary-light);
+    --color-tour-mask: rgba(20, 184, 166, 0.2);
 
     /* Spacing */
     --space-xs: 4px;
@@ -67,7 +68,11 @@
   }
 
   body {
-    background: var(--color-app-bg);
+    background:
+      radial-gradient(circle at 12% 18%, rgba(45, 212, 191, 0.16), transparent 45%),
+      radial-gradient(circle at 88% 10%, rgba(14, 165, 233, 0.12), transparent 40%),
+      var(--color-app-bg);
+    background-attachment: fixed;
     color: var(--color-text-main);
     min-height: 100vh;
     font-family: inherit;
@@ -85,27 +90,56 @@
     outline-offset: 2px;
   }
 
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type='number'] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
   /* Dark theme overrides */
   [data-theme='dark'] {
-    --color-primary-main: #a855f7;
-    --color-primary-dark: #7c3aed;
-    --color-primary-light: #c084fc;
-    --color-primary-soft: #2f1b52;
+    --color-primary-main: #2dd4bf;
+    --color-primary-dark: #14b8a6;
+    --color-primary-light: #5eead4;
+    --color-primary-soft: #12353f;
 
-    --color-app-bg: #090e1a;
-    --color-surface-card: #121b2d;
-    --color-surface-muted: #162239;
-    --color-surface-input: #0d1526;
-    --color-border-subtle: #212c40;
+    --color-app-bg: #0b111b;
+    --color-surface-card: #0f1726;
+    --color-surface-muted: #111d33;
+    --color-surface-input: #0b1325;
+    --color-border-subtle: #1b2a40;
     --color-border-strong: var(--color-border-subtle);
     --color-text-main: #e2e8f0;
-    --color-text-muted: #cbd5e1;
-    --color-text-on-primary: #0b1020;
+    --color-text-muted: #94a3b8;
+    --color-text-on-primary: #07131b;
     --color-danger-bg: #2f1111;
     --color-warning-bg: #3b2a0f;
     --color-success-bg: #0f2f1c;
     --color-info-bg: #0b2c3b;
-    --color-focus-ring: #c084fc;
+    --color-focus-ring: var(--color-primary-light);
+    --color-tour-mask: rgba(45, 212, 191, 0.28);
+  }
+
+  [data-theme='dark'] .reactour__mask,
+  [data-theme='dark'] .reactour__mask path,
+  [data-theme='dark'] .reactour__mask--clickable,
+  [data-theme='dark'] .reactour__mask rect {
+    fill: rgba(20, 184, 166, 0.24) !important;
+  }
+
+  [data-theme='dark'] .reactour__mask,
+  [data-theme='dark'] .reactour__mask svg {
+    color: rgba(20, 184, 166, 0.24) !important;
+  }
+
+  [data-theme='dark'] .reactour__overlay,
+  [data-theme='dark'] .reactour__overlay--open {
+    background: rgba(6, 12, 22, 0.6) !important;
   }
 }
 
@@ -361,5 +395,15 @@
 
   .animate-accordion-up {
     animation: accordion-up 200ms ease-out;
+  }
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }

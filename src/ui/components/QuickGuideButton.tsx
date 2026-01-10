@@ -10,6 +10,8 @@ type RequirementKey =
   | 'event-created'
   | 'people-added'
   | 'invoice-added'
+  | 'invoice-form-open'
+  | 'invoice-advanced'
   | 'invoice-description'
   | 'invoice-amount'
   | 'tab-people'
@@ -25,23 +27,31 @@ type GuideStepConfig = {
   requirement: RequirementKey
   tabId?: 'people' | 'invoices' | 'summary' | 'transfers' | 'overview'
   bypassElem?: boolean
+  position?: StepType['position']
   highlightedSelectors?: string[]
   mutationObservables?: string[]
   resizeObservables?: string[]
   hint?: string
 }
 
+const mobileDockPosition: StepType['position'] = ({ windowWidth, windowHeight, height }) => {
+  if (windowWidth <= 640) {
+    return [16, Math.max(16, windowHeight - height - 16)]
+  }
+  return 'bottom'
+}
+
 const homeSteps: GuideStepConfig[] = [
   {
-    selector: '[data-tour="mode-banner"]',
-    title: 'Modo de uso',
-    description: 'Aqui ves si estas en modo invitado o con perfil activo.',
+    selector: '[data-tour="session-status"]',
+    title: 'Estado de sesion',
+    description: 'El icono indica si estas en modo local o con perfil activo.',
     requirement: 'none',
   },
   {
-    selector: '[data-tour="profile-card"]',
-    title: 'Tu perfil',
-    description: 'Activa tu perfil si quieres guardar los datos en la nube.',
+    selector: '[data-tour="menu-button"]',
+    title: 'Menu',
+    description: 'Abre el menu para gestionar tu perfil y preferencias.',
     requirement: 'none',
   },
   {
@@ -67,14 +77,27 @@ const eventSteps: GuideStepConfig[] = [
     requirement: 'people-added',
     tabId: 'people',
     hint: 'Agrega al menos dos integrantes para continuar.',
+    mutationObservables: ['[data-tour-active-tab]'],
+    resizeObservables: ['[data-tour-active-tab]'],
   },
   {
-    selector: '[data-tour-tab="invoices"]',
+    selector: '[data-tour="invoice-section"]',
     title: 'Gastos',
-    description: 'Abre la pestana de gastos para registrar un gasto.',
-    requirement: 'tab-invoices',
+    description: 'Aqui registras los gastos del grupo y quien pago cada uno.',
+    requirement: 'none',
     tabId: 'invoices',
-    hint: 'Cambia a la pestana Gastos para continuar.',
+    mutationObservables: ['[data-tour-active-tab]'],
+    resizeObservables: ['[data-tour-active-tab]'],
+  },
+  {
+    selector: '[data-tour="invoice-add"]',
+    title: 'Agregar gasto',
+    description: 'Abre el formulario para registrar un gasto.',
+    requirement: 'invoice-form-open',
+    tabId: 'invoices',
+    hint: 'Pulsa "Agregar gasto" para continuar.',
+    mutationObservables: ['[data-tour-active-tab]'],
+    resizeObservables: ['[data-tour-active-tab]'],
   },
   {
     selector: '[data-tour="invoice-description"]',
@@ -82,6 +105,8 @@ const eventSteps: GuideStepConfig[] = [
     description: 'Escribe el concepto del gasto.',
     requirement: 'invoice-description',
     tabId: 'invoices',
+    mutationObservables: ['[data-tour-active-tab]'],
+    resizeObservables: ['[data-tour-active-tab]'],
   },
   {
     selector: '[data-tour="invoice-amount"]',
@@ -89,6 +114,18 @@ const eventSteps: GuideStepConfig[] = [
     description: 'Ingresa el monto total del gasto.',
     requirement: 'invoice-amount',
     tabId: 'invoices',
+    mutationObservables: ['[data-tour-active-tab]'],
+    resizeObservables: ['[data-tour-active-tab]'],
+  },
+  {
+    selector: '[data-tour="invoice-advanced-toggle"]',
+    title: 'Opciones avanzadas',
+    description: 'Elige propina, cumpleanero, participantes o consumo.',
+    requirement: 'invoice-advanced',
+    tabId: 'invoices',
+    hint: 'Selecciona una opcion para continuar.',
+    mutationObservables: ['[data-tour-active-tab]'],
+    resizeObservables: ['[data-tour-active-tab]'],
   },
   {
     selector: '[data-tour="invoice-payer"]',
@@ -97,6 +134,8 @@ const eventSteps: GuideStepConfig[] = [
     requirement: 'none',
     tabId: 'invoices',
     bypassElem: true,
+    mutationObservables: ['[data-tour-active-tab]'],
+    resizeObservables: ['[data-tour-active-tab]'],
   },
   {
     selector: '[data-tour="invoice-participants"]',
@@ -105,6 +144,8 @@ const eventSteps: GuideStepConfig[] = [
     requirement: 'none',
     tabId: 'invoices',
     bypassElem: true,
+    mutationObservables: ['[data-tour-active-tab]'],
+    resizeObservables: ['[data-tour-active-tab]'],
   },
   {
     selector: '[data-tour="invoice-save"]',
@@ -113,8 +154,8 @@ const eventSteps: GuideStepConfig[] = [
     requirement: 'invoice-added',
     tabId: 'invoices',
     hint: 'Guarda el gasto para continuar.',
-    mutationObservables: ['[data-tour="invoice-section"]'],
-    resizeObservables: ['[data-tour="invoice-section"]'],
+    mutationObservables: ['[data-tour-active-tab]', '[data-tour="invoice-section"]'],
+    resizeObservables: ['[data-tour-active-tab]', '[data-tour="invoice-section"]'],
   },
   {
     selector: '[data-tour-tab="summary"]',
@@ -123,6 +164,8 @@ const eventSteps: GuideStepConfig[] = [
     requirement: 'tab-summary',
     tabId: 'summary',
     hint: 'Cambia a la pestana Resumen para continuar.',
+    mutationObservables: ['[data-tour-active-tab]'],
+    resizeObservables: ['[data-tour-active-tab]'],
   },
   {
     selector: '[data-tour-tab="transfers"]',
@@ -131,6 +174,8 @@ const eventSteps: GuideStepConfig[] = [
     requirement: 'tab-transfers',
     tabId: 'transfers',
     hint: 'Cambia a la pestana Transferencias para continuar.',
+    mutationObservables: ['[data-tour-active-tab]'],
+    resizeObservables: ['[data-tour-active-tab]'],
   },
   {
     selector: '[data-tour-tab="overview"]',
@@ -139,6 +184,8 @@ const eventSteps: GuideStepConfig[] = [
     requirement: 'tab-overview',
     tabId: 'overview',
     hint: 'Cambia a la pestana Vista general para continuar.',
+    mutationObservables: ['[data-tour-active-tab]'],
+    resizeObservables: ['[data-tour-active-tab]'],
   },
 ]
 
@@ -176,6 +223,14 @@ function GuideStepContent({
   const selectedEvent = useFairSplitStore((state) => state.getSelectedEvent())
   const [activeTab, setActiveTab] = useState<string | null>(null)
   const lastAutoAdvanceRef = useRef<number | null>(null)
+  const lastTabDispatchRef = useRef<string | null>(null)
+  const scrollRetryRef = useRef(0)
+  const pendingFocusRef = useRef<{ selector: string; tabId?: string } | null>(null)
+  const pendingStepRef = useRef<number | null>(null)
+  const pendingSelectorRef = useRef<string | null>(null)
+  const pendingTabRef = useRef<string | null>(null)
+  const pendingTimeoutRef = useRef<number | null>(null)
+  const pendingObserverRef = useRef<MutationObserver | null>(null)
   const peopleCount = selectedEvent?.people.length ?? 0
   const invoiceCount = selectedEvent?.invoices.length ?? 0
 
@@ -187,6 +242,14 @@ function GuideStepContent({
       setActiveTab(tabId)
     }
     window.addEventListener('tour:active-tab', handler)
+    if (typeof document !== 'undefined') {
+      const initialTab = document
+        .querySelector('[data-tour-active-tab]')
+        ?.getAttribute('data-tour-active-tab')
+      if (initialTab) {
+        setActiveTab(initialTab)
+      }
+    }
     return () => {
       window.removeEventListener('tour:active-tab', handler)
     }
@@ -241,6 +304,10 @@ function GuideStepContent({
         return peopleCount >= 2
       case 'invoice-added':
         return invoiceCount > 0
+      case 'invoice-form-open':
+        return hasVisibleSection('[data-tour="invoice-form"]')
+      case 'invoice-advanced':
+        return hasVisibleSection('[data-tour="invoice-advanced"]')
       case 'invoice-description': {
         const value = getInputValue('[data-tour="invoice-description"]')
         return value.trim().length > 0
@@ -275,12 +342,160 @@ function GuideStepContent({
     })
   }, [isOpen, requirementTick])
 
+  const runFocus = useCallback((selector: string) => {
+    scrollRetryRef.current = 0
+    const focusTarget = (target: Element) => {
+      if (selector.startsWith('[data-tour-tab')) {
+        const tabNav = target.closest('[data-tour="tab-nav"]')
+        if (tabNav instanceof HTMLElement) {
+          tabNav.scrollTo({ left: 0, behavior: 'smooth' })
+        }
+      }
+      window.requestAnimationFrame(() => {
+        target.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'center',
+        })
+        window.setTimeout(() => {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest',
+            inline: 'center',
+          })
+        }, 180)
+      })
+    }
+
+    const attemptScroll = () => {
+      const target = document.querySelector(selector)
+      if (!target) return false
+      focusTarget(target)
+      return true
+    }
+
+    if (attemptScroll()) return
+
+    const observer = new MutationObserver(() => {
+      if (attemptScroll()) {
+        observer.disconnect()
+      } else if (scrollRetryRef.current < 8) {
+        scrollRetryRef.current += 1
+      } else {
+        observer.disconnect()
+      }
+    })
+    observer.observe(document.body, { childList: true, subtree: true })
+    const timeoutId = window.setTimeout(() => observer.disconnect(), 1500)
+
+    window.setTimeout(() => {
+      observer.disconnect()
+      window.clearTimeout(timeoutId)
+    }, 1600)
+  }, [])
+
+  const clearPendingStep = useCallback(() => {
+    if (pendingTimeoutRef.current) {
+      window.clearTimeout(pendingTimeoutRef.current)
+    }
+    pendingTimeoutRef.current = null
+    pendingStepRef.current = null
+    pendingSelectorRef.current = null
+    pendingTabRef.current = null
+    pendingObserverRef.current?.disconnect()
+    pendingObserverRef.current = null
+  }, [])
+
+  const waitForSelector = useCallback(
+    (selector: string, onFound: () => void) => {
+      if (typeof document === 'undefined') {
+        onFound()
+        return
+      }
+      const existing = document.querySelector(selector)
+      if (existing) {
+        onFound()
+        return
+      }
+      pendingObserverRef.current?.disconnect()
+      const observer = new MutationObserver(() => {
+        const target = document.querySelector(selector)
+        if (target) {
+          observer.disconnect()
+          onFound()
+        }
+      })
+      pendingObserverRef.current = observer
+      observer.observe(document.body, { childList: true, subtree: true })
+      window.setTimeout(() => observer.disconnect(), 1500)
+    },
+    [],
+  )
+
+  useEffect(() => {
+    if (!isOpen) return
+    const selector = config.selector
+    if (!selector) return
+    if (config.tabId) {
+      pendingFocusRef.current = { selector, tabId: config.tabId }
+      const fallbackId = window.setTimeout(() => {
+        if (pendingFocusRef.current?.selector === selector) {
+          runFocus(selector)
+          pendingFocusRef.current = null
+        }
+      }, 600)
+      return () => window.clearTimeout(fallbackId)
+    }
+    runFocus(selector)
+  }, [config.selector, config.tabId, currentStep, isOpen, runFocus])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const handler = (event: Event) => {
+      if (!(event instanceof CustomEvent)) return
+      const tabId = event.detail?.tabId as string | undefined
+      if (!tabId) return
+      const pending = pendingFocusRef.current
+      if (!pending || pending.tabId !== tabId) return
+      if (!isOpen) return
+      runFocus(pending.selector)
+      pendingFocusRef.current = null
+    }
+    window.addEventListener('tour:tab-rendered', handler)
+    return () => {
+      window.removeEventListener('tour:tab-rendered', handler)
+    }
+  }, [isOpen, runFocus])
+
   const isLastStep = steps && currentStep === steps.length - 1
   const autoAdvance = config.requirement === 'event-created'
+  const autoAdvanceRequirements: RequirementKey[] = ['invoice-added', 'invoice-form-open']
 
   const handleStepChange = useCallback(
     (nextIndex: number) => {
       const target = steps?.[nextIndex] as (StepType & { tabId?: string }) | undefined
+      const selector = target?.selector as string | undefined
+      const resolvedActiveTab =
+        activeTab ??
+        document
+          .querySelector('[data-tour-active-tab]')
+          ?.getAttribute('data-tour-active-tab') ??
+        null
+      if (target?.tabId && selector && resolvedActiveTab && resolvedActiveTab !== target.tabId) {
+        clearPendingStep()
+        pendingStepRef.current = nextIndex
+        pendingSelectorRef.current = selector
+        pendingTabRef.current = target.tabId
+        window.dispatchEvent(
+          new CustomEvent('tour:go-tab', { detail: { tabId: target.tabId } }),
+        )
+        pendingTimeoutRef.current = window.setTimeout(() => {
+          if (pendingStepRef.current !== nextIndex) return
+          setCurrentStep(nextIndex)
+          clearPendingStep()
+        }, 1200)
+        return
+      }
       if (target?.tabId) {
         window.dispatchEvent(
           new CustomEvent('tour:go-tab', { detail: { tabId: target.tabId } }),
@@ -288,22 +503,58 @@ function GuideStepContent({
       }
       setCurrentStep(nextIndex)
     },
-    [setCurrentStep, steps],
+    [activeTab, clearPendingStep, currentStep, setCurrentStep, steps],
   )
 
   useEffect(() => {
-    if (
-      config.requirement !== 'invoice-added' ||
-      !requirementMet ||
-      !steps ||
-      currentStep >= steps.length - 1
-    ) {
-      return
-    }
+    if (!autoAdvanceRequirements.includes(config.requirement)) return
+    if (!requirementMet || !steps || currentStep >= steps.length - 1) return
     if (lastAutoAdvanceRef.current === currentStep) return
     lastAutoAdvanceRef.current = currentStep
     handleStepChange(currentStep + 1)
   }, [config.requirement, currentStep, requirementMet, steps, handleStepChange])
+
+  useEffect(() => {
+    if (!isOpen || !config.tabId) return
+    if (lastTabDispatchRef.current === config.tabId) return
+    window.dispatchEvent(new CustomEvent('tour:go-tab', { detail: { tabId: config.tabId } }))
+    lastTabDispatchRef.current = config.tabId
+  }, [config.tabId, currentStep, isOpen])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const handler = () => {
+      if (!isOpen) return
+      if (config.requirement !== 'invoice-form-open') return
+      if (!requirementMet) return
+      if (!steps || currentStep >= steps.length - 1) return
+      if (lastAutoAdvanceRef.current === currentStep) return
+      lastAutoAdvanceRef.current = currentStep
+      handleStepChange(currentStep + 1)
+    }
+    window.addEventListener('tour:invoice-form-open', handler)
+    return () => window.removeEventListener('tour:invoice-form-open', handler)
+  }, [config.requirement, currentStep, handleStepChange, isOpen, requirementMet, steps])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const handler = (event: Event) => {
+      if (!(event instanceof CustomEvent)) return
+      const tabId = event.detail?.tabId as string | undefined
+      if (!tabId || pendingTabRef.current !== tabId) return
+      const pendingIndex = pendingStepRef.current
+      const pendingSelector = pendingSelectorRef.current
+      if (pendingIndex === null || !pendingSelector) return
+      waitForSelector(pendingSelector, () => {
+        setCurrentStep(pendingIndex)
+        clearPendingStep()
+      })
+    }
+    window.addEventListener('tour:tab-rendered', handler)
+    return () => {
+      window.removeEventListener('tour:tab-rendered', handler)
+    }
+  }, [clearPendingStep, setCurrentStep, waitForSelector])
 
   return (
     <div className="space-y-3">
@@ -316,14 +567,14 @@ function GuideStepContent({
         </p>
       </div>
       {!requirementMet && config.hint ? (
-        <div className="rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-3 py-2 text-xs text-[color:var(--color-text-muted)]">
+        <div className="rounded-md border border-[color:var(--color-accent-warning)] bg-[color:var(--color-warning-bg)] px-3 py-2 text-xs font-semibold text-[color:var(--color-text-main)]">
           {config.hint}
         </div>
       ) : null}
       <div className="flex items-center justify-between gap-2">
         <button
           type="button"
-          className="text-xs font-semibold text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-main)]"
+          className="rounded-md border border-[color:var(--color-border-subtle)] px-2.5 py-1 text-xs font-semibold text-[color:var(--color-text-muted)] hover:border-[color:var(--color-primary-light)] hover:text-[color:var(--color-text-main)]"
           onClick={() => {
             setIsOpen(false)
             setMeta?.('')
@@ -378,6 +629,8 @@ export function QuickGuideButton() {
       'event-created',
       'people-added',
       'invoice-added',
+      'invoice-form-open',
+      'invoice-advanced',
       'tab-invoices',
       'tab-people',
       'tab-summary',
@@ -407,6 +660,7 @@ export function QuickGuideButton() {
         content: getStepContent(config),
         stepInteraction: interactive,
         bypassElem: config.bypassElem,
+        position: config.position ?? mobileDockPosition,
         highlightedSelectors: highlightedSelectors.length ? highlightedSelectors : undefined,
         mutationObservables: mutationObservables.length ? mutationObservables : undefined,
         resizeObservables: resizeObservables.length ? resizeObservables : undefined,
@@ -417,12 +671,13 @@ export function QuickGuideButton() {
 
   useEffect(() => {
     if (meta !== 'guided' || !setSteps) return
+    if (!isOpen) {
+      lastPathRef.current = location.pathname
+      return
+    }
     if (lastPathRef.current === location.pathname) return
     setSteps(steps)
     setCurrentStep(0)
-    if (!isOpen) {
-      setIsOpen(true)
-    }
     lastPathRef.current = location.pathname
   }, [isOpen, location.pathname, meta, setCurrentStep, setIsOpen, setSteps, steps])
 

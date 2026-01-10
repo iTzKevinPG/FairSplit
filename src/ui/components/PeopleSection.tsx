@@ -72,12 +72,15 @@ export function PeopleSection({
       description="Invita a las personas del grupo para asignar pagos y consumos."
       badge={people.length > 0 ? `${people.length} integrantes` : undefined}
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row">
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col gap-2 sm:flex-row sm:items-center sm:max-w-md"
+      >
         <Input
           placeholder="Nombre o alias"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="flex-1"
+          className="sm:flex-1"
         />
         <Button type="submit" variant="outline" size="sm" disabled={!name.trim()}>
           <UserPlus className="h-4 w-4" />

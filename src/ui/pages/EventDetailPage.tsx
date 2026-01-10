@@ -16,13 +16,17 @@ import { useEvents } from '../hooks/useEvents'
 import { BentoOverview } from '../components/BentoOverview'
 import { Footer } from '../components/Footer'
 import { InvoiceSection } from '../components/InvoiceSection'
-import { ModeBanner } from '../components/ModeBanner'
 import { PeopleSection } from '../components/PeopleSection'
 import { SummarySection } from '../components/SummarySection'
 import { TabNav } from '../components/TabNav'
-import { ThemeToggle } from '../components/ThemeToggle'
 import { TransfersSection } from '../components/TransfersSection'
 import { QuickGuideButton } from '../components/QuickGuideButton'
+import { ProfileModal } from '../components/ProfileModal'
+import {
+  SessionMenu,
+  SessionMenuButton,
+  SessionStatusPill,
+} from '../components/SessionMenu'
 import NotFoundPage from './NotFoundPage'
 
 const tabs = [
@@ -58,6 +62,8 @@ function EventDetailPage() {
   const [activeTab, setActiveTab] = useState<
     'people' | 'invoices' | 'summary' | 'transfers' | 'overview'
   >('people')
+  const [showProfile, setShowProfile] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
     void loadEvents()
@@ -86,6 +92,12 @@ function EventDetailPage() {
     window.dispatchEvent(
       new CustomEvent('tour:active-tab', { detail: { tabId: activeTab } }),
     )
+    const timeoutId = window.setTimeout(() => {
+      window.dispatchEvent(
+        new CustomEvent('tour:tab-rendered', { detail: { tabId: activeTab } }),
+      )
+    }, 120)
+    return () => window.clearTimeout(timeoutId)
   }, [activeTab])
 
   useEffect(() => {
@@ -145,6 +157,15 @@ function EventDetailPage() {
 
   return (
     <div className="min-h-screen bg-[color:var(--color-app-bg)]">
+      <SessionMenu
+        isOpen={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        onOpenProfile={() => setShowProfile(true)}
+        backLink={{ href: '/', label: 'Volver a eventos' }}
+      />
+
+      <ProfileModal isOpen={showProfile} onClose={() => setShowProfile(false)} />
+
       <header className="sticky top-0 z-40 border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-app-bg)]/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
           <div className="flex items-center gap-3">
@@ -164,7 +185,8 @@ function EventDetailPage() {
               <span className="hidden sm:inline">Volver a eventos</span>
             </Link>
             <QuickGuideButton />
-            <ThemeToggle />
+            <SessionStatusPill />
+            <SessionMenuButton onClick={() => setMenuOpen((prev) => !prev)} />
           </div>
         </div>
       </header>
@@ -180,106 +202,119 @@ function EventDetailPage() {
           <h1 className="text-3xl font-semibold text-[color:var(--color-text-main)] sm:text-4xl">
             {selectedEvent.name}
           </h1>
-          <div className="flex flex-wrap items-center gap-3 text-sm text-[color:var(--color-text-muted)]">
-            <span className="inline-flex items-center gap-1">
-              Moneda:
-              <Badge variant="outline">{selectedEvent.currency}</Badge>
+          <div className="flex flex-wrap gap-2 text-xs text-[color:var(--color-text-muted)]">
+            <span className="rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-3 py-1">
+              Moneda: <span className="font-semibold text-[color:var(--color-text-main)]">{selectedEvent.currency}</span>
             </span>
-            <span>Integrantes: {selectedEvent.people.length}</span>
-            <span>Gastos: {selectedEvent.invoices.length}</span>
+            <span className="rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-3 py-1">
+              Integrantes: <span className="font-semibold text-[color:var(--color-text-main)]">{selectedEvent.people.length}</span>
+            </span>
+            <span className="rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-3 py-1">
+              Gastos: <span className="font-semibold text-[color:var(--color-text-main)]">{selectedEvent.invoices.length}</span>
+            </span>
           </div>
         </section>
-
-        <ModeBanner />
 
         <div data-tour="tab-nav">
           <TabNav
             tabs={tabs}
             activeTab={activeTab}
-            onTabChange={(tabId) => setActiveTab(tabId as typeof activeTab)}
+            onTabChange={(tabId) => {
+              setActiveTab(tabId as typeof activeTab)
+            }}
           />
         </div>
 
-        {activeTab === 'people' && (
-          <div data-tour="people-section">
-            <PeopleSection
-              people={selectedEvent.people}
-              onAdd={async (name) => {
-                await addPerson({ name })
-              }}
-              onRemove={async (personId) => {
-                await removePerson({ personId })
-              }}
-              onEdit={async (personId, name) => {
-                await updatePerson({ personId, name })
-              }}
-            />
-          </div>
-        )}
+        <div
+          data-tour="people-section"
+          className={activeTab === 'people' ? 'block' : 'hidden'}
+          aria-hidden={activeTab !== 'people'}
+        >
+          <PeopleSection
+            people={selectedEvent.people}
+            onAdd={async (name) => {
+              await addPerson({ name })
+            }}
+            onRemove={async (personId) => {
+              await removePerson({ personId })
+            }}
+            onEdit={async (personId, name) => {
+              await updatePerson({ personId, name })
+            }}
+          />
+        </div>
 
-        {activeTab === 'invoices' && (
-          <div data-tour="invoice-section">
-            <InvoiceSection
-              invoices={selectedEvent.invoices}
-              people={selectedEvent.people}
-              currency={selectedEvent.currency}
-              onAdd={async (invoice) => {
-                await addInvoice(invoice)
-              }}
-              onUpdate={async (invoice) => {
-                await updateInvoice(invoice)
-              }}
-              onRemove={async (invoiceId) => {
-                await removeInvoice({ invoiceId })
-              }}
-            />
-          </div>
-        )}
+        <div
+          data-tour="invoice-section"
+          className={activeTab === 'invoices' ? 'block' : 'hidden'}
+          aria-hidden={activeTab !== 'invoices'}
+        >
+          <InvoiceSection
+            invoices={selectedEvent.invoices}
+            people={selectedEvent.people}
+            currency={selectedEvent.currency}
+            onAdd={async (invoice) => {
+              await addInvoice(invoice)
+            }}
+            onUpdate={async (invoice) => {
+              await updateInvoice(invoice)
+            }}
+            onRemove={async (invoiceId) => {
+              await removeInvoice({ invoiceId })
+            }}
+          />
+        </div>
 
-        {activeTab === 'summary' && (
-          <div data-tour="summary-section">
-            <SummarySection
-              balances={balances}
-              people={selectedEvent.people}
-              currency={selectedEvent.currency}
-              tipTotal={tipTotal}
-            />
-          </div>
-        )}
+        <div
+          data-tour="summary-section"
+          className={activeTab === 'summary' ? 'block' : 'hidden'}
+          aria-hidden={activeTab !== 'summary'}
+        >
+          <SummarySection
+            balances={balances}
+            people={selectedEvent.people}
+            currency={selectedEvent.currency}
+            tipTotal={tipTotal}
+          />
+        </div>
 
-        {activeTab === 'transfers' && (
-          <div data-tour="transfers-section">
-            <TransfersSection
-              transfers={transfers}
-              people={selectedEvent.people}
-              currency={selectedEvent.currency}
-              tipTotal={tipTotal}
-              transferStatusMap={transferStatusMap}
-              onToggleStatus={(transfer, isSettled) => {
-                void setTransferStatus({
-                  eventId: selectedEvent.id,
-                  fromPersonId: transfer.fromPersonId,
-                  toPersonId: transfer.toPersonId,
-                  isSettled,
-                })
-              }}
-            />
-          </div>
-        )}
+        <div
+          data-tour="transfers-section"
+          className={activeTab === 'transfers' ? 'block' : 'hidden'}
+          aria-hidden={activeTab !== 'transfers'}
+        >
+          <TransfersSection
+            transfers={transfers}
+            people={selectedEvent.people}
+            currency={selectedEvent.currency}
+            tipTotal={tipTotal}
+            transferStatusMap={transferStatusMap}
+            onToggleStatus={(transfer, isSettled) => {
+              void setTransferStatus({
+                eventId: selectedEvent.id,
+                fromPersonId: transfer.fromPersonId,
+                toPersonId: transfer.toPersonId,
+                isSettled,
+              })
+            }}
+          />
+        </div>
 
-        {activeTab === 'overview' && (
-          <div data-tour="overview-section">
-            <BentoOverview
-              people={selectedEvent.people}
-              invoices={selectedEvent.invoices}
-              balances={balances}
-              transfers={transfers}
-              currency={selectedEvent.currency}
-              transferStatusMap={transferStatusMap}
-              settledByPersonId={settledByPersonId}
-            />
-          </div>
-        )}
+        <div
+          data-tour="overview-section"
+          className={activeTab === 'overview' ? 'block' : 'hidden'}
+          aria-hidden={activeTab !== 'overview'}
+        >
+          <BentoOverview
+            people={selectedEvent.people}
+            invoices={selectedEvent.invoices}
+            balances={balances}
+            transfers={transfers}
+            currency={selectedEvent.currency}
+            transferStatusMap={transferStatusMap}
+            settledByPersonId={settledByPersonId}
+          />
+        </div>
       </main>
 
       <Footer />
