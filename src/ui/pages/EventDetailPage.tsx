@@ -44,7 +44,7 @@ const tabs = [
 function EventDetailPage() {
   const { eventId } = useParams<{ eventId: string }>()
   const navigate = useNavigate()
-  const { events, loadEvents, selectEvent } = useEvents()
+  const { events, selectEvent, loadEventDetailsForList } = useEvents()
   const {
     addPerson,
     removePerson,
@@ -66,8 +66,9 @@ function EventDetailPage() {
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
-    void loadEvents()
-  }, [loadEvents])
+    if (!eventId) return
+    void loadEventDetailsForList([eventId])
+  }, [eventId, loadEventDetailsForList])
 
   useEffect(() => {
     const handler = (event: Event) => {
@@ -327,6 +328,7 @@ function EventDetailPage() {
           aria-hidden={activeTab !== 'overview'}
         >
           <BentoOverview
+            eventId={selectedEvent.id}
             people={selectedEvent.people}
             invoices={selectedEvent.invoices}
             balances={balances}

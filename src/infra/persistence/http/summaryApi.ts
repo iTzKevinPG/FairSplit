@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '../../config/api';
+import { withLoading } from './withLoading';
 
 export type ApiSummaryItem = {
   participantId: string;
@@ -24,20 +25,22 @@ function buildHeaders() {
 }
 
 export async function getSummaryApi(eventId: string): Promise<ApiSummaryItem[]> {
-  const response = await fetch(`${API_BASE_URL}/events/${eventId}/summary`, {
-    method: 'GET',
-    headers: buildHeaders()
+  return withLoading(async () => {
+    const response = await fetch(`${API_BASE_URL}/events/${eventId}/summary`, {
+      method: 'GET',
+      headers: buildHeaders()
+    });
+    if (response.status === 401) {
+      throw new Error('UNAUTHORIZED')
+    }
+    if (response.status === 404) {
+      throw new Error('Event not found');
+    }
+    if (!response.ok) {
+      throw new Error('Failed to fetch summary');
+    }
+    return response.json();
   });
-  if (response.status === 401) {
-    throw new Error('UNAUTHORIZED')
-  }
-  if (response.status === 404) {
-    throw new Error('Event not found');
-  }
-  if (!response.ok) {
-    throw new Error('Failed to fetch summary');
-  }
-  return response.json();
 }
 
 export type ApiTransferItem = {
@@ -49,18 +52,20 @@ export type ApiTransferItem = {
 };
 
 export async function getTransfersApi(eventId: string): Promise<ApiTransferItem[]> {
-  const response = await fetch(`${API_BASE_URL}/events/${eventId}/transfers`, {
-    method: 'GET',
-    headers: buildHeaders()
+  return withLoading(async () => {
+    const response = await fetch(`${API_BASE_URL}/events/${eventId}/transfers`, {
+      method: 'GET',
+      headers: buildHeaders()
+    });
+    if (response.status === 401) {
+      throw new Error('UNAUTHORIZED')
+    }
+    if (response.status === 404) {
+      throw new Error('Event not found');
+    }
+    if (!response.ok) {
+      throw new Error('Failed to fetch transfers');
+    }
+    return response.json();
   });
-  if (response.status === 401) {
-    throw new Error('UNAUTHORIZED')
-  }
-  if (response.status === 404) {
-    throw new Error('Event not found');
-  }
-  if (!response.ok) {
-    throw new Error('Failed to fetch transfers');
-  }
-  return response.json();
 }

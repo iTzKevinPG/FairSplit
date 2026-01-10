@@ -1,0 +1,164 @@
+import { ArrowLeft, Wallet } from 'lucide-react'
+import { useEffect, useMemo } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Badge } from '../../shared/components/ui/badge'
+import { buttonVariants } from '../../shared/components/ui/button'
+import { useFairSplitStore } from '../../shared/state/fairsplitStore'
+import { BentoOverview } from '../components/BentoOverview'
+import { Footer } from '../components/Footer'
+import { useEvents } from '../hooks/useEvents'
+import NotFoundPage from './NotFoundPage'
+
+function EventOverviewPage() {
+  const { eventId } = useParams<{ eventId: string }>()
+  const navigate = useNavigate()
+  const { events, loadEvents, selectEvent } = useEvents()
+  const {
+    getBalances,
+    getTransfers,
+    getSelectedEvent,
+    transferStatusesByEvent,
+  } = useFairSplitStore()
+
+  useEffect(() => {
+    void loadEvents()
+  }, [loadEvents])
+
+  useEffect(() => {
+    if (eventId) {
+      selectEvent(eventId)
+    }
+  }, [eventId, selectEvent, events.length])
+
+  useEffect(() => {
+    if (eventId && events.length > 0 && !getSelectedEvent()) {
+      navigate('/', { replace: true })
+    }
+  }, [eventId, events.length, getSelectedEvent, navigate])
+
+  const selectedEvent = getSelectedEvent()
+  const balances = useMemo(
+    () => (selectedEvent ? getBalances() : []),
+    [getBalances, selectedEvent],
+  )
+  const transfers = useMemo(
+    () => (selectedEvent ? getTransfers() : []),
+    [getTransfers, selectedEvent],
+  )
+  const transferStatusMap = useMemo(() => {
+    if (!selectedEvent) return {}
+    return transferStatusesByEvent[selectedEvent.id] ?? {}
+  }, [selectedEvent, transferStatusesByEvent])
+  const tipTotal = useMemo(
+    () =>
+      selectedEvent?.invoices.reduce(
+        (acc, invoice) => acc + (invoice.tipAmount ?? 0),
+        0,
+      ) ?? 0,
+    [selectedEvent],
+  )
+  const settledByPersonId = useMemo(() => {
+    if (!selectedEvent) return {}
+    const netByPersonId = new Map<string, number>()
+    balances.forEach((balance) => {
+      netByPersonId.set(balance.personId, balance.net)
+    })
+
+    const totals = new Map<string, { total: number; settled: number }>()
+    transfers.forEach((transfer) => {
+      const key = `${transfer.fromPersonId}::${transfer.toPersonId}`
+      const isSettled = Boolean(transferStatusMap[key]?.isSettled)
+      const fromEntry = totals.get(transfer.fromPersonId) ?? { total: 0, settled: 0 }
+      fromEntry.total += 1
+      if (isSettled) fromEntry.settled += 1
+      totals.set(transfer.fromPersonId, fromEntry)
+
+      const toEntry = totals.get(transfer.toPersonId) ?? { total: 0, settled: 0 }
+      toEntry.total += 1
+      if (isSettled) toEntry.settled += 1
+      totals.set(transfer.toPersonId, toEntry)
+    })
+
+    const result: Record<string, boolean> = {}
+    selectedEvent.people.forEach((person) => {
+      const net = netByPersonId.get(person.id) ?? 0
+      if (Math.abs(net) < 0.01) {
+        result[person.id] = true
+        return
+      }
+      const entry = totals.get(person.id)
+      if (!entry || entry.total === 0) {
+        result[person.id] = false
+        return
+      }
+      result[person.id] = entry.settled === entry.total
+    })
+    return result
+  }, [balances, selectedEvent, transfers, transferStatusMap])
+
+  if (!eventId || !selectedEvent) {
+    return <NotFoundPage />
+  }
+
+  return (
+    <div className="min-h-screen bg-[color:var(--color-app-bg)]">
+      <header className="sticky top-0 z-40 border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-app-bg)]/95 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[color:var(--color-primary-main)] text-[color:var(--color-text-on-primary)]">
+              <Wallet className="h-5 w-5" />
+            </div>
+            <span className="text-lg font-semibold text-[color:var(--color-text-main)]">
+              FairSplit
+            </span>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto flex max-w-5xl flex-1 flex-col gap-6 px-6 py-10">
+        <section className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[color:var(--color-primary-main)]">
+            Vista general
+          </p>
+          <h1 className="text-3xl font-semibold text-[color:var(--color-text-main)] sm:text-4xl">
+            {selectedEvent.name}
+          </h1>
+          <div className="flex flex-wrap gap-2 text-xs text-[color:var(--color-text-muted)]">
+            <span className="rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-3 py-1">
+              Moneda:{' '}
+              <span className="font-semibold text-[color:var(--color-text-main)]">
+                {selectedEvent.currency}
+              </span>
+            </span>
+            <Badge variant="outline" className="text-[10px] font-semibold">
+              Integrantes: {selectedEvent.people.length}
+            </Badge>
+            <Badge variant="outline" className="text-[10px] font-semibold">
+              Gastos: {selectedEvent.invoices.length}
+            </Badge>
+            {tipTotal > 0 ? (
+              <Badge variant="outline" className="text-[10px] font-semibold">
+                Propina: {selectedEvent.currency} {tipTotal.toFixed(2)}
+              </Badge>
+            ) : null}
+          </div>
+        </section>
+
+        <BentoOverview
+          eventId={selectedEvent.id}
+          people={selectedEvent.people}
+          invoices={selectedEvent.invoices}
+          balances={balances}
+          transfers={transfers}
+          currency={selectedEvent.currency}
+          transferStatusMap={transferStatusMap}
+          settledByPersonId={settledByPersonId}
+        />
+      </main>
+
+      <Footer />
+    </div>
+  )
+}
+
+export default EventOverviewPage

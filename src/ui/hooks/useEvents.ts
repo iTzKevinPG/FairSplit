@@ -10,12 +10,15 @@ export function useEvents() {
     selectEvent,
     createEvent,
     loadEventDetailsForList,
+    isEventLoaded,
   } = useFairSplitStore()
-    useFairSplitStore()
 
-  const loadEvents = useCallback(async () => {
-    await hydrate()
-  }, [hydrate])
+  const loadEvents = useCallback(
+    async (options?: { loadDetails?: boolean }) => {
+      await hydrate(options)
+    },
+    [hydrate],
+  )
 
   const createAndSelect = useCallback(
     async (input: CreateEventInput) => {
@@ -34,5 +37,6 @@ export function useEvents() {
     selectEvent,
     createAndSelect,
     loadEventDetailsForList,
+    isEventLoaded,
   }
 }

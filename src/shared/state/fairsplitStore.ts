@@ -39,7 +39,6 @@ import {
 } from '../../infra/persistence/http/participantApi'
 import {
   createInvoiceApi,
-  getInvoiceApi,
   listInvoicesApi,
   updateInvoiceApi,
 } from '../../infra/persistence/http/invoiceApi'
@@ -53,6 +52,7 @@ const personRepository = new InMemoryPersonRepository(eventRepository)
 const invoiceRepository = new InMemoryInvoiceRepository(eventRepository)
 let demoSeeded = false
 const loadedEventData = new Set<string>()
+const loadingEventData = new Set<string>()
 const LOCAL_STORAGE_KEY = 'fairsplit_local_state'
 
 type LocalState = Pick<
@@ -185,7 +185,7 @@ interface FairSplitState {
   selectedEventId?: EventId
   hasSeededDemo: boolean
   transferStatusesByEvent: Record<string, Record<string, TransferStatus>>
-  hydrate: () => Promise<void>
+  hydrate: (options?: { loadDetails?: boolean }) => Promise<void>
   seedDemoData: () => Promise<void>
   selectEvent: (eventId: EventId) => Promise<void>
   createEvent: (input: CreateEventInput) => Promise<Event | undefined>
@@ -209,6 +209,7 @@ interface FairSplitState {
   getBalances: () => Balance[]
   getTransfers: () => SettlementTransfer[]
   getTransferStatusMap: (eventId: EventId) => Record<string, TransferStatus>
+  isEventLoaded: (eventId: EventId) => boolean
   loadTransferStatuses: (eventId: EventId) => Promise<void>
   loadEventDetailsForList: (eventIds: EventId[]) => Promise<void>
   setTransferStatus: (input: {
@@ -229,7 +230,7 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
   selectedEventId: undefined,
   hasSeededDemo: false,
   transferStatusesByEvent: {},
-  hydrate: async () => {
+  hydrate: async (options) => {
     // Fetch event headers only; load details lazily per event to reduce calls.
     const token = getAuthToken()
     const localState = token ? null : readLocalState()
@@ -249,6 +250,8 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
             currency: apiEvent.currency,
             people: [],
             invoices: [],
+            peopleCount: apiEvent.peopleCount,
+            invoiceCount: apiEvent.invoiceCount,
           })
         })
       } catch (error) {
@@ -273,11 +276,16 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
     }
 
     const events = await eventRepository.list()
+    const selectedFromLocal = localState?.selectedEventId
+    const selectedFromState = get().selectedEventId
     const selected =
-      localState?.selectedEventId &&
-      events.some((event) => event.id === localState.selectedEventId)
-        ? localState.selectedEventId
-        : get().selectedEventId ?? events[0]?.id ?? undefined
+      (selectedFromLocal &&
+        events.some((event) => event.id === selectedFromLocal)
+        ? selectedFromLocal
+        : selectedFromState &&
+          events.some((event) => event.id === selectedFromState)
+        ? selectedFromState
+        : events[0]?.id) ?? undefined
     set({
       events,
       selectedEventId: selected,
@@ -289,7 +297,7 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
         : get().hasSeededDemo,
     })
 
-    if (selected) {
+    if (selected && (options?.loadDetails ?? true)) {
       void loadEventData(selected, set)
       if (token) {
         void get().loadTransferStatuses(selected)
@@ -615,6 +623,7 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
   getTransferStatusMap: (eventId: EventId) => {
     return get().transferStatusesByEvent[eventId] ?? {}
   },
+  isEventLoaded: (eventId: EventId) => loadedEventData.has(eventId),
   loadTransferStatuses: async (eventId: EventId) => {
     const token = await ensureAuthOrRedirect()
     if (!token) return
@@ -776,8 +785,13 @@ async function loadEventData(
   eventId: EventId,
   setFn: StoreApi<FairSplitState>['setState'],
 ) {
+  if (loadedEventData.has(eventId) || loadingEventData.has(eventId)) {
+    return
+  }
+  loadingEventData.add(eventId)
   const token = getAuthToken()
   if (!token) {
+    loadingEventData.delete(eventId)
     return
   }
   try {
@@ -791,20 +805,6 @@ async function loadEventData(
         return null
       }),
     ])
-
-    const detailedInvoices =
-      invoices !== null
-        ? await Promise.all(
-            invoices.map(async (inv) => {
-              try {
-                return await getInvoiceApi(eventId, inv.id)
-              } catch (error) {
-                console.warn(`Failed to fetch invoice ${inv.id} detail`, error)
-                return null
-              }
-            }),
-          )
-        : null
 
     const existing = await eventRepository.getById(eventId)
     const current: Event =
@@ -820,8 +820,8 @@ async function loadEventData(
       participants?.map((p) => ({ id: p.id, name: p.name })) ?? current.people
 
     const mappedInvoices =
-      detailedInvoices
-        ?.filter((d): d is NonNullable<typeof d> => Boolean(d))
+      invoices
+        ?.filter((det): det is NonNullable<typeof det> => Boolean(det))
         .map((det) => {
           const consumptions = det.participations.reduce<Record<string, number>>((acc, p) => {
             acc[p.participantId] = p.baseAmount
@@ -854,6 +854,8 @@ async function loadEventData(
     loadedEventData.add(eventId)
   } catch (error) {
     console.warn(`Failed to load event data for ${eventId}`, error)
+  } finally {
+    loadingEventData.delete(eventId)
   }
 }
 

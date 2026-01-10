@@ -16,6 +16,13 @@ const router = createBrowserRouter([
     },
   },
   {
+    path: '/events/:eventId/overview',
+    lazy: async () => {
+      const { default: EventOverviewPage } = await import('../../ui/pages/EventOverviewPage')
+      return { Component: EventOverviewPage }
+    },
+  },
+  {
     path: '*',
     lazy: async () => {
       const { default: NotFoundPage } = await import('../../ui/pages/NotFoundPage')

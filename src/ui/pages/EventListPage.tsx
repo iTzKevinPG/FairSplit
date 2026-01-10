@@ -6,7 +6,7 @@ import {
   Wallet,
   X,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Badge } from '../../shared/components/ui/badge'
 import { Button } from '../../shared/components/ui/button'
@@ -29,14 +29,18 @@ function EventListPage() {
     selectEvent,
     createAndSelect,
     loadEventDetailsForList,
+    isEventLoaded,
   } = useEvents()
   const navigate = useNavigate()
   const [showIntro, setShowIntro] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const hasLoadedRef = useRef(false)
 
   useEffect(() => {
-    void loadEvents()
+    if (hasLoadedRef.current) return
+    hasLoadedRef.current = true
+    void loadEvents({ loadDetails: false })
   }, [loadEvents])
 
   useEffect(() => {
@@ -47,9 +51,8 @@ function EventListPage() {
   }, [])
 
   useEffect(() => {
-    if (events.length === 0) return
-    void loadEventDetailsForList(events.map((event) => event.id))
-  }, [events, loadEventDetailsForList])
+    // Details are loaded on event selection, not on the home list.
+  }, [])
 
   const handleSelect = (eventId: string) => {
     selectEvent(eventId)
@@ -259,7 +262,17 @@ function EventListPage() {
             </div>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
-              {events.map((event) => (
+              {events.map((event) => {
+                const loaded = isEventLoaded(event.id)
+                const peopleCount =
+                  typeof event.peopleCount === 'number'
+                    ? event.peopleCount
+                    : event.people.length
+                const invoiceCount =
+                  typeof event.invoiceCount === 'number'
+                    ? event.invoiceCount
+                    : event.invoices.length
+                return (
                 <button
                   key={event.id}
                   type="button"
@@ -275,15 +288,20 @@ function EventListPage() {
                     </Badge>
                     <span className="inline-flex items-center gap-1.5">
                       <Users className="h-3.5 w-3.5" />
-                      {event.people.length} integrantes
+                      {loaded || typeof event.peopleCount === 'number'
+                        ? `${peopleCount} integrantes`
+                        : 'Integrantes: —'}
                     </span>
                     <span className="inline-flex items-center gap-1.5">
                       <Receipt className="h-3.5 w-3.5" />
-                      {event.invoices.length} gastos
+                      {loaded || typeof event.invoiceCount === 'number'
+                        ? `${invoiceCount} gastos`
+                        : 'Gastos: —'}
                     </span>
                   </div>
                 </button>
-              ))}
+                )
+              })}
             </div>
           )}
         </section>

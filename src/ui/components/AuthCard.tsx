@@ -43,7 +43,6 @@ export function AuthCard() {
     const ok = await verifyCode(code)
     if (ok) {
       setCode('')
-      setExpanded(false)
     }
   }
   const handleSubmit = (event: React.FormEvent) => {

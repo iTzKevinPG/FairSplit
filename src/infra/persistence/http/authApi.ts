@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "../../config/api"
+import { withLoading } from "./withLoading"
 
 type RequestCodePayload = {
   email: string
@@ -24,37 +25,43 @@ type VerifyCodeResponse = {
 export async function requestLoginCodeApi(
   payload: RequestCodePayload,
 ): Promise<RequestCodeResponse> {
-  const response = await fetch(`${API_BASE_URL}/auth/request-code`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+  return withLoading(async () => {
+    const response = await fetch(`${API_BASE_URL}/auth/request-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok) {
+      throw new Error(
+        normalizeAuthError(data, 'No se pudo enviar el codigo, intenta de nuevo.'),
+      )
+    }
+
+    return data as RequestCodeResponse
   })
-
-  const data = await response.json().catch(() => ({}))
-  if (!response.ok) {
-    throw new Error(normalizeAuthError(data, 'No se pudo enviar el codigo, intenta de nuevo.'))
-  }
-
-  return data as RequestCodeResponse
 }
 
 export async function verifyLoginCodeApi(
   payload: VerifyCodePayload,
 ): Promise<VerifyCodeResponse> {
-  const response = await fetch(`${API_BASE_URL}/auth/verify-code`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+  return withLoading(async () => {
+    const response = await fetch(`${API_BASE_URL}/auth/verify-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok) {
+      throw new Error(
+        normalizeAuthError(data, 'Codigo inv?lido o expirado. Intenta de nuevo.'),
+      )
+    }
+
+    return data as VerifyCodeResponse
   })
-
-  const data = await response.json().catch(() => ({}))
-  if (!response.ok) {
-    throw new Error(
-      normalizeAuthError(data, 'Codigo inválido o expirado. Intenta de nuevo.'),
-    )
-  }
-
-  return data as VerifyCodeResponse
 }
 
 function normalizeAuthError(data: unknown, fallback: string): string {
@@ -65,7 +72,7 @@ function normalizeAuthError(data: unknown, fallback: string): string {
 
   const knownEmailErrors = ['email must be an email', 'Email is required', 'email must be an Email']
   if (emailError || (rawMessage && knownEmailErrors.some((m) => rawMessage.includes(m)))) {
-    return 'Ingresa un correo válido.'
+    return 'Ingresa un correo v?lido.'
   }
 
   if (rawMessage) return rawMessage

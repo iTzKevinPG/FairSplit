@@ -9,4 +9,6 @@ export interface Event {
   currency: string
   people: Person[]
   invoices: Invoice[]
+  peopleCount?: number
+  invoiceCount?: number
 }
