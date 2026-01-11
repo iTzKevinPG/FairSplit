@@ -11,4 +11,5 @@ export interface Event {
   invoices: Invoice[]
   peopleCount?: number
   invoiceCount?: number
+  isPublic?: boolean
 }

@@ -705,6 +705,7 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
         invoices,
         peopleCount: people.length,
         invoiceCount: invoices.length,
+        isPublic: true,
       })
 
       const events = await eventRepository.list()

@@ -43,6 +43,7 @@ function EventListPage() {
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const hasLoadedRef = useRef(false)
+  const visibleEvents = events.filter((event) => !event.isPublic)
   const hasAuthToken =
     typeof window !== 'undefined' &&
     Boolean(window.localStorage.getItem('fairsplit_auth_token'))
@@ -251,7 +252,7 @@ function EventListPage() {
               <div className="mt-4 space-y-4">
                 <div data-tour="event-create">
                   <EventSelector
-                    events={events}
+                    events={visibleEvents}
                     selectedEventId={selectedEventId}
                     onSelect={handleSelect}
                     onCreate={handleCreate}
@@ -273,7 +274,7 @@ function EventListPage() {
           <h2 className="text-lg font-semibold text-[color:var(--color-text-main)]">
             Tus eventos recientes
           </h2>
-          {events.length === 0 ? (
+          {visibleEvents.length === 0 ? (
             <div
               className="rounded-lg border border-dashed border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-6 text-center"
               data-testid="empty-events"
@@ -284,7 +285,7 @@ function EventListPage() {
             </div>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
-              {events.map((event) => {
+              {visibleEvents.map((event) => {
                 const loaded = isEventLoaded(event.id)
                 const peopleCount =
                   typeof event.peopleCount === 'number'
