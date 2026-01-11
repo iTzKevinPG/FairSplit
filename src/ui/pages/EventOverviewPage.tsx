@@ -1,16 +1,16 @@
 import { Wallet } from 'lucide-react'
 import { useEffect, useMemo, useRef } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { Badge } from '../../shared/components/ui/badge'
 import { useFairSplitStore } from '../../shared/state/fairsplitStore'
 import { BentoOverview } from '../components/BentoOverview'
 import { Footer } from '../components/Footer'
 import { useEvents } from '../hooks/useEvents'
 import NotFoundPage from './NotFoundPage'
+import { ThemeToggle } from '../components/ThemeToggle'
 
 function EventOverviewPage() {
   const { eventId } = useParams<{ eventId: string }>()
-  const navigate = useNavigate()
   const {
     events,
     selectedEventId,
@@ -22,6 +22,9 @@ function EventOverviewPage() {
     getBalances,
     getTransfers,
     getSelectedEvent,
+    hasHydrated,
+    isEventLoading,
+    loadPublicOverview,
     transferStatusesByEvent,
   } = useFairSplitStore()
   const hasLoadedRef = useRef(false)
@@ -34,8 +37,19 @@ function EventOverviewPage() {
 
   useEffect(() => {
     if (!eventId) return
-    void loadEventDetailsForList([eventId])
-  }, [eventId, loadEventDetailsForList])
+    const hasAuthToken =
+      typeof window !== 'undefined' &&
+      Boolean(window.localStorage.getItem('fairsplit_auth_token'))
+    const hasEventInList = events.some((event) => event.id === eventId)
+    if (hasAuthToken && hasEventInList) {
+      void loadEventDetailsForList([eventId])
+      return
+    }
+    if (!hasAuthToken && hasEventInList) {
+      return
+    }
+    void loadPublicOverview(eventId)
+  }, [eventId, events, loadEventDetailsForList, loadPublicOverview])
 
   useEffect(() => {
     if (!eventId) return
@@ -44,13 +58,10 @@ function EventOverviewPage() {
     void selectEvent(eventId)
   }, [eventId, events, selectedEventId, selectEvent])
 
-  useEffect(() => {
-    if (eventId && events.length > 0 && !getSelectedEvent()) {
-      navigate('/', { replace: true })
-    }
-  }, [eventId, events.length, getSelectedEvent, navigate])
-
   const selectedEvent = getSelectedEvent()
+  const hasEventInStore = eventId
+    ? events.some((event) => event.id === eventId)
+    : false
   const balances = useMemo(
     () => (selectedEvent ? getBalances() : []),
     [getBalances, selectedEvent],
@@ -110,7 +121,35 @@ function EventOverviewPage() {
     return result
   }, [balances, selectedEvent, transfers, transferStatusMap])
 
-  if (!eventId || !selectedEvent) {
+  if (!eventId) {
+    return <NotFoundPage />
+  }
+
+  if (!selectedEvent) {
+    if (!hasHydrated || isEventLoading(eventId) || hasEventInStore) {
+      return (
+        <div className="min-h-screen bg-[color:var(--color-app-bg)]">
+          <header className="sticky top-0 z-40 border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-app-bg)]/95 backdrop-blur">
+            <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[color:var(--color-primary-main)] text-[color:var(--color-text-on-primary)]">
+                  <Wallet className="h-5 w-5" />
+                </div>
+                <span className="text-lg font-semibold text-[color:var(--color-text-main)]">
+                  FairSplit
+                </span>
+              </div>
+            </div>
+          </header>
+          <main className="mx-auto flex max-w-5xl flex-1 flex-col gap-6 px-6 py-10">
+            <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-6 text-sm text-[color:var(--color-text-muted)]">
+              Cargando vista general...
+            </div>
+          </main>
+          <Footer />
+        </div>
+      )
+    }
     return <NotFoundPage />
   }
 
@@ -126,6 +165,7 @@ function EventOverviewPage() {
               FairSplit
             </span>
           </div>
+          <ThemeToggle />
         </div>
       </header>
 

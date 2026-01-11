@@ -29,6 +29,8 @@ import { InMemoryPersonRepository } from '../../infra/persistence/in-memory/InMe
 import { InMemoryInvoiceRepository } from '../../infra/persistence/in-memory/InMemoryInvoiceRepository'
 import {
   createEventApi,
+  deleteEventApi,
+  getEventApi,
   listEventsApi,
 } from '../../infra/persistence/http/eventApi'
 import {
@@ -39,10 +41,11 @@ import {
 } from '../../infra/persistence/http/participantApi'
 import {
   createInvoiceApi,
+  deleteInvoiceApi,
   listInvoicesApi,
   updateInvoiceApi,
 } from '../../infra/persistence/http/invoiceApi'
-import { getSummaryApi, getTransfersApi } from '../../infra/persistence/http/summaryApi'
+import { getSummaryApi, getTransfersApi, getPublicOverviewApi } from '../../infra/persistence/http/summaryApi'
 import { getTransferStatusApi, upsertTransferStatusApi } from '../../infra/persistence/http/transferStatusApi'
 import { STORAGE_EXPIRED_FLAG } from './authStore'
 import { toast } from '../../shared/components/ui/sonner'
@@ -132,13 +135,6 @@ function notifyApiFailure(action: string) {
   showToast(`No se pudo ${action} en la nube. No se aplicaron cambios locales.`, 'error')
 }
 
-function notifyApiUnsupported(action: string) {
-  showToast(
-    `Accion no permitida: no puedes ${action} en modo sesion activa/perfil.`,
-    'warning',
-  )
-}
-
 function notifySessionExpired() {
   showToast(
     'Tu sesion expiro. Vuelve al inicio para configurar tu perfil.',
@@ -181,11 +177,13 @@ interface FairSplitState {
   events: Event[]
   selectedEventId?: EventId
   hasSeededDemo: boolean
+  hasHydrated: boolean
   transferStatusesByEvent: Record<string, Record<string, TransferStatus>>
   hydrate: (options?: { loadDetails?: boolean }) => Promise<void>
   seedDemoData: () => Promise<void>
   selectEvent: (eventId: EventId) => Promise<void>
   createEvent: (input: CreateEventInput) => Promise<Event | undefined>
+  removeEvent: (eventId: EventId) => Promise<void>
   addPerson: (input: Omit<AddPersonInput, 'eventId'>) => Promise<Event | undefined>
   updatePerson: (
     input: Omit<UpdatePersonInput, 'eventId'>,
@@ -207,6 +205,8 @@ interface FairSplitState {
   getTransfers: () => SettlementTransfer[]
   getTransferStatusMap: (eventId: EventId) => Record<string, TransferStatus>
   isEventLoaded: (eventId: EventId) => boolean
+  isEventLoading: (eventId: EventId) => boolean
+  loadPublicOverview: (eventId: EventId) => Promise<void>
   loadTransferStatuses: (eventId: EventId) => Promise<void>
   loadEventDetailsForList: (eventIds: EventId[]) => Promise<void>
   setTransferStatus: (input: {
@@ -226,6 +226,7 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
   events: [],
   selectedEventId: undefined,
   hasSeededDemo: false,
+  hasHydrated: false,
   transferStatusesByEvent: {},
   hydrate: async (options) => {
     // Fetch event headers only; load details lazily per event to reduce calls.
@@ -292,6 +293,7 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
       hasSeededDemo: shouldApplyLocalState
         ? localState?.hasSeededDemo ?? false
         : get().hasSeededDemo,
+      hasHydrated: true,
     })
 
     if (selected && (options?.loadDetails ?? true)) {
@@ -392,6 +394,41 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
       selectedEventId: created.id,
     })
     return created
+  },
+  removeEvent: async (eventId: EventId) => {
+    const token = await ensureAuthOrRedirect()
+    if (token) {
+      try {
+        await deleteEventApi(eventId)
+      } catch (error) {
+        if ((error as Error).message === 'UNAUTHORIZED') {
+          await handleUnauthorizedAndRedirect()
+          return
+        }
+        console.error('Failed to delete event in backend', error)
+        notifyApiFailure('eliminar el evento')
+        return
+      }
+    }
+
+    await eventRepository.delete(eventId)
+    loadedEventData.delete(eventId)
+    const events = await eventRepository.list()
+    set((state) => {
+      const nextSelected =
+        state.selectedEventId === eventId
+          ? events[0]?.id
+          : state.selectedEventId
+      return {
+        events,
+        selectedEventId: nextSelected,
+        transferStatusesByEvent: Object.fromEntries(
+          Object.entries(state.transferStatusesByEvent).filter(
+            ([key]) => key !== eventId,
+          ),
+        ),
+      }
+    })
   },
   addPerson: async (input) => {
     const eventId = get().selectedEventId
@@ -584,8 +621,17 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
     if (!eventId) return undefined
     const token = await ensureAuthOrRedirect()
     if (token) {
-      notifyApiUnsupported('eliminar la factura')
-      return undefined
+      try {
+        await deleteInvoiceApi(eventId, input.invoiceId)
+      } catch (error) {
+        if ((error as Error).message === 'UNAUTHORIZED') {
+          await handleUnauthorizedAndRedirect()
+          return undefined
+        }
+        console.error('Failed to delete invoice in backend', error)
+        notifyApiFailure('eliminar la factura')
+        return undefined
+      }
     }
     const event = await removeInvoiceFromEvent(
       eventRepository,
@@ -621,6 +667,58 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
     return get().transferStatusesByEvent[eventId] ?? {}
   },
   isEventLoaded: (eventId: EventId) => loadedEventData.has(eventId),
+  isEventLoading: (eventId: EventId) => loadingEventData.has(eventId),
+  loadPublicOverview: async (eventId: EventId) => {
+    if (loadedEventData.has(eventId) || loadingEventData.has(eventId)) {
+      return
+    }
+    loadingEventData.add(eventId)
+    try {
+      const payload = await getPublicOverviewApi(eventId)
+      const people = payload.participants.map((person) => ({
+        id: person.id,
+        name: person.name,
+      }))
+      const invoices = payload.invoices.map((det) => {
+        const consumptions = det.participations.reduce<Record<string, number>>((acc, p) => {
+          acc[p.participantId] = p.baseAmount
+          return acc
+        }, {})
+        return {
+          id: det.id,
+          description: det.description,
+          amount: det.totalAmount,
+          payerId: det.payerId,
+          participantIds: det.participations.map((p) => p.participantId),
+          divisionMethod: det.divisionMethod,
+          consumptions,
+          tipAmount: det.tipAmount,
+          birthdayPersonId: det.birthdayPersonId,
+        }
+      })
+
+      await eventRepository.save({
+        id: payload.event.id,
+        name: payload.event.name,
+        currency: payload.event.currency,
+        people,
+        invoices,
+        peopleCount: people.length,
+        invoiceCount: invoices.length,
+      })
+
+      const events = await eventRepository.list()
+      set((state) => ({
+        events,
+        selectedEventId: state.selectedEventId ?? payload.event.id,
+      }))
+      loadedEventData.add(eventId)
+    } catch (error) {
+      console.warn(`Failed to load public overview for ${eventId}`, error)
+    } finally {
+      loadingEventData.delete(eventId)
+    }
+  },
   loadTransferStatuses: async (eventId: EventId) => {
     const token = await ensureAuthOrRedirect()
     if (!token) return
@@ -792,7 +890,22 @@ async function loadEventData(
     return
   }
   try {
-    const [participants, invoices] = await Promise.all([
+    const existing = await eventRepository.getById(eventId)
+    const needsEventMeta = !existing?.name || !existing?.currency
+    const eventMetaPromise = needsEventMeta
+      ? getEventApi(eventId)
+          .then((event) => event)
+          .catch((error) => {
+            if ((error as Error).message === 'UNAUTHORIZED') {
+              throw error
+            }
+            console.warn(`Failed to fetch event metadata for ${eventId}`, error)
+            return null
+          })
+      : Promise.resolve(null)
+
+    const [eventMeta, participants, invoices] = await Promise.all([
+      eventMetaPromise,
       listParticipantsApi(eventId).catch((error) => {
         console.warn(`Failed to fetch participants for event ${eventId}`, error)
         return null
@@ -803,15 +916,15 @@ async function loadEventData(
       }),
     ])
 
-    const existing = await eventRepository.getById(eventId)
-    const current: Event =
-      existing ?? {
-        id: eventId,
-        name: '',
-        currency: '',
-        people: [],
-        invoices: [],
-      }
+    const current: Event = {
+      id: eventId,
+      name: eventMeta?.name ?? existing?.name ?? '',
+      currency: eventMeta?.currency ?? existing?.currency ?? '',
+      people: existing?.people ?? [],
+      invoices: existing?.invoices ?? [],
+      peopleCount: eventMeta?.peopleCount ?? existing?.peopleCount,
+      invoiceCount: eventMeta?.invoiceCount ?? existing?.invoiceCount,
+    }
 
     const mappedParticipants =
       participants?.map((p) => ({ id: p.id, name: p.name })) ?? current.people
@@ -848,11 +961,11 @@ async function loadEventData(
       events,
       selectedEventId: state.selectedEventId ?? eventId,
     }))
-    loadedEventData.add(eventId)
   } catch (error) {
     console.warn(`Failed to load event data for ${eventId}`, error)
   } finally {
     loadingEventData.delete(eventId)
+    loadedEventData.add(eventId)
   }
 }
 

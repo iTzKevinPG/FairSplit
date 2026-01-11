@@ -1,5 +1,6 @@
 import { API_BASE_URL } from '../../config/api';
 import { withLoading } from './withLoading';
+import type { ApiInvoiceDetail } from './invoiceApi';
 
 export type ApiSummaryItem = {
   participantId: string;
@@ -65,6 +66,33 @@ export async function getTransfersApi(eventId: string): Promise<ApiTransferItem[
     }
     if (!response.ok) {
       throw new Error('Failed to fetch transfers');
+    }
+    return response.json();
+  });
+}
+
+export type ApiPublicOverview = {
+  event: {
+    id: string;
+    name: string;
+    currency: string;
+  };
+  participants: Array<{ id: string; name: string }>;
+  invoices: ApiInvoiceDetail[];
+  balances: ApiSummaryItem[];
+  transfers: ApiTransferItem[];
+};
+
+export async function getPublicOverviewApi(eventId: string): Promise<ApiPublicOverview> {
+  return withLoading(async () => {
+    const response = await fetch(`${API_BASE_URL}/public/events/${eventId}/overview`, {
+      method: 'GET'
+    });
+    if (response.status === 404) {
+      throw new Error('Event not found');
+    }
+    if (!response.ok) {
+      throw new Error('Failed to fetch public overview');
     }
     return response.json();
   });

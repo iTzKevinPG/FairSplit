@@ -1,6 +1,7 @@
 import {
   CalendarPlus,
   Receipt,
+  Trash2,
   UserPlus,
   Users,
   Wallet,
@@ -28,6 +29,7 @@ function EventListPage() {
     loadEvents,
     selectEvent,
     createAndSelect,
+    removeEvent,
     isEventLoaded,
   } = useEvents()
   const navigate = useNavigate()
@@ -37,6 +39,9 @@ function EventListPage() {
   })
   const [showProfile, setShowProfile] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const hasLoadedRef = useRef(false)
   const hasAuthToken =
     typeof window !== 'undefined' &&
@@ -61,13 +66,33 @@ function EventListPage() {
     }
   }
 
+  const handleRemove = async (eventId: string) => {
+    try {
+      setError(null)
+      await removeEvent(eventId)
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'No se pudo eliminar el evento.'
+      setError(message)
+    }
+  }
+
+  const handleConfirmRemove = async () => {
+    if (!deleteTarget) return
+    setIsDeleting(true)
+    await handleRemove(deleteTarget.id)
+    setIsDeleting(false)
+    setDeleteTarget(null)
+  }
+
   const handleCloseIntro = () => {
     window.localStorage.setItem('fairsplit-intro-seen', 'true')
     setShowIntro(false)
   }
 
   return (
-    <div className="min-h-screen bg-[color:var(--color-app-bg)]">
+    <>
+      <div className="min-h-screen bg-[color:var(--color-app-bg)]">
       <SessionMenu
         isOpen={menuOpen}
         onClose={() => setMenuOpen(false)}
@@ -242,6 +267,8 @@ function EventListPage() {
           </div>
         </section>
 
+        {error ? <p className="text-sm text-red-600">{error}</p> : null}
+
         <section className="space-y-4" data-tour="events-list">
           <h2 className="text-lg font-semibold text-[color:var(--color-text-main)]">
             Tus eventos recientes
@@ -268,33 +295,54 @@ function EventListPage() {
                     ? event.invoiceCount
                     : event.invoices.length
                 return (
-                <button
-                  key={event.id}
-                  type="button"
-                  onClick={() => handleSelect(event.id)}
-                  className="ds-card card-interactive flex flex-col items-start text-left"
-                >
-                  <span className="text-sm font-semibold text-[color:var(--color-text-main)]">
-                    {event.name}
-                  </span>
-                  <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-[color:var(--color-text-muted)]">
-                    <Badge variant="outline" className="text-[10px] font-semibold">
-                      {event.currency}
-                    </Badge>
-                    <span className="inline-flex items-center gap-1.5">
-                      <Users className="h-3.5 w-3.5" />
-                      {loaded || typeof event.peopleCount === 'number' || !hasAuthToken
-                        ? `${peopleCount} integrantes`
-                        : 'Integrantes: —'}
-                    </span>
-                    <span className="inline-flex items-center gap-1.5">
-                      <Receipt className="h-3.5 w-3.5" />
-                      {loaded || typeof event.invoiceCount === 'number' || !hasAuthToken
-                        ? `${invoiceCount} gastos`
-                        : 'Gastos: —'}
-                    </span>
+                  <div
+                    key={event.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleSelect(event.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        handleSelect(event.id)
+                      }
+                    }}
+                    className="ds-card card-interactive flex flex-col items-start text-left"
+                  >
+                    <div className="flex w-full items-start justify-between gap-2">
+                      <span className="text-sm font-semibold text-[color:var(--color-text-main)]">
+                        {event.name}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setDeleteTarget({ id: event.id, name: event.name })
+                        }}
+                        className="rounded-md p-1 text-[color:var(--color-text-muted)] hover:text-[color:var(--color-accent-danger)]"
+                        aria-label={`Eliminar evento ${event.name}`}
+                        title="Eliminar evento"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-[color:var(--color-text-muted)]">
+                      <Badge variant="outline" className="text-[10px] font-semibold">
+                        {event.currency}
+                      </Badge>
+                      <span className="inline-flex items-center gap-1.5">
+                        <Users className="h-3.5 w-3.5" />
+                        {loaded || typeof event.peopleCount === 'number' || !hasAuthToken
+                          ? `${peopleCount} integrantes`
+                          : 'Integrantes: -'}
+                      </span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <Receipt className="h-3.5 w-3.5" />
+                        {loaded || typeof event.invoiceCount === 'number' || !hasAuthToken
+                          ? `${invoiceCount} gastos`
+                          : 'Gastos: -'}
+                      </span>
+                    </div>
                   </div>
-                </button>
                 )
               })}
             </div>
@@ -302,8 +350,64 @@ function EventListPage() {
         </section>
       </main>
 
-      <Footer />
-    </div>
+        <Footer />
+      </div>
+      {deleteTarget ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6 backdrop-blur-sm">
+          <div
+            className="relative w-full max-w-md rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-6 shadow-lg"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Eliminar evento"
+          >
+            <button
+              type="button"
+              onClick={() => {
+                if (isDeleting) return
+                setDeleteTarget(null)
+              }}
+              className="absolute right-4 top-4 rounded-full border border-transparent p-1 text-[color:var(--color-text-muted)] hover:border-[color:var(--color-border-subtle)] hover:text-[color:var(--color-text-main)]"
+              aria-label="Cerrar"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[color:var(--color-accent-danger)]">
+                  Eliminar evento
+                </p>
+                <h2 className="text-lg font-semibold text-[color:var(--color-text-main)]">
+                  {deleteTarget.name}
+                </h2>
+                <p className="text-sm text-[color:var(--color-text-muted)]">
+                  Esta accion elimina el evento, integrantes y gastos asociados.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDeleteTarget(null)}
+                  disabled={isDeleting}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleConfirmRemove}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? 'Eliminando...' : 'Eliminar'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   )
 }
 

@@ -9,6 +9,7 @@ export function useEvents() {
     hydrate,
     selectEvent,
     createEvent,
+    removeEvent,
     loadEventDetailsForList,
     isEventLoaded,
   } = useFairSplitStore()
@@ -36,6 +37,7 @@ export function useEvents() {
     loadEvents,
     selectEvent,
     createAndSelect,
+    removeEvent,
     loadEventDetailsForList,
     isEventLoaded,
   }

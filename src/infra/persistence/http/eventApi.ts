@@ -91,3 +91,21 @@ export async function getEventApi(id: string): Promise<ApiEvent> {
     return response.json();
   });
 }
+
+export async function deleteEventApi(id: string): Promise<void> {
+  return withLoading(async () => {
+    const response = await fetch(`${API_BASE_URL}/events/${id}`, {
+      method: 'DELETE',
+      headers: buildHeaders()
+    });
+    if (response.status === 401) {
+      throw new Error('UNAUTHORIZED');
+    }
+    if (response.status === 404) {
+      throw new Error('Event not found');
+    }
+    if (!response.ok) {
+      throw new Error('Failed to delete event');
+    }
+  });
+}

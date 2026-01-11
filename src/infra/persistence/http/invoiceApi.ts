@@ -164,3 +164,21 @@ export async function getInvoiceApi(
     return response.json();
   });
 }
+
+export async function deleteInvoiceApi(eventId: string, invoiceId: string): Promise<void> {
+  return withLoading(async () => {
+    const response = await fetch(`${API_BASE_URL}/events/${eventId}/invoices/${invoiceId}`, {
+      method: 'DELETE',
+      headers: buildHeaders()
+    });
+    if (response.status === 401) {
+      throw new Error('UNAUTHORIZED');
+    }
+    if (response.status === 404) {
+      throw new Error('Invoice not found');
+    }
+    if (!response.ok) {
+      throw new Error('Failed to delete invoice');
+    }
+  });
+}
