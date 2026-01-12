@@ -15,6 +15,7 @@ describe('SummarySection', () => {
           { personId: 'p2', totalPaid: 0, totalOwed: 0, net: 0 },
         ]}
         people={people}
+        invoices={[]}
         currency="USD"
         tipTotal={5}
       />,
@@ -32,6 +33,7 @@ describe('SummarySection', () => {
           { personId: 'p2', totalPaid: 0, totalOwed: 20, net: -20 },
         ]}
         people={people}
+        invoices={[]}
         currency="USD"
       />,
     )
