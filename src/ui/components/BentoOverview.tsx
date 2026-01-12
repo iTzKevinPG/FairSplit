@@ -34,6 +34,7 @@ export function BentoOverview({
   const totalInvoices = invoices.length
   const totalAmount = invoices.reduce((acc, inv) => acc + inv.amount, 0)
   const totalTips = invoices.reduce((acc, inv) => acc + (inv.tipAmount ?? 0), 0)
+  const totalItems = invoices.reduce((acc, inv) => acc + (inv.items?.length ?? 0), 0)
   const totalTransfers = transfers.length
   const settledTransfers = transfers.reduce((acc, transfer) => {
     const key = buildTransferKey(transfer.fromPersonId, transfer.toPersonId)
@@ -108,11 +109,16 @@ export function BentoOverview({
           <div className="flex flex-1 flex-wrap items-center gap-2 text-xs sm:justify-end">
             <span className="ds-badge-soft">Integrantes: {people.length}</span>
             <span className="ds-badge-soft">Gastos: {totalInvoices}</span>
+            {totalItems > 0 ? (
+              <span className="ds-badge-soft">Items consumidos: {totalItems}</span>
+            ) : null}
             <span className="ds-badge-soft">
               Total: {currency} {roundToCents(totalAmount).toFixed(2)}
             </span>
             {totalTransfers > 0 ? (
-              <span className="ds-badge-soft">Pendientes: {pendingTransfers}</span>
+              <span className="ds-badge-soft">
+                Transferencias pendientes: {pendingTransfers}
+              </span>
             ) : null}
             {totalTips > 0 ? (
               <span className="ds-badge-soft">
@@ -196,6 +202,13 @@ export function BentoOverview({
                 <p className="mt-1 text-[10px] uppercase tracking-wide text-[color:var(--color-text-muted)]">
                   Reparto: {inv.divisionMethod === 'consumption' ? 'Consumo real' : 'Equitativo'}
                 </p>
+                {inv.divisionMethod === 'consumption' && inv.items?.length ? (
+                  <p className="mt-1 text-[11px] text-[color:var(--color-text-muted)]">
+                    Items:{' '}
+                    {inv.items.slice(0, 2).map((item) => item.name).join(', ')}
+                    {inv.items.length > 2 ? ` · +${inv.items.length - 2} más` : ''}
+                  </p>
+                ) : null}
                 {inv.birthdayPersonId ? (
                   <p className="mt-1 text-[11px] font-semibold text-[color:var(--color-primary-main)]">
                     Invitado especial: {resolvePersonName(inv.birthdayPersonId, people)}

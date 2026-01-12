@@ -13,10 +13,16 @@ export async function removePersonFromEvent(
       invoice.payerId === input.personId ||
       invoice.participantIds.includes(input.personId),
   )
+  const hasItemAssignments = event.invoices.some(
+    (invoice) =>
+      invoice.items?.some((item) =>
+        item.participantIds.includes(input.personId),
+      ) ?? false,
+  )
 
-  if (hasInvoices) {
+  if (hasInvoices || hasItemAssignments) {
     throw new Error(
-      'No puedes eliminar participantes que tienen facturas asociadas',
+      'No puedes eliminar participantes con gastos o consumos asociados',
     )
   }
 

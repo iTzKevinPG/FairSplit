@@ -29,6 +29,12 @@ function cloneEvent(event: Event): Event {
     invoices: event.invoices.map((invoice) => ({
       ...invoice,
       participantIds: [...invoice.participantIds],
+      items: invoice.items
+        ? invoice.items.map((item) => ({
+            ...item,
+            participantIds: [...item.participantIds],
+          }))
+        : undefined,
     })),
   }
 }

@@ -1,5 +1,5 @@
 import type { EventId } from '../../domain/event/Event'
-import type { InvoiceId } from '../../domain/invoice/Invoice'
+import type { InvoiceId, InvoiceItem } from '../../domain/invoice/Invoice'
 import type { PersonId } from '../../domain/person/Person'
 
 export interface CreateEventInput {
@@ -34,6 +34,7 @@ export interface AddInvoiceInput {
   participantIds: PersonId[]
   divisionMethod?: 'equal' | 'consumption'
   consumptions?: Record<PersonId, number>
+  items?: InvoiceItem[]
   tipAmount?: number
   birthdayPersonId?: PersonId
 }

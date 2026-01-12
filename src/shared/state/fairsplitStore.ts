@@ -509,7 +509,18 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
           return undefined
         }
         console.error('Failed to delete participant in backend', error)
-        notifyApiFailure('eliminar el participante')
+        const message = (error as Error).message
+        if (
+          message.includes('No puedes eliminar') ||
+          message.includes('Cannot delete participant')
+        ) {
+          const friendly = message.includes('Cannot delete participant')
+            ? 'No puedes eliminar este participante porque tiene gastos o consumos asociados.'
+            : message
+          showToast(friendly, 'warning', 3500)
+        } else {
+          notifyApiFailure('eliminar el participante')
+        }
         return undefined
       }
     }
@@ -542,6 +553,12 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
           participantIds: input.participantIds,
           divisionMethod: input.divisionMethod ?? 'equal',
           consumptions: input.consumptions,
+          items: input.items?.map((item) => ({
+            name: item.name,
+            unitPrice: item.unitPrice,
+            quantity: item.quantity,
+            participantIds: item.participantIds,
+          })),
           tipAmount: input.tipAmount,
           birthdayPersonId: input.birthdayPersonId,
         })
@@ -587,6 +604,12 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
           participantIds: input.participantIds,
           divisionMethod: input.divisionMethod ?? 'equal',
           consumptions: input.consumptions,
+          items: input.items?.map((item) => ({
+            name: item.name,
+            unitPrice: item.unitPrice,
+            quantity: item.quantity,
+            participantIds: item.participantIds,
+          })),
           tipAmount: input.tipAmount,
           birthdayPersonId: input.birthdayPersonId,
         })
@@ -692,6 +715,13 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
           participantIds: det.participations.map((p) => p.participantId),
           divisionMethod: det.divisionMethod,
           consumptions,
+          items: det.items?.map((item) => ({
+            id: item.id,
+            name: item.name,
+            unitPrice: item.unitPrice,
+            quantity: item.quantity,
+            participantIds: item.participantIds,
+          })),
           tipAmount: det.tipAmount,
           birthdayPersonId: det.birthdayPersonId,
         }
@@ -946,6 +976,13 @@ async function loadEventData(
             participantIds: det.participations.map((p) => p.participantId),
             divisionMethod: det.divisionMethod,
             consumptions,
+            items: det.items?.map((item) => ({
+              id: item.id,
+              name: item.name,
+              unitPrice: item.unitPrice,
+              quantity: item.quantity,
+              participantIds: item.participantIds,
+            })),
             tipAmount: det.tipAmount,
             birthdayPersonId: det.birthdayPersonId,
           }

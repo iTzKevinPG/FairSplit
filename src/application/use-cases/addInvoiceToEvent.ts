@@ -84,6 +84,7 @@ export async function addInvoiceToEvent(
     participantIds: participants,
     divisionMethod,
     consumptions,
+    items: input.items,
     tipAmount: tipAmount > 0 ? tipAmount : undefined,
     birthdayPersonId,
   }

@@ -128,10 +128,35 @@ export async function deleteParticipantApi(
       throw new Error('Participant not found');
     }
     if (!response.ok) {
+      let details: unknown;
+      try {
+        details = await response.json();
+      } catch {
+        // ignore
+      }
+      const apiMessage =
+        details &&
+        typeof details === 'object' &&
+        details !== null &&
+        'message' in details &&
+        typeof (details as Record<string, unknown>).message === 'string'
+          ? (details as Record<string, string>).message
+          : null;
+      const apiCode =
+        details &&
+        typeof details === 'object' &&
+        details !== null &&
+        'code' in details &&
+        typeof (details as Record<string, unknown>).code === 'string'
+          ? (details as Record<string, string>).code
+          : null;
+      const businessMessage =
+        apiCode === 'PARTICIPANT_HAS_INVOICES' ||
+        (apiMessage && apiMessage.toLowerCase().includes('associated invoices'))
+          ? 'No puedes eliminar este participante porque tiene gastos o consumos asociados.'
+          : null;
       const message =
-        response.status === 400
-          ? 'Cannot delete participant with invoices'
-          : 'Failed to delete participant';
+        businessMessage ?? apiMessage ?? 'Failed to delete participant';
       throw new Error(message);
     }
   });

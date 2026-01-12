@@ -1,4 +1,14 @@
-import { ChevronDown, ChevronUp, Edit2, Plus, Trash2 } from 'lucide-react'
+import {
+  ChevronDown,
+  ChevronUp,
+  Edit2,
+  Plus,
+  Receipt,
+  Save,
+  SlidersHorizontal,
+  Trash2,
+  X,
+} from 'lucide-react'
 import { Badge } from '../../shared/components/ui/badge'
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useTour } from '@reactour/tour'
@@ -13,7 +23,9 @@ import {
 } from '../../shared/components/ui/select'
 import { MemberChip } from './MemberChip'
 import { SectionCard } from './SectionCard'
+import type { InvoiceItem } from '../../domain/invoice/Invoice'
 import type { InvoiceForUI, PersonForUI } from '../../shared/state/fairsplitStore'
+import { createId } from '../../shared/utils/createId'
 
 interface InvoiceSectionProps {
   invoices: InvoiceForUI[]
@@ -26,6 +38,7 @@ interface InvoiceSectionProps {
     participantIds: string[]
     divisionMethod?: 'equal' | 'consumption'
     consumptions?: Record<string, number>
+    items?: InvoiceItem[]
     tipAmount?: number
     birthdayPersonId?: string
   }) => Promise<void>
@@ -37,6 +50,7 @@ interface InvoiceSectionProps {
     participantIds: string[]
     divisionMethod?: 'equal' | 'consumption'
     consumptions?: Record<string, number>
+    items?: InvoiceItem[]
     tipAmount?: number
     birthdayPersonId?: string
   }) => Promise<void>
@@ -53,6 +67,7 @@ export function InvoiceSection({
 }: InvoiceSectionProps) {
   const { isOpen: isTourOpen, meta: tourMeta, steps, setCurrentStep } = useTour()
   const optionsMenuRef = useRef<HTMLDetailsElement | null>(null)
+  const addMenuRef = useRef<HTMLDetailsElement | null>(null)
   const formRef = useRef<HTMLDivElement | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [description, setDescription] = useState('')
@@ -67,13 +82,15 @@ export function InvoiceSection({
   const [detailInvoiceId, setDetailInvoiceId] = useState<string | null>(null)
   const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null)
   const [divisionMethod, setDivisionMethod] = useState<'equal' | 'consumption'>('equal')
-  const [consumptions, setConsumptions] = useState<Record<string, string>>(
-    () =>
-      people.reduce<Record<string, string>>((acc, person) => {
-        acc[person.id] = ''
-        return acc
-      }, {}),
-  )
+  const [items, setItems] = useState<InvoiceItem[]>([])
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({})
+  const [itemModalOpen, setItemModalOpen] = useState(false)
+  const [editingItemId, setEditingItemId] = useState<string | null>(null)
+  const [itemName, setItemName] = useState('')
+  const [itemUnitPrice, setItemUnitPrice] = useState('')
+  const [itemQuantity, setItemQuantity] = useState('1')
+  const [itemParticipantIds, setItemParticipantIds] = useState<string[]>([])
+  const [itemError, setItemError] = useState<string | null>(null)
   const [includeTip, setIncludeTip] = useState(false)
   const [tipAmount, setTipAmount] = useState('')
   const [birthdayEnabled, setBirthdayEnabled] = useState(false)
@@ -93,6 +110,13 @@ export function InvoiceSection({
     : availablePersonIds
   const birthdayOptions = showParticipants ? sanitizedParticipantIds : availablePersonIds
 
+  useEffect(() => {
+    if (!resolvedPayerId) return
+    setParticipantIds((current) =>
+      current.includes(resolvedPayerId) ? current : [...current, resolvedPayerId],
+    )
+  }, [resolvedPayerId])
+
   const handleToggleParticipant = (id: string) => {
     if (id === resolvedPayerId) return
     setParticipantIds((current) => {
@@ -111,13 +135,16 @@ export function InvoiceSection({
     setAmount('')
     setPayerId(people[0]?.id ?? undefined)
     setParticipantIds(people.map((person) => person.id))
-    setConsumptions(
-      people.reduce<Record<string, string>>((acc, person) => {
-        acc[person.id] = ''
-        return acc
-      }, {}),
-    )
     setDivisionMethod('equal')
+    setItems([])
+    setExpandedItems({})
+    setItemModalOpen(false)
+    setEditingItemId(null)
+    setItemName('')
+    setItemUnitPrice('')
+    setItemQuantity('1')
+    setItemParticipantIds([])
+    setItemError(null)
     setIncludeTip(false)
     setTipAmount('')
     setBirthdayEnabled(false)
@@ -144,13 +171,15 @@ export function InvoiceSection({
     setBirthdayEnabled(Boolean(invoice.birthdayPersonId))
     setBirthdayPersonId(invoice.birthdayPersonId ?? '')
     setShowParticipants(true)
-    setConsumptions(
-      people.reduce<Record<string, string>>((acc, person) => {
-        const value = invoice.consumptions?.[person.id]
-        acc[person.id] = value !== undefined ? String(value) : ''
-        return acc
-      }, {}),
-    )
+    setItems(invoice.items ?? [])
+    setExpandedItems({})
+    setItemModalOpen(false)
+    setEditingItemId(null)
+    setItemName('')
+    setItemUnitPrice('')
+    setItemQuantity('1')
+    setItemParticipantIds([])
+    setItemError(null)
   }
 
   const handleSubmit = async (event: FormEvent) => {
@@ -199,31 +228,43 @@ export function InvoiceSection({
     }
 
     let consumptionPayload: Record<string, number> | undefined
+    let itemsPayload: InvoiceItem[] | undefined
     if (divisionMethod === 'consumption') {
-      const numericConsumptions = effectiveParticipants.reduce<Record<string, number>>(
-        (acc, id) => {
-          const value = Number(consumptions[id] ?? 0)
-          acc[id] = value
-          return acc
-        },
-        {},
+      if (items.length === 0) {
+        setError('Agrega al menos un item para repartir el consumo.')
+        return
+      }
+      const normalizedItems = items.map((item) => ({
+        ...item,
+        participantIds: item.participantIds.filter((id) =>
+          effectiveParticipants.includes(id),
+        ),
+      }))
+      const invalidItem = normalizedItems.find(
+        (item) => item.participantIds.length === 0,
       )
-      const sum = Object.values(numericConsumptions).reduce((acc, val) => acc + val, 0)
-      const hasPositive = Object.values(numericConsumptions).some((val) => val > 0)
-      if (!hasPositive || sum <= 0) {
-        setError('Ingresa consumos mayores a 0.')
+      if (invalidItem) {
+        setError('Cada item debe tener al menos un participante asignado.')
         return
       }
-      const diff = Math.abs(numericAmount - sum)
+      const totalRegistered = normalizedItems.reduce(
+        (acc, item) => acc + getItemTotal(item),
+        0,
+      )
+      if (totalRegistered <= 0) {
+        setError('El total registrado debe ser mayor a 0.')
+        return
+      }
+      const diff = Math.abs(numericAmount - totalRegistered)
       if (diff > 0.01) {
-        setError('La suma de consumos no coincide con el total.')
+        setError('La suma de items no coincide con el total del gasto.')
         return
       }
-      if (birthdayEnabled && birthdayPersonId && consumptions[birthdayPersonId] === undefined) {
-        setError('El invitado especial debe tener un consumo declarado (puede ser 0).')
-        return
-      }
-      consumptionPayload = numericConsumptions
+      consumptionPayload = buildConsumptionsFromItems(
+        normalizedItems,
+        effectiveParticipants,
+      )
+      itemsPayload = normalizedItems
     }
 
     setError(null)
@@ -236,6 +277,7 @@ export function InvoiceSection({
         participantIds: effectiveParticipants,
         divisionMethod,
         consumptions: consumptionPayload,
+        items: itemsPayload,
         tipAmount: includeTip ? numericTip : undefined,
         birthdayPersonId: birthdayEnabled ? birthdayPersonId : undefined,
       })
@@ -247,6 +289,7 @@ export function InvoiceSection({
         participantIds: effectiveParticipants,
         divisionMethod,
         consumptions: consumptionPayload,
+        items: itemsPayload,
         tipAmount: includeTip ? numericTip : undefined,
         birthdayPersonId: birthdayEnabled ? birthdayPersonId : undefined,
       })
@@ -264,11 +307,8 @@ export function InvoiceSection({
   const participantShares = detailInvoice ? calculateShares(detailInvoice, people) : []
   const consumptionSum = useMemo(() => {
     if (divisionMethod !== 'consumption') return 0
-    return effectiveParticipantIds.reduce(
-      (acc, id) => acc + Number(consumptions[id] ?? 0),
-      0,
-    )
-  }, [divisionMethod, effectiveParticipantIds, consumptions])
+    return items.reduce((acc, item) => acc + getItemTotal(item), 0)
+  }, [divisionMethod, items])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -299,6 +339,10 @@ export function InvoiceSection({
     optionsMenuRef.current?.removeAttribute('open')
   }
 
+  const closeAddMenu = () => {
+    addMenuRef.current?.removeAttribute('open')
+  }
+
   const toggleConsumption = () => {
     setShowConsumption((current) => {
       const next = !current
@@ -307,12 +351,15 @@ export function InvoiceSection({
         setShowParticipants(true)
       }
       if (!next) {
-        setConsumptions(
-          people.reduce<Record<string, string>>((acc, person) => {
-            acc[person.id] = ''
-            return acc
-          }, {}),
-        )
+        setItems([])
+        setExpandedItems({})
+        setItemModalOpen(false)
+        setEditingItemId(null)
+        setItemName('')
+        setItemUnitPrice('')
+        setItemQuantity('1')
+        setItemParticipantIds([])
+        setItemError(null)
         setError(null)
       }
       return next
@@ -320,7 +367,179 @@ export function InvoiceSection({
   }
 
   return (
-    <SectionCard
+    <>
+      {itemModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6 backdrop-blur-sm">
+          <div
+            className="relative w-full max-w-lg rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-6 shadow-lg"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Item de consumo"
+          >
+            <button
+              type="button"
+              onClick={() => {
+                setItemModalOpen(false)
+                setItemError(null)
+              }}
+              className="absolute right-4 top-4 rounded-full border border-transparent p-1 text-[color:var(--color-text-muted)] hover:border-[color:var(--color-border-subtle)] hover:text-[color:var(--color-text-main)]"
+              aria-label="Cerrar item"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[color:var(--color-primary-main)]">
+                  Item
+                </p>
+                <h2 className="text-2xl font-semibold text-[color:var(--color-text-main)]">
+                  {editingItemId ? 'Editar item' : 'Nuevo item'}
+                </h2>
+                <p className="text-sm text-[color:var(--color-text-muted)]">
+                  Define el item y quienes lo consumieron.
+                </p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Input
+                  placeholder="Nombre del item"
+                  value={itemName}
+                  onChange={(e) => setItemName(e.target.value)}
+                  className="sm:col-span-2"
+                />
+                <div className="flex items-center">
+                  <div className="flex w-full items-center rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-input)] focus-within:border-[color:var(--color-primary-main)] focus-within:ring-1 focus-within:ring-[color:var(--color-focus-ring)]">
+                    <span className="flex h-10 items-center rounded-l-md border border-[color:var(--color-border-subtle)] border-r-0 bg-[color:var(--color-surface-muted)] px-3 text-xs font-semibold text-[color:var(--color-text-muted)]">
+                      {currency}
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="Precio unitario"
+                      value={itemUnitPrice}
+                      onChange={(e) => setItemUnitPrice(e.target.value)}
+                      className="w-full appearance-none rounded-r-md border-0 bg-transparent px-3 text-sm text-[color:var(--color-text-main)] outline-none focus:outline-none focus-visible:ring-0"
+                    />
+                  </div>
+                </div>
+                <Input
+                  type="number"
+                  min="1"
+                  step="1"
+                  placeholder="Cantidad"
+                  value={itemQuantity}
+                  onChange={(e) => setItemQuantity(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs font-semibold tracking-wide text-[color:var(--color-text-muted)]">
+                  Participantes del item
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {effectiveParticipantIds.length === 0 ? (
+                    <span className="text-sm text-[color:var(--color-text-muted)]">
+                      Agrega participantes para asignar consumos.
+                    </span>
+                  ) : (
+                    effectiveParticipantIds.map((id) => {
+                      const person = people.find((entry) => entry.id === id)
+                      if (!person) return null
+                      const checked = itemParticipantIds.includes(id)
+                      const isPayer = id === resolvedPayerId
+                      return (
+                        <MemberChip
+                          key={id}
+                          name={person.name}
+                          isPayer={isPayer}
+                          isSelected={checked}
+                          isEditable
+                          onToggle={() =>
+                            setItemParticipantIds((current) =>
+                              current.includes(id)
+                                ? current.filter((entry) => entry !== id)
+                                : [...current, id],
+                            )
+                          }
+                        />
+                      )
+                    })
+                  )}
+                </div>
+              </div>
+
+              {itemError ? <p className="text-sm text-red-600">{itemError}</p> : null}
+
+              <div className="flex flex-wrap items-center justify-end gap-3">
+                <button
+                  type="button"
+                  className="text-xs font-semibold text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-main)]"
+                  onClick={() => {
+                    setItemModalOpen(false)
+                    setItemError(null)
+                  }}
+                >
+                  Cancelar
+                </button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    const trimmedName = itemName.trim()
+                    const unitPrice = Number(itemUnitPrice)
+                    const quantity = Math.max(1, Math.floor(Number(itemQuantity)))
+
+                    if (!trimmedName) {
+                      setItemError('El nombre del item es obligatorio.')
+                      return
+                    }
+                    if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
+                      setItemError('El precio unitario debe ser mayor que 0.')
+                      return
+                    }
+                    if (!Number.isFinite(quantity) || quantity <= 0) {
+                      setItemError('La cantidad debe ser mayor que 0.')
+                      return
+                    }
+                    if (itemParticipantIds.length === 0) {
+                      setItemError('Selecciona al menos un participante.')
+                      return
+                    }
+
+                  const nextItem: InvoiceItem = {
+                    id: editingItemId ?? createId(),
+                    name: trimmedName,
+                    unitPrice,
+                    quantity,
+                    participantIds: itemParticipantIds,
+                  }
+
+                    setItems((current) => {
+                      if (editingItemId) {
+                        return current.map((item) =>
+                          item.id === editingItemId ? nextItem : item,
+                        )
+                      }
+                      return [...current, nextItem]
+                    })
+                  setItemModalOpen(false)
+                  setEditingItemId(null)
+                  setItemName('')
+                  setItemUnitPrice('')
+                  setItemQuantity('1')
+                  setItemParticipantIds([])
+                  setItemError(null)
+                }}
+              >
+                  {editingItemId ? 'Guardar item' : 'Agregar item'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <SectionCard
       title="Gastos"
       description="Registra cada gasto con su pagador y participantes. Elige reparto equitativo o por consumo real, con propina y invitado especial opcional."
       badge={`${invoices.length} gasto${invoices.length === 1 ? '' : 's'}`}
@@ -339,15 +558,50 @@ export function InvoiceSection({
         </div>
 
         <div className="flex items-center justify-end">
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => setShowForm((current) => !current)}
-            data-tour="invoice-add"
-          >
-            <Plus className="h-4 w-4" />
-            {showForm ? 'Cerrar formulario' : 'Agregar gasto'}
-          </Button>
+          {showForm ? (
+            editingInvoiceId ? null : (
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => setShowForm(false)}
+              data-tour="invoice-add"
+            >
+              <X className="h-4 w-4" />
+              Cerrar formulario
+            </Button>
+            )
+          ) : (
+            <details className="relative" ref={addMenuRef}>
+              <summary
+                className="flex cursor-pointer list-none items-center gap-2 rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-2 text-sm font-semibold text-[color:var(--color-text-muted)] hover:border-[color:var(--color-primary-light)] hover:text-[color:var(--color-text-main)]"
+                data-tour="invoice-add"
+              >
+                Agregar gasto
+                <ChevronDown className="h-4 w-4" />
+              </summary>
+              <div className="absolute right-0 z-10 mt-2 w-56 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-2 shadow-md">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForm(true)
+                    closeAddMenu()
+                  }}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-[color:var(--color-text-main)] hover:bg-[color:var(--color-surface-muted)]"
+                >
+                  <Plus className="h-4 w-4" />
+                  Manual
+                </button>
+                <button
+                  type="button"
+                  disabled
+                  className="mt-1 flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-[color:var(--color-text-muted)] opacity-60"
+                >
+                  <Receipt className="h-4 w-4" />
+                  Escanear factura (pronto)
+                </button>
+              </div>
+            </details>
+          )}
         </div>
 
         {showForm ? (
@@ -412,7 +666,7 @@ export function InvoiceSection({
 
             {includeTip ? (
               <div className="md:col-span-2 space-y-2">
-                <p className="text-xs font-semibold tracking-wide text-[color:var(--color-text-muted)]">
+                <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
                   Propina
                 </p>
                 <div className="flex items-center">
@@ -436,7 +690,7 @@ export function InvoiceSection({
 
             {birthdayEnabled ? (
               <div className="space-y-2">
-                <p className="text-xs font-semibold tracking-wide text-[color:var(--color-text-muted)]">
+                <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
                   Invitado especial
                 </p>
                 <Select
@@ -459,7 +713,7 @@ export function InvoiceSection({
 
             {showParticipants ? (
               <div className="md:col-span-4 space-y-2" data-tour="invoice-participants">
-                <p className="text-xs font-semibold tracking-wide text-[color:var(--color-text-muted)]">
+                <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
                   Personas incluidas
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -492,8 +746,8 @@ export function InvoiceSection({
             {showConsumption ? (
               <div className="md:col-span-4 space-y-4">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-xs font-semibold tracking-wide text-[color:var(--color-text-muted)]">
-                    Consumo por persona
+                  <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
+                    Items del consumo
                   </p>
                   <p className="text-[11px] font-semibold text-[color:var(--color-text-muted)] sm:text-right">
                     Total registrado:{' '}
@@ -502,56 +756,149 @@ export function InvoiceSection({
                     </span>
                   </p>
                 </div>
-                {effectiveParticipantIds.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4 text-center">
-                    <p className="text-sm text-[color:var(--color-text-muted)]">
-                      Selecciona al menos una persona para registrar su consumo.
-                    </p>
+
+                {items.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4 text-sm text-[color:var(--color-text-muted)]">
+                    Aun no hay items. Usa &quot;Agregar item&quot; para empezar.
                   </div>
                 ) : (
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {effectiveParticipantIds.map((id) => (
-                      <div
-                        key={id}
-                        className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-3 text-sm"
-                      >
-                        <p className="text-xs font-semibold text-[color:var(--color-text-main)]">
-                          {resolvePersonName(id, people)}
-                        </p>
-                        <div className="mt-2 flex items-center rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-input)] focus-within:border-[color:var(--color-primary-main)] focus-within:ring-1 focus-within:ring-[color:var(--color-focus-ring)]">
-                          <span className="flex h-9 items-center rounded-l-md border border-[color:var(--color-border-subtle)] border-r-0 bg-[color:var(--color-surface-muted)] px-2 text-[10px] font-semibold text-[color:var(--color-text-muted)]">
-                            {currency}
-                          </span>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            className="w-full appearance-none rounded-r-md border-0 bg-transparent px-2 text-sm text-[color:var(--color-text-main)] outline-none focus:outline-none focus-visible:ring-0"
-                            data-testid={`consumption-${id}`}
-                            value={consumptions[id] ?? ''}
-                            onChange={(e) =>
-                              setConsumptions((curr) => ({
-                                ...curr,
-                                [id]: e.target.value,
-                              }))
-                            }
-                          />
+                  <div className="space-y-3">
+                    {items.map((item) => {
+                      const isExpanded = Boolean(expandedItems[item.id])
+                      const itemTotal = getItemTotal(item)
+                      const shares = buildItemShares(item)
+                      return (
+                        <div
+                          key={item.id}
+                          className="card-interactive overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)]"
+                        >
+                          <div className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="space-y-1">
+                              <p className="font-semibold text-[color:var(--color-text-main)]">
+                                {item.name}
+                              </p>
+                              <p className="text-xs text-[color:var(--color-text-muted)]">
+                                Cantidad: {item.quantity} - Unitario: {currency}{' '}
+                                {item.unitPrice.toFixed(2)}
+                              </p>
+                              <p className="text-[10px] uppercase tracking-wide text-[color:var(--color-text-muted)]">
+                                Participantes: {item.participantIds.length}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className="ds-badge-soft">
+                                {currency} {itemTotal.toFixed(2)}
+                              </span>
+                              <button
+                                type="button"
+                                className="inline-flex items-center gap-1 text-[color:var(--color-primary-main)] hover:underline"
+                                onClick={() =>
+                                  setExpandedItems((current) => ({
+                                    ...current,
+                                    [item.id]: !current[item.id],
+                                  }))
+                                }
+                              >
+                                {isExpanded ? 'Ocultar detalle' : 'Ver detalle'}
+                                {isExpanded ? (
+                                  <ChevronUp className="h-3.5 w-3.5" />
+                                ) : (
+                                  <ChevronDown className="h-3.5 w-3.5" />
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                className="text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-main)]"
+                                onClick={() => {
+                                  const nextParticipants = item.participantIds.filter((id) =>
+                                    effectiveParticipantIds.includes(id),
+                                  )
+                                  setEditingItemId(item.id)
+                                  setItemName(item.name)
+                                  setItemUnitPrice(String(item.unitPrice))
+                                  setItemQuantity(String(item.quantity))
+                                  setItemParticipantIds(nextParticipants)
+                                  setItemError(null)
+                                  setItemModalOpen(true)
+                                }}
+                                aria-label="Editar item"
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                className="text-[color:var(--color-accent-danger)] hover:text-[color:var(--color-accent-danger)]/80"
+                                onClick={() =>
+                                  setItems((current) =>
+                                    current.filter((entry) => entry.id !== item.id),
+                                  )
+                                }
+                                aria-label="Eliminar item"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {isExpanded ? (
+                            <div className="animate-fade-in border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] p-4 text-sm text-[color:var(--color-text-main)]">
+                              {shares.length === 0 ? (
+                                <p className="text-sm text-[color:var(--color-text-muted)]">
+                                  Sin participantes asignados.
+                                </p>
+                              ) : (
+                                <div className="space-y-2">
+                                  {shares.map((share) => (
+                                    <div
+                                      key={`${item.id}-${share.personId}`}
+                                      className="flex items-center justify-between rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-2"
+                                    >
+                                      <span className="font-semibold text-[color:var(--color-text-main)]">
+                                        {resolvePersonName(share.personId, people)}
+                                      </span>
+                                      <span className="font-semibold text-[color:var(--color-primary-main)]">
+                                        {currency} {share.amount.toFixed(2)}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ) : null}
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingItemId(null)
+                    setItemName('')
+                    setItemUnitPrice('')
+                    setItemQuantity('1')
+                    setItemParticipantIds([])
+                    setItemError(null)
+                    setItemModalOpen(true)
+                  }}
+                  className="flex w-full items-center justify-between rounded-lg border border-dashed border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-4 py-3 text-sm font-semibold text-[color:var(--color-text-muted)] transition hover:border-[color:var(--color-primary-light)] hover:text-[color:var(--color-text-main)]"
+                >
+                  <span>Agregar item</span>
+                  <Plus className="h-4 w-4" />
+                </button>
               </div>
             ) : null}
 
             {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
-            <div className="md:col-span-4 flex flex-wrap items-center justify-end gap-3">
+            <div className="md:col-span-4 flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-end">
               <details className="relative w-full sm:w-auto" ref={optionsMenuRef}>
                 <summary
-                  className="cursor-pointer list-none rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-1.5 text-xs font-semibold text-[color:var(--color-text-muted)] hover:border-[color:var(--color-primary-light)] hover:text-[color:var(--color-text-main)] sm:ml-auto sm:inline-flex"
+                  className="flex w-full cursor-pointer list-none items-center justify-center gap-2 rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-2 text-xs font-semibold text-[color:var(--color-text-muted)] hover:border-[color:var(--color-primary-light)] hover:text-[color:var(--color-text-main)] sm:ml-auto sm:w-32 sm:inline-flex"
                   data-tour="invoice-advanced-toggle"
                 >
+                  <SlidersHorizontal className="h-4 w-4" />
                   Opciones
                 </summary>
                 <div className="absolute left-0 right-0 z-10 mt-2 w-full rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-2 shadow-md sm:left-auto sm:right-0 sm:w-52">
@@ -640,8 +987,9 @@ export function InvoiceSection({
                 type="submit"
                 disabled={people.length === 0}
                 data-tour="invoice-save"
+                className="w-full sm:w-44"
               >
-                <Plus className="h-4 w-4" />
+                <Save className="h-4 w-4" />
                 {editingInvoiceId ? 'Guardar cambios' : 'Guardar gasto'}
               </Button>
             </div>
@@ -695,6 +1043,15 @@ export function InvoiceSection({
                         Reparto:{' '}
                         {invoice.divisionMethod === 'consumption' ? 'Consumo real' : 'Equitativo'}
                       </p>
+                      {invoice.divisionMethod === 'consumption' && invoice.items?.length ? (
+                        <p className="text-xs text-[color:var(--color-text-muted)]">
+                          Items:{' '}
+                          {invoice.items.slice(0, 2).map((item) => item.name).join(', ')}
+                          {invoice.items.length > 2
+                            ? ` · +${invoice.items.length - 2} más`
+                            : ''}
+                        </p>
+                      ) : null}
                       {invoice.tipAmount ? (
                         <p className="text-xs text-[color:var(--color-text-muted)]">
                           Propina: {currency} {invoice.tipAmount.toFixed(2)}
@@ -770,7 +1127,48 @@ export function InvoiceSection({
                           Cerrar
                         </button>
                       </div>
+                      {detailInvoice.divisionMethod === 'consumption' &&
+                      detailInvoice.items?.length ? (
+                        <div className="mt-3 space-y-2">
+                          <p className="text-xs font-semibold text-[color:var(--color-text-main)]">
+                            Items del consumo
+                          </p>
+                          <div className="space-y-2">
+                            {detailInvoice.items.map((item) => {
+                              const participants = item.participantIds
+                                .map((id) => resolvePersonName(id, people))
+                                .join(', ')
+                              return (
+                                <div
+                                  key={item.id}
+                                  className="rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-2"
+                                >
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="font-semibold text-[color:var(--color-text-main)]">
+                                      {item.name}
+                                    </span>
+                                    <span className="text-[color:var(--color-primary-main)] font-semibold">
+                                      {currency} {getItemTotal(item).toFixed(2)}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-[color:var(--color-text-muted)]">
+                                    Cantidad: {item.quantity} · Unitario: {currency}{' '}
+                                    {item.unitPrice.toFixed(2)}
+                                  </p>
+                                  <p className="text-[11px] text-[color:var(--color-text-muted)]">
+                                    Participantes:{' '}
+                                    {participants.length > 0 ? participants : 'Sin participantes'}
+                                  </p>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      ) : null}
                       <div className="mt-3 space-y-2">
+                        <p className="text-xs font-semibold text-[color:var(--color-text-main)]">
+                          Consumo por persona
+                        </p>
                         {shares.map((share) => (
                           <div
                             key={share.personId}
@@ -809,12 +1207,44 @@ export function InvoiceSection({
           )}
         </div>
       </div>
-    </SectionCard>
+      </SectionCard>
+    </>
   )
 }
 
 function resolvePersonName(id: string, people: PersonForUI[]) {
   return people.find((person) => person.id === id)?.name ?? 'Desconocido'
+}
+
+function getItemTotal(item: InvoiceItem) {
+  return roundToCents(item.unitPrice * item.quantity)
+}
+
+function buildItemShares(item: InvoiceItem) {
+  const participants = item.participantIds
+  if (participants.length === 0) return []
+  const total = getItemTotal(item)
+  const rawShare = total / participants.length
+  const share = roundToCents(rawShare)
+  const totalRounded = roundToCents(share * participants.length)
+  const diff = roundToCents(total - totalRounded)
+  return participants.map((personId, index) => ({
+    personId,
+    amount: roundToCents(share + (index === participants.length - 1 ? diff : 0)),
+  }))
+}
+
+function buildConsumptionsFromItems(items: InvoiceItem[], participantIds: string[]) {
+  const base = participantIds.reduce<Record<string, number>>((acc, id) => {
+    acc[id] = 0
+    return acc
+  }, {})
+  return items.reduce<Record<string, number>>((acc, item) => {
+    buildItemShares(item).forEach((share) => {
+      acc[share.personId] = roundToCents((acc[share.personId] ?? 0) + share.amount)
+    })
+    return acc
+  }, base)
 }
 
 function calculateShares(invoice: InvoiceForUI, people: PersonForUI[]) {

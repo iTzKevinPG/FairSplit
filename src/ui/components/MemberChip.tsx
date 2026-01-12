@@ -26,7 +26,7 @@ export function MemberChip({
       <span className="truncate">
         {name}
         {isPayer ? (
-          <span className="ml-1 text-xs text-[color:var(--color-text-muted)]">
+          <span className="ml-1 rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-1.5 py-0.5 text-[10px] font-semibold text-[color:var(--color-text-main)]">
             (Pagador)
           </span>
         ) : null}

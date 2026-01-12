@@ -4,6 +4,7 @@ import { Button } from '../../shared/components/ui/button'
 import { Input } from '../../shared/components/ui/input'
 import { SectionCard } from './SectionCard'
 import type { PersonForUI } from '../../shared/state/fairsplitStore'
+import { toast } from '../../shared/components/ui/sonner'
 
 interface PeopleSectionProps {
   people: PersonForUI[]
@@ -62,7 +63,14 @@ export function PeopleSection({
         err instanceof Error
           ? err.message
           : 'No puedes eliminar este participante.'
-      setError(message)
+      toast.warning(message, {
+        style: {
+          borderColor: 'var(--color-accent-warning)',
+          backgroundColor: 'var(--color-warning-bg)',
+          color: '#ffffff',
+        },
+        duration: 3500,
+      })
     }
   }
 

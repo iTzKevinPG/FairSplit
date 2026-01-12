@@ -308,6 +308,7 @@ function EventDetailPage() {
           <SummarySection
             balances={balances}
             people={selectedEvent.people}
+            invoices={selectedEvent.invoices}
             currency={selectedEvent.currency}
             tipTotal={tipTotal}
           />

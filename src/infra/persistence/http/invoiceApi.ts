@@ -10,6 +10,15 @@ export type ApiInvoice = {
   divisionMethod: 'equal' | 'consumption';
   tipAmount?: number;
   birthdayPersonId?: string;
+  items?: ApiInvoiceItem[];
+};
+
+export type ApiInvoiceItem = {
+  id: string;
+  name: string;
+  unitPrice: number;
+  quantity: number;
+  participantIds: string[];
 };
 
 type CreateInvoicePayload = {
@@ -19,6 +28,12 @@ type CreateInvoicePayload = {
   participantIds: string[];
   divisionMethod: 'equal' | 'consumption';
   consumptions?: Record<string, number>;
+  items?: Array<{
+    name: string;
+    unitPrice: number;
+    quantity: number;
+    participantIds: string[];
+  }>;
   tipAmount?: number;
   birthdayPersonId?: string;
 };
@@ -122,6 +137,7 @@ export type ApiInvoiceDetail = {
     tipShare: number;
     isBirthdayPerson: boolean;
   }>;
+  items?: ApiInvoiceItem[];
 };
 
 export async function listInvoicesApi(eventId: string): Promise<ApiInvoiceDetail[]> {

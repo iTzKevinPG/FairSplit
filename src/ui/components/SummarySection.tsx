@@ -1,11 +1,12 @@
 import type { Balance } from '../../domain/settlement/Balance'
-import type { PersonForUI } from '../../shared/state/fairsplitStore'
+import type { InvoiceForUI, PersonForUI } from '../../shared/state/fairsplitStore'
 import { AmountDisplay } from './AmountDisplay'
 import { SectionCard } from './SectionCard'
 
 interface SummarySectionProps {
   balances: Balance[]
   people: PersonForUI[]
+  invoices: InvoiceForUI[]
   currency: string
   tipTotal?: number
 }
@@ -13,6 +14,7 @@ interface SummarySectionProps {
 export function SummarySection({
   balances,
   people,
+  invoices,
   currency,
   tipTotal,
 }: SummarySectionProps) {
@@ -31,6 +33,10 @@ export function SummarySection({
     .filter((balance) => balance.net < 0)
     .sort((a, b) => a.net - b.net)
   const settled = normalizedBalances.filter((balance) => balance.net === 0)
+  const items = invoices.flatMap((invoice) => invoice.items ?? [])
+  const itemNames = items.map((item) => item.name)
+  const itemPreview = itemNames.slice(0, 3).join(', ')
+  const remainingItems = Math.max(0, itemNames.length - 3)
 
   return (
     <SectionCard
@@ -52,6 +58,15 @@ export function SummarySection({
         </div>
       ) : (
         <div className="space-y-4">
+          {itemNames.length > 0 ? (
+            <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-4 py-3 text-sm text-[color:var(--color-text-muted)]">
+              <span className="font-semibold text-[color:var(--color-text-main)]">
+                Items registrados:
+              </span>{' '}
+              {itemPreview}
+              {remainingItems > 0 ? ` · +${remainingItems} más` : ''}
+            </div>
+          ) : null}
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="rounded-xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[color:var(--color-text-muted)]">
