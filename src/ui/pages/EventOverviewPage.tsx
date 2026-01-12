@@ -40,15 +40,14 @@ function EventOverviewPage() {
     const hasAuthToken =
       typeof window !== 'undefined' &&
       Boolean(window.localStorage.getItem('fairsplit_auth_token'))
-    const hasEventInList = events.some((event) => event.id === eventId)
-    if (hasAuthToken && hasEventInList) {
+    if (hasAuthToken) {
       void loadEventDetailsForList([eventId])
       return
     }
-    if (!hasAuthToken && hasEventInList) {
-      return
+    const hasEventInList = events.some((event) => event.id === eventId)
+    if (!hasEventInList) {
+      void loadPublicOverview(eventId)
     }
-    void loadPublicOverview(eventId)
   }, [eventId, events, loadEventDetailsForList, loadPublicOverview])
 
   useEffect(() => {
