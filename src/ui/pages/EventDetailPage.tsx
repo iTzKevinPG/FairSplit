@@ -4,12 +4,15 @@ import {
   BarChart3,
   LayoutGrid,
   Receipt,
+  Share2,
   Users,
   Wallet,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { buttonVariants } from '../../shared/components/ui/button'
+import { Button } from '../../shared/components/ui/button'
+import { toast } from '../../shared/components/ui/sonner'
 import { useFairSplitStore } from '../../shared/state/fairsplitStore'
 import { useEvents } from '../hooks/useEvents'
 import { BentoOverview } from '../components/BentoOverview'
@@ -155,6 +158,46 @@ function EventDetailPage() {
       ) ?? 0,
     [selectedEvent],
   )
+  const shareUrl =
+    typeof window !== 'undefined' && eventId
+      ? `${window.location.origin}/events/${eventId}/overview`
+      : ''
+  const handleShare = async () => {
+    if (!shareUrl) return
+    const isMobile =
+      window.matchMedia('(max-width: 640px)').matches ||
+      /Mobi|Android/i.test(navigator.userAgent)
+    if (isMobile && navigator.share) {
+      try {
+        await navigator.share({
+          title: 'FairSplit',
+          text: 'Vista general del evento',
+          url: shareUrl,
+        })
+        return
+      } catch {
+        // fallback to copy
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      toast.success('Link copiado al portapapeles.')
+    } catch {
+      const textarea = document.createElement('textarea')
+      textarea.value = shareUrl
+      textarea.style.position = 'fixed'
+      textarea.style.opacity = '0'
+      document.body.appendChild(textarea)
+      textarea.select()
+      const ok = document.execCommand('copy')
+      document.body.removeChild(textarea)
+      if (ok) {
+        toast.success('Link copiado al portapapeles.')
+      } else {
+        toast.error('No se pudo copiar el link.')
+      }
+    }
+  }
   const settledByPersonId = useMemo(() => {
     if (!selectedEvent) return {}
     const netByPersonId = new Map<string, number>()
@@ -242,9 +285,17 @@ function EventDetailPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[color:var(--color-primary-main)]">
             Evento
           </p>
-          <h1 className="text-3xl font-semibold text-[color:var(--color-text-main)] sm:text-4xl">
-            {selectedEvent.name}
-          </h1>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h1 className="text-3xl font-semibold text-[color:var(--color-text-main)] sm:text-4xl">
+              {selectedEvent.name}
+            </h1>
+            {activeTab === 'overview' ? (
+              <Button type="button" size="sm" variant="soft" onClick={handleShare}>
+                <Share2 className="h-4 w-4" />
+                Compartir
+              </Button>
+            ) : null}
+          </div>
           <div className="flex flex-wrap gap-2 text-xs text-[color:var(--color-text-muted)]">
             <span className="rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-3 py-1">
               Moneda: <span className="font-semibold text-[color:var(--color-text-main)]">{selectedEvent.currency}</span>
@@ -350,7 +401,6 @@ function EventDetailPage() {
           aria-hidden={activeTab !== 'overview'}
         >
           <BentoOverview
-            eventId={selectedEvent.id}
             people={selectedEvent.people}
             invoices={selectedEvent.invoices}
             balances={balances}

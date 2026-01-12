@@ -1,16 +1,12 @@
-﻿import { ArrowRight, Share2 } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import type { Balance } from '../../domain/settlement/Balance'
 import type { SettlementTransfer } from '../../domain/settlement/SettlementTransfer'
 import type { TransferStatus } from '../../domain/settlement/TransferStatus'
 import type { InvoiceForUI, PersonForUI } from '../../shared/state/fairsplitStore'
-import { useAuthStore } from '../../shared/state/authStore'
-import { toast } from '../../shared/components/ui/sonner'
-import { Button } from '../../shared/components/ui/button'
 import { Checkbox } from '../../shared/components/ui/checkbox'
 import { AmountDisplay } from './AmountDisplay'
 
 interface BentoOverviewProps {
-  eventId: string
   people: PersonForUI[]
   invoices: InvoiceForUI[]
   balances: Balance[]
@@ -21,7 +17,6 @@ interface BentoOverviewProps {
 }
 
 export function BentoOverview({
-  eventId,
   people,
   invoices,
   balances,
@@ -30,7 +25,6 @@ export function BentoOverview({
   settledByPersonId,
   currency,
 }: BentoOverviewProps) {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated())
   const totalInvoices = invoices.length
   const totalAmount = invoices.reduce((acc, inv) => acc + inv.amount, 0)
   const totalTips = invoices.reduce((acc, inv) => acc + (inv.tipAmount ?? 0), 0)
@@ -49,48 +43,6 @@ export function BentoOverview({
     return Number(Boolean(aSettled)) - Number(Boolean(bSettled))
   })
   const previewTransfers = orderedTransfers
-  const shareUrl =
-    typeof window !== 'undefined'
-      ? `${window.location.origin}/events/${eventId}/overview`
-      : ''
-
-  const handleShare = async () => {
-    if (typeof window === 'undefined' || !shareUrl) return
-    const isMobile =
-      window.matchMedia('(max-width: 640px)').matches ||
-      /Mobi|Android/i.test(navigator.userAgent)
-    if (isMobile && navigator.share) {
-      try {
-        await navigator.share({
-          title: 'FairSplit',
-          text: 'Vista general del evento',
-          url: shareUrl,
-        })
-        return
-      } catch {
-        // Fallback to copy
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(shareUrl)
-      toast.success('Link copiado al portapapeles.')
-    } catch {
-      const textarea = document.createElement('textarea')
-      textarea.value = shareUrl
-      textarea.style.position = 'fixed'
-      textarea.style.opacity = '0'
-      document.body.appendChild(textarea)
-      textarea.select()
-      const ok = document.execCommand('copy')
-      document.body.removeChild(textarea)
-      if (ok) {
-        toast.success('Link copiado al portapapeles.')
-      } else {
-        toast.error('No se pudo copiar el link.')
-      }
-    }
-  }
-
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <div className="animate-fade-in rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4 md:col-span-2">
@@ -124,18 +76,6 @@ export function BentoOverview({
               <span className="ds-badge-soft">
                 Propina: {currency} {roundToCents(totalTips).toFixed(2)}
               </span>
-            ) : null}
-            {isAuthenticated ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="soft"
-                className="ml-auto"
-                onClick={handleShare}
-              >
-                <Share2 className="h-4 w-4" />
-                Compartir
-              </Button>
             ) : null}
           </div>
         </div>
