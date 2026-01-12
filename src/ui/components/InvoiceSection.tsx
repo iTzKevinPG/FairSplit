@@ -110,12 +110,12 @@ export function InvoiceSection({
     : availablePersonIds
   const birthdayOptions = showParticipants ? sanitizedParticipantIds : availablePersonIds
 
-  useEffect(() => {
-    if (!resolvedPayerId) return
+  const handlePayerChange = (nextPayerId: string) => {
+    setPayerId(nextPayerId)
     setParticipantIds((current) =>
-      current.includes(resolvedPayerId) ? current : [...current, resolvedPayerId],
+      current.includes(nextPayerId) ? current : [...current, nextPayerId],
     )
-  }, [resolvedPayerId])
+  }
 
   const handleToggleParticipant = (id: string) => {
     if (id === resolvedPayerId) return
@@ -639,7 +639,7 @@ export function InvoiceSection({
 
             <Select
               value={resolvedPayerId || undefined}
-              onValueChange={setPayerId}
+              onValueChange={handlePayerChange}
               disabled={people.length === 0}
             >
               <SelectTrigger data-tour="invoice-payer">
