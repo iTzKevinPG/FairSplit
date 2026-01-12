@@ -60,6 +60,7 @@ function EventDetailPage() {
     getBalances,
     getTransfers,
     getSelectedEvent,
+    loadTransferStatuses,
     transferStatusesByEvent,
     setTransferStatus,
   } = useFairSplitStore()
@@ -127,6 +128,13 @@ function EventDetailPage() {
   }, [eventId, events.length, getSelectedEvent, navigate])
 
   const selectedEvent = getSelectedEvent()
+  useEffect(() => {
+    const hasAuthToken =
+      typeof window !== 'undefined' &&
+      Boolean(window.localStorage.getItem('fairsplit_auth_token'))
+    if (!hasAuthToken || !selectedEvent) return
+    void loadTransferStatuses(selectedEvent.id)
+  }, [loadTransferStatuses, selectedEvent])
   const balances = useMemo(
     () => (selectedEvent ? getBalances() : []),
     [getBalances, selectedEvent],

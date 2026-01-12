@@ -1,6 +1,7 @@
 import { API_BASE_URL } from '../../config/api';
 import { withLoading } from './withLoading';
 import type { ApiInvoiceDetail } from './invoiceApi';
+import type { ApiTransferStatusItem } from './transferStatusApi';
 
 export type ApiSummaryItem = {
   participantId: string;
@@ -81,6 +82,7 @@ export type ApiPublicOverview = {
   invoices: ApiInvoiceDetail[];
   balances: ApiSummaryItem[];
   transfers: ApiTransferItem[];
+  transferStatuses: ApiTransferStatusItem[];
 };
 
 export async function getPublicOverviewApi(eventId: string): Promise<ApiPublicOverview> {

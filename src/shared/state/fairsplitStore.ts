@@ -726,6 +726,19 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
           birthdayPersonId: det.birthdayPersonId,
         }
       })
+      const transferStatusMap = (payload.transferStatuses ?? []).reduce<
+        Record<string, TransferStatus>
+      >((acc, status) => {
+        const key = buildTransferStatusKey(status.fromParticipantId, status.toParticipantId)
+        acc[key] = {
+          eventId: payload.event.id,
+          fromPersonId: status.fromParticipantId,
+          toPersonId: status.toParticipantId,
+          isSettled: status.isSettled,
+          settledAt: status.settledAt ?? null,
+        }
+        return acc
+      }, {})
 
       await eventRepository.save({
         id: payload.event.id,
@@ -742,6 +755,10 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
       set((state) => ({
         events,
         selectedEventId: state.selectedEventId ?? payload.event.id,
+        transferStatusesByEvent: {
+          ...state.transferStatusesByEvent,
+          [payload.event.id]: transferStatusMap,
+        },
       }))
       loadedEventData.add(eventId)
     } catch (error) {

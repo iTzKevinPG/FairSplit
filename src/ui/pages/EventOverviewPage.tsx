@@ -25,6 +25,7 @@ function EventOverviewPage() {
     hasHydrated,
     isEventLoading,
     loadPublicOverview,
+    loadTransferStatuses,
     transferStatusesByEvent,
   } = useFairSplitStore()
   const hasLoadedRef = useRef(false)
@@ -61,6 +62,13 @@ function EventOverviewPage() {
   const hasEventInStore = eventId
     ? events.some((event) => event.id === eventId)
     : false
+  useEffect(() => {
+    const hasAuthToken =
+      typeof window !== 'undefined' &&
+      Boolean(window.localStorage.getItem('fairsplit_auth_token'))
+    if (!hasAuthToken || !selectedEvent) return
+    void loadTransferStatuses(selectedEvent.id)
+  }, [loadTransferStatuses, selectedEvent])
   const balances = useMemo(
     () => (selectedEvent ? getBalances() : []),
     [getBalances, selectedEvent],
