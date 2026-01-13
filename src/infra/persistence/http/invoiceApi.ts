@@ -52,12 +52,12 @@ function buildHeaders() {
   };
 }
 
-function buildOptionalAuthHeaders() {
+function buildOptionalAuthHeaders(): HeadersInit | undefined {
   const token =
     typeof window !== 'undefined'
       ? localStorage.getItem('fairsplit_auth_token')
       : null;
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  return token ? { Authorization: `Bearer ${token}` } : undefined;
 }
 
 export async function createInvoiceApi(

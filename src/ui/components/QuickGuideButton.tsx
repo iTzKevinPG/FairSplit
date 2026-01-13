@@ -10,6 +10,7 @@ type RequirementKey =
   | 'event-created'
   | 'people-added'
   | 'invoice-added'
+  | 'invoice-add-menu-open'
   | 'invoice-form-open'
   | 'invoice-advanced'
   | 'invoice-description'
@@ -41,7 +42,11 @@ const mobileDockPosition: StepType['position'] = ({ windowWidth }) => {
   return 'bottom'
 }
 
-const autoAdvanceRequirements: RequirementKey[] = ['invoice-added', 'invoice-form-open']
+const autoAdvanceRequirements: RequirementKey[] = [
+  'invoice-added',
+  'invoice-form-open',
+  'invoice-add-menu-open',
+]
 
 const homeSteps: GuideStepConfig[] = [
   {
@@ -94,10 +99,20 @@ const eventSteps: GuideStepConfig[] = [
   {
     selector: '[data-tour="invoice-add"]',
     title: 'Agregar gasto',
-    description: 'Abre el formulario para registrar un gasto.',
+    description: 'Abre el selector para elegir como agregar un gasto.',
+    requirement: 'invoice-add-menu-open',
+    tabId: 'invoices',
+    hint: 'Pulsa "Agregar gasto" para ver las opciones.',
+    mutationObservables: ['[data-tour-active-tab]'],
+    resizeObservables: ['[data-tour-active-tab]'],
+  },
+  {
+    selector: '[data-tour="invoice-add-manual"]',
+    title: 'Tipo de gasto',
+    description: 'Selecciona Manual para abrir el formulario.',
     requirement: 'invoice-form-open',
     tabId: 'invoices',
-    hint: 'Pulsa "Agregar gasto" para continuar.',
+    hint: 'Selecciona Manual para continuar.',
     mutationObservables: ['[data-tour-active-tab]'],
     resizeObservables: ['[data-tour-active-tab]'],
   },
@@ -296,6 +311,8 @@ function GuideStepContent({
         return peopleCount >= 2
       case 'invoice-added':
         return invoiceCount > 0
+      case 'invoice-add-menu-open':
+        return hasVisibleSection('[data-tour="invoice-add-menu"][open]')
       case 'invoice-form-open':
         return hasVisibleSection('[data-tour="invoice-form"]')
       case 'invoice-advanced':
@@ -541,6 +558,7 @@ export function QuickGuideButton() {
       'event-created',
       'people-added',
       'invoice-added',
+      'invoice-add-menu-open',
       'invoice-form-open',
       'invoice-advanced',
       'tab-invoices',

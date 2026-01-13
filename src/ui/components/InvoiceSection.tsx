@@ -1,14 +1,4 @@
-import {
-  ChevronDown,
-  ChevronUp,
-  Edit2,
-  Plus,
-  Receipt,
-  Save,
-  SlidersHorizontal,
-  Trash2,
-  X
-} from 'lucide-react'
+import { ChevronDown, Plus, Receipt, Save, SlidersHorizontal, X } from 'lucide-react'
 import { Badge } from '../../shared/components/ui/badge'
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useTour } from '@reactour/tour'
@@ -24,6 +14,8 @@ import {
 import { MemberChip } from './MemberChip'
 import { SectionCard } from './SectionCard'
 import { InvoiceList } from './invoice/InvoiceList'
+import { ConsumptionItemsSection } from './invoice/ConsumptionItemsSection'
+import { InvoiceItemModal } from './invoice/InvoiceItemModal'
 import { OcrDecisionModal } from './invoice/OcrDecisionModal'
 import { ScanProgressBanner } from './invoice/ScanProgressBanner'
 import type { InvoiceItem } from '../../domain/invoice/Invoice'
@@ -124,13 +116,17 @@ export function InvoiceSection({
   const [scanIsGuest, setScanIsGuest] = useState(false)
   const [scanModalOpen, setScanModalOpen] = useState(false)
   const [rescanConfirmOpen, setRescanConfirmOpen] = useState(false)
-  const [scanPreviewOpen, setScanPreviewOpen] = useState(false)
 
   const totalAmount = invoices.reduce((acc, inv) => acc + inv.amount, 0)
   const availablePersonIds = people.map((person) => person.id)
   const resolvedPayerId =
     payerId && availablePersonIds.includes(payerId) ? payerId : availablePersonIds[0]
-  const sanitizedParticipantIds = participantIds.filter((id) =>
+  const participantIdsWithPayer = resolvedPayerId
+    ? participantIds.includes(resolvedPayerId)
+      ? participantIds
+      : [...participantIds, resolvedPayerId]
+    : participantIds
+  const sanitizedParticipantIds = participantIdsWithPayer.filter((id) =>
     availablePersonIds.includes(id),
   )
   const effectiveParticipantIds = showParticipants
@@ -188,7 +184,6 @@ export function InvoiceSection({
     setScanError(null)
     setScanModalOpen(false)
     setRescanConfirmOpen(false)
-    setScanPreviewOpen(false)
     setScanIsGuest(false)
   }
 
@@ -469,8 +464,7 @@ export function InvoiceSection({
           setScanError(null)
           setScanModalOpen(true)
           setRescanConfirmOpen(false)
-          setScanPreviewOpen(false)
-          scanStartRef.current = null
+                scanStartRef.current = null
           toast.success('Lectura lista. Revisa y ajusta los datos.')
         } else if (status.status === 'failed') {
           window.clearInterval(scanPollRef.current!)
@@ -537,9 +531,10 @@ export function InvoiceSection({
     typeof window !== 'undefined' &&
     Boolean(window.localStorage.getItem('fairsplit_auth_token'))
   const isOcrConfirm = scanFromOcr && scanJobId && hasAuthToken && !editingInvoiceId
+  const isScanning = scanStatus !== 'idle'
   const consumptionSum = useMemo(() => {
     if (divisionMethod !== 'consumption') return 0
-    return items.reduce((acc, item) => acc + getItemTotal(item), 0)
+    return roundToCents(items.reduce((acc, item) => acc + getItemTotal(item), 0))
   }, [divisionMethod, items])
 
   useEffect(() => {
@@ -585,6 +580,12 @@ export function InvoiceSection({
     addMenuRef.current?.removeAttribute('open')
   }
 
+  const advanceTourStep = () => {
+    if (!isTourOpen || tourMeta !== 'guided') return
+    if (!steps || !setCurrentStep) return
+    setCurrentStep((current) => Math.min(current + 1, steps.length - 1))
+  }
+
   const toggleConsumption = () => {
     setShowConsumption((current) => {
       const next = !current
@@ -610,176 +611,45 @@ export function InvoiceSection({
 
   return (
     <>
-      {itemModalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6 backdrop-blur-sm">
-          <div
-            className="relative w-full max-w-lg rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-6 shadow-lg"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Item de consumo"
-          >
-            <button
-              type="button"
-              onClick={() => {
-                setItemModalOpen(false)
-                setItemError(null)
-              }}
-              className="absolute right-4 top-4 rounded-full border border-transparent p-1 text-[color:var(--color-text-muted)] hover:border-[color:var(--color-border-subtle)] hover:text-[color:var(--color-text-main)]"
-              aria-label="Cerrar item"
-            >
-              <X className="h-4 w-4" />
-            </button>
-            <div className="space-y-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[color:var(--color-primary-main)]">
-                  Item
-                </p>
-                <h2 className="text-2xl font-semibold text-[color:var(--color-text-main)]">
-                  {editingItemId ? 'Editar item' : 'Nuevo item'}
-                </h2>
-                <p className="text-sm text-[color:var(--color-text-muted)]">
-                  Define el item y quienes lo consumieron.
-                </p>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Input
-                  placeholder="Nombre del item"
-                  value={itemName}
-                  onChange={(e) => setItemName(e.target.value)}
-                  className="sm:col-span-2"
-                />
-                <div className="flex items-center">
-                  <div className="flex w-full items-center rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-input)] focus-within:border-[color:var(--color-primary-main)] focus-within:ring-1 focus-within:ring-[color:var(--color-focus-ring)]">
-                    <span className="flex h-10 items-center rounded-l-md border border-[color:var(--color-border-subtle)] border-r-0 bg-[color:var(--color-surface-muted)] px-3 text-xs font-semibold text-[color:var(--color-text-muted)]">
-                      {currency}
-                    </span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="Precio unitario"
-                      value={itemUnitPrice}
-                      onChange={(e) => setItemUnitPrice(e.target.value)}
-                      className="w-full appearance-none rounded-r-md border-0 bg-transparent px-3 text-sm text-[color:var(--color-text-main)] outline-none focus:outline-none focus-visible:ring-0"
-                    />
-                  </div>
-                </div>
-                <Input
-                  type="number"
-                  min="1"
-                  step="1"
-                  placeholder="Cantidad"
-                  value={itemQuantity}
-                  onChange={(e) => setItemQuantity(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-xs font-semibold tracking-wide text-[color:var(--color-text-muted)]">
-                  Participantes del item
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {effectiveParticipantIds.length === 0 ? (
-                    <span className="text-sm text-[color:var(--color-text-muted)]">
-                      Agrega participantes para asignar consumos.
-                    </span>
-                  ) : (
-                    effectiveParticipantIds.map((id) => {
-                      const person = people.find((entry) => entry.id === id)
-                      if (!person) return null
-                      const checked = itemParticipantIds.includes(id)
-                      const isPayer = id === resolvedPayerId
-                      return (
-                        <MemberChip
-                          key={id}
-                          name={person.name}
-                          isPayer={isPayer}
-                          isSelected={checked}
-                          isEditable
-                          onToggle={() =>
-                            setItemParticipantIds((current) =>
-                              current.includes(id)
-                                ? current.filter((entry) => entry !== id)
-                                : [...current, id],
-                            )
-                          }
-                        />
-                      )
-                    })
-                  )}
-                </div>
-              </div>
-
-              {itemError ? <p className="text-sm text-red-600">{itemError}</p> : null}
-
-              <div className="flex flex-wrap items-center justify-end gap-3">
-                <button
-                  type="button"
-                  className="text-xs font-semibold text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-main)]"
-                  onClick={() => {
-                    setItemModalOpen(false)
-                    setItemError(null)
-                  }}
-                >
-                  Cancelar
-                </button>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    const trimmedName = itemName.trim()
-                    const unitPrice = Number(itemUnitPrice)
-                    const quantity = Math.max(1, Math.floor(Number(itemQuantity)))
-
-                    if (!trimmedName) {
-                      setItemError('El nombre del item es obligatorio.')
-                      return
-                    }
-                    if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
-                      setItemError('El precio unitario debe ser mayor que 0.')
-                      return
-                    }
-                    if (!Number.isFinite(quantity) || quantity <= 0) {
-                      setItemError('La cantidad debe ser mayor que 0.')
-                      return
-                    }
-                    if (itemParticipantIds.length === 0) {
-                      setItemError('Selecciona al menos un participante.')
-                      return
-                    }
-
-                    const nextItem: InvoiceItem = {
-                      id: editingItemId ?? createId(),
-                      name: trimmedName,
-                      unitPrice,
-                      quantity,
-                      participantIds: itemParticipantIds,
-                    }
-
-                    setItems((current) => {
-                      if (editingItemId) {
-                        return current.map((item) =>
-                          item.id === editingItemId ? nextItem : item,
-                        )
-                      }
-                      return [...current, nextItem]
-                    })
-                    setItemModalOpen(false)
-                    setEditingItemId(null)
-                    setItemName('')
-                    setItemUnitPrice('')
-                    setItemQuantity('1')
-                    setItemParticipantIds([])
-                    setItemError(null)
-                  }}
-                >
-                  {editingItemId ? 'Guardar item' : 'Agregar item'}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <InvoiceItemModal
+        open={itemModalOpen}
+        currency={currency}
+        people={people}
+        resolvedPayerId={resolvedPayerId}
+        effectiveParticipantIds={effectiveParticipantIds}
+        editingItemId={editingItemId}
+        itemName={itemName}
+        itemUnitPrice={itemUnitPrice}
+        itemQuantity={itemQuantity}
+        itemParticipantIds={itemParticipantIds}
+        itemError={itemError}
+        onItemNameChange={setItemName}
+        onItemUnitPriceChange={setItemUnitPrice}
+        onItemQuantityChange={setItemQuantity}
+        onItemParticipantIdsChange={setItemParticipantIds}
+        onErrorChange={setItemError}
+        onClose={() => {
+          setItemModalOpen(false)
+          setItemError(null)
+        }}
+        onSave={(nextItem) => {
+          setItems((current) => {
+            if (editingItemId) {
+              return current.map((item) =>
+                item.id === editingItemId ? nextItem : item,
+              )
+            }
+            return [...current, nextItem]
+          })
+          setItemModalOpen(false)
+          setEditingItemId(null)
+          setItemName('')
+          setItemUnitPrice('')
+          setItemQuantity('1')
+          setItemParticipantIds([])
+          setItemError(null)
+        }}
+      />
 
       <SectionCard
         title="Gastos"
@@ -806,17 +676,37 @@ export function InvoiceSection({
               type="button"
               size="sm"
               onClick={() => setShowForm(false)}
-              data-tour="invoice-add"
+              data-tour="invoice-close"
             >
               <X className="h-4 w-4" />
               Cerrar formulario
             </Button>
             )
           ) : (
-            <details className="relative" ref={addMenuRef}>
+            <details
+              className="relative"
+              ref={addMenuRef}
+              data-tour="invoice-add-menu"
+              onToggle={(event) => {
+                const target = event.currentTarget
+                if (target.open) {
+                  advanceTourStep()
+                }
+              }}
+            >
               <summary
-                className="flex cursor-pointer list-none items-center gap-2 rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-2 text-sm font-semibold text-[color:var(--color-text-muted)] hover:border-[color:var(--color-primary-light)] hover:text-[color:var(--color-text-main)]"
+                className={`flex list-none items-center gap-2 rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-2 text-sm font-semibold text-[color:var(--color-text-muted)] ${
+                  isScanning
+                    ? 'cursor-not-allowed opacity-60'
+                    : 'cursor-pointer hover:border-[color:var(--color-primary-light)] hover:text-[color:var(--color-text-main)]'
+                }`}
                 data-tour="invoice-add"
+                aria-disabled={isScanning}
+                onClick={(event) => {
+                  if (isScanning) {
+                    event.preventDefault()
+                  }
+                }}
               >
                 Agregar gasto
                 <ChevronDown className="h-4 w-4" />
@@ -827,7 +717,11 @@ export function InvoiceSection({
                   onClick={() => {
                     setShowForm(true)
                     closeAddMenu()
+                    setTimeout(() => {
+                      advanceTourStep()
+                    }, 100);
                   }}
+                  data-tour="invoice-add-manual"
                   className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-[color:var(--color-text-main)] hover:bg-[color:var(--color-surface-muted)]"
                 >
                   <Plus className="h-4 w-4" />
@@ -902,9 +796,7 @@ export function InvoiceSection({
           items={items}
           divisionMethod={divisionMethod}
           scanIsGuest={scanIsGuest}
-          scanPreviewOpen={scanPreviewOpen}
           rescanConfirmOpen={rescanConfirmOpen}
-          onTogglePreview={() => setScanPreviewOpen((current) => !current)}
           onSelectEqual={() => {
             setDivisionMethod('equal')
             setShowConsumption(false)
@@ -934,30 +826,11 @@ export function InvoiceSection({
             ref={formRef}
           >
             <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-4">
-              {scanFromOcr ? (
-                <div className="md:col-span-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full sm:w-auto"
-                    onClick={() => {
-                      setScanModalOpen(true)
-                      setScanPreviewOpen(true)
-                    }}
-                  >
-                    Ver resumen de la lectura
-                  </Button>
-                </div>
-              ) : null}
               {divisionMethod === 'consumption' ? (
                 <div className="md:col-span-4">
                   {items.length === 0 ? (
                     <p className="mt-2">No se detectaron items. Puedes agregarlos manualmente.</p>
-                  ) : (
-                    <p className="mt-2">
-                      Asigna participantes a cada item para repartir el consumo real.
-                    </p>
-                  )}
+                  ) : null}
                 </div>
               ) : null}
               <Input
@@ -1093,160 +966,62 @@ export function InvoiceSection({
             ) : null}
 
             {showConsumption ? (
-              <div className="md:col-span-4 space-y-4">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
-                    Items del consumo
-                  </p>
-                  <p className="text-[11px] font-semibold text-[color:var(--color-text-muted)] sm:text-right">
-                    Total registrado:{' '}
-                    <span className="text-[color:var(--color-primary-main)]">
-                      {currency} {roundToCents(consumptionSum).toFixed(2)}
-                    </span>
-                  </p>
-                </div>
-
-                {items.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4 text-sm text-[color:var(--color-text-muted)]">
-                    Aun no hay items. Usa &quot;Agregar item&quot; para empezar.
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {items.map((item) => {
-                      const isExpanded = Boolean(expandedItems[item.id])
-                      const itemTotal = getItemTotal(item)
-                      const shares = buildItemShares(item)
-                      const participants = item.participantIds
-                        .map((id) => resolvePersonName(id, people))
-                        .join(', ')
-
-                      return (
-                        <div
-                          key={item.id}
-                          className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)]"
-                        >
-                          <div className="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                              <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
-                                {item.name}
-                              </p>
-                              <p className="text-[11px] text-[color:var(--color-text-muted)]">
-                                Cantidad: {item.quantity} - Unitario: {currency}{' '}
-                                {item.unitPrice.toFixed(2)}
-                              </p>
-                              <p className="text-[11px] text-[color:var(--color-text-muted)]">
-                                Participantes:{' '}
-                                {participants.length > 0 ? participants : 'Sin participantes'}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs">
-                              <span className="ds-badge-soft">
-                                {currency} {itemTotal.toFixed(2)}
-                              </span>
-                              <button
-                                type="button"
-                                className="inline-flex items-center gap-1 text-[color:var(--color-primary-main)] hover:underline"
-                                onClick={() =>
-                                  setExpandedItems((current) => ({
-                                    ...current,
-                                    [item.id]: !current[item.id],
-                                  }))
-                                }
-                              >
-                                {isExpanded ? 'Ocultar detalle' : 'Ver detalle'}
-                                {isExpanded ? (
-                                  <ChevronUp className="h-3.5 w-3.5" />
-                                ) : (
-                                  <ChevronDown className="h-3.5 w-3.5" />
-                                )}
-                              </button>
-                              <button
-                                type="button"
-                                className="text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-main)]"
-                                onClick={() => {
-                                  const nextParticipants = item.participantIds.filter((id) =>
-                                    effectiveParticipantIds.includes(id),
-                                  )
-                                  setEditingItemId(item.id)
-                                  setItemName(item.name)
-                                  setItemUnitPrice(String(item.unitPrice))
-                                  setItemQuantity(String(item.quantity))
-                                  setItemParticipantIds(nextParticipants)
-                                  setItemError(null)
-                                  setItemModalOpen(true)
-                                }}
-                                aria-label="Editar item"
-                              >
-                                <Edit2 className="h-4 w-4" />
-                              </button>
-                              <button
-                                type="button"
-                                className="text-[color:var(--color-accent-danger)] hover:text-[color:var(--color-accent-danger)]/80"
-                                onClick={() =>
-                                  setItems((current) =>
-                                    current.filter((entry) => entry.id !== item.id),
-                                  )
-                                }
-                                aria-label="Eliminar item"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </div>
-
-                          {isExpanded ? (
-                            <div className="animate-fade-in border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] p-4 text-sm text-[color:var(--color-text-main)]">
-                              {shares.length === 0 ? (
-                                <p className="text-sm text-[color:var(--color-text-muted)]">
-                                  Sin participantes asignados.
-                                </p>
-                              ) : (
-                                <div className="space-y-2">
-                                  {shares.map((share) => (
-                                    <div
-                                      key={`${item.id}-${share.personId}`}
-                                      className="flex items-center justify-between rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-2"
-                                    >
-                                      <span className="font-semibold text-[color:var(--color-text-main)]">
-                                        {resolvePersonName(share.personId, people)}
-                                      </span>
-                                      <span className="font-semibold text-[color:var(--color-primary-main)]">
-                                        {currency} {share.amount.toFixed(2)}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          ) : null}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingItemId(null)
-                    setItemName('')
-                    setItemUnitPrice('')
-                    setItemQuantity('1')
-                    setItemParticipantIds([])
-                    setItemError(null)
-                    setItemModalOpen(true)
-                  }}
-                  className="flex w-full items-center justify-between rounded-lg border border-dashed border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-4 py-3 text-sm font-semibold text-[color:var(--color-text-muted)] transition hover:border-[color:var(--color-primary-light)] hover:text-[color:var(--color-text-main)]"
-                >
-                  <span>Agregar item</span>
-                  <Plus className="h-4 w-4" />
-                </button>
-              </div>
+              <ConsumptionItemsSection
+                currency={currency}
+                people={people}
+                items={items}
+                expandedItems={expandedItems}
+                effectiveParticipantIds={effectiveParticipantIds}
+                consumptionSum={consumptionSum}
+                onToggleExpanded={(itemId) =>
+                  setExpandedItems((current) => ({
+                    ...current,
+                    [itemId]: !current[itemId],
+                  }))
+                }
+                onEditItem={(item) => {
+                  const nextParticipants = item.participantIds.filter((id) =>
+                    effectiveParticipantIds.includes(id),
+                  )
+                  setEditingItemId(item.id)
+                  setItemName(item.name)
+                  setItemUnitPrice(String(item.unitPrice))
+                  setItemQuantity(String(item.quantity))
+                  setItemParticipantIds(nextParticipants)
+                  setItemError(null)
+                  setItemModalOpen(true)
+                }}
+                onRemoveItem={(itemId) =>
+                  setItems((current) => current.filter((entry) => entry.id !== itemId))
+                }
+                onAddItem={() => {
+                  setEditingItemId(null)
+                  setItemName('')
+                  setItemUnitPrice('')
+                  setItemQuantity('1')
+                  setItemParticipantIds([])
+                  setItemError(null)
+                  setItemModalOpen(true)
+                }}
+                resolvePersonName={resolvePersonName}
+                getItemTotal={getItemTotal}
+                buildItemShares={buildItemShares}
+              />
             ) : null}
 
             {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
             <div className="md:col-span-4 flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-end">
+              {scanFromOcr ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  onClick={() => setScanModalOpen(true)}
+                >
+                  Ver resumen de la lectura
+                </Button>
+              ) : null}
               <details className="relative w-full sm:w-auto" ref={optionsMenuRef}>
                 <summary
                   className="flex w-full cursor-pointer list-none items-center justify-center gap-2 rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-2 text-xs font-semibold text-[color:var(--color-text-muted)] hover:border-[color:var(--color-primary-light)] hover:text-[color:var(--color-text-main)] sm:ml-auto sm:w-32 sm:inline-flex"
@@ -1344,7 +1119,7 @@ export function InvoiceSection({
               ) : null}
               <Button
                 type="submit"
-                disabled={people.length === 0}
+                disabled={people.length === 0 || isScanning}
                 data-tour="invoice-save"
                 className="w-full sm:w-44"
               >

@@ -13,9 +13,7 @@ interface OcrDecisionModalProps {
   items: InvoiceItem[]
   divisionMethod: 'equal' | 'consumption'
   scanIsGuest: boolean
-  scanPreviewOpen: boolean
   rescanConfirmOpen: boolean
-  onTogglePreview: () => void
   onSelectEqual: () => void
   onSelectConsumption: () => void
   onOpenRescanConfirm: () => void
@@ -34,9 +32,7 @@ export function OcrDecisionModal({
   items,
   divisionMethod,
   scanIsGuest,
-  scanPreviewOpen,
   rescanConfirmOpen,
-  onTogglePreview,
   onSelectEqual,
   onSelectConsumption,
   onOpenRescanConfirm,
@@ -44,6 +40,9 @@ export function OcrDecisionModal({
   onConfirmRescan,
 }: OcrDecisionModalProps) {
   if (!open || typeof document === 'undefined') return null
+
+  const actionButtonClass =
+    'h-12 w-full text-sm border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] text-[color:var(--color-text-main)] hover:border-[color:var(--color-primary-light)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-primary-main)]'
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6 backdrop-blur-sm">
@@ -66,38 +65,27 @@ export function OcrDecisionModal({
           ) : null}
 
           <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)]/60 px-4 py-3 text-xs text-[color:var(--color-text-muted)]">
-            <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sx font-semibold uppercase tracking-[0.25em] text-[color:var(--color-primary-main)]">
+              Lectura lista. Revisa el detalle si lo necesitas.
+            </p>
+            <div className="mt-3 space-y-1">
               <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
-                Lectura lista. Revisa el detalle si lo necesitas.
+                {description || 'Consumo'}
               </p>
-              <Button type="button" variant="outline" size="sm" onClick={onTogglePreview}>
-                {scanPreviewOpen ? 'Ocultar vista previa' : 'Ver vista previa'}
-              </Button>
-            </div>
-            {scanPreviewOpen ? (
-              <div className="mt-3 space-y-1">
-                <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
-                  {description || 'Consumo'}
-                </p>
+              <p>
+                Total: {currency} {amount || '0.00'}
+                {includeTip && tipAmount ? ` - Propina: ${currency} ${tipAmount}` : ''}
+              </p>
+              {items.length > 0 ? (
                 <p>
-                  Total: {currency} {amount || '0.00'}
-                  {includeTip && tipAmount
-                    ? ` - Propina: ${currency} ${tipAmount}`
-                    : ''}
+                  Items detectados: {items.slice(0, 3).map((item) => item.name).join(', ')}
+                  {items.length > 3 ? ` - +${items.length - 3} mas` : ''}
                 </p>
-                {items.length > 0 ? (
-                  <p>
-                    Items detectados: {items.slice(0, 3).map((item) => item.name).join(', ')}
-                    {items.length > 3 ? ` - +${items.length - 3} mas` : ''}
-                  </p>
-                ) : (
-                  <p>No se detectaron items.</p>
-                )}
-                {includeTip && tipAmount ? (
-                  <p>La propina se guarda aparte del gasto.</p>
-                ) : null}
-              </div>
-            ) : null}
+              ) : (
+                <p>No se detectaron items.</p>
+              )}
+              {includeTip && tipAmount ? <p>La propina se guarda aparte del gasto.</p> : null}
+            </div>
           </div>
 
           <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)]/60 px-4 py-4 text-xs text-[color:var(--color-text-muted)]">
@@ -105,18 +93,28 @@ export function OcrDecisionModal({
               Como quieres repartir este gasto?
             </p>
             <div className="grid gap-3 sm:grid-cols-3">
-              <Button type="button" variant="soft" className="h-12 w-full text-sm" onClick={onSelectEqual}>
+              <Button
+                type="button"
+                variant="ghost"
+                className={actionButtonClass}
+                onClick={onSelectEqual}
+              >
                 Equitativo
               </Button>
               <Button
                 type="button"
-                variant="soft"
-                className="h-12 w-full text-sm"
+                variant="ghost"
+                className={actionButtonClass}
                 onClick={onSelectConsumption}
               >
                 Consumo real
               </Button>
-              <Button type="button" variant="soft" className="h-12 w-full text-sm" onClick={onOpenRescanConfirm}>
+              <Button
+                type="button"
+                variant="ghost"
+                className={actionButtonClass}
+                onClick={onOpenRescanConfirm}
+              >
                 Reescanear
               </Button>
             </div>
