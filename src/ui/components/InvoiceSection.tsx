@@ -406,12 +406,8 @@ export function InvoiceSection({
         if (status.status === 'completed' && status.result) {
           window.clearInterval(scanPollRef.current!)
           scanPollRef.current = null
-          const tipDetected = status.result.tipAmount ?? 0
           const rawTotal = status.result.totalAmount ?? status.result.subtotal ?? 0
-          const baseTotal =
-            tipDetected > 0 && status.result.totalAmount
-              ? Math.max(0, status.result.totalAmount - tipDetected)
-              : rawTotal
+          const baseTotal = rawTotal
           setShowForm(true)
           setEditingInvoiceId(null)
           setDivisionMethod('equal')
@@ -430,19 +426,36 @@ export function InvoiceSection({
             setIncludeTip(false)
             setTipAmount('')
           }
-          const nextItems =
-            status.result.items?.map((item) => ({
+          const rawItems = status.result.items ?? []
+          const nextItems = rawItems
+            .filter(
+              (item) =>
+                Number.isFinite(item.unitPrice) &&
+                Number.isFinite(item.quantity) &&
+                item.unitPrice > 0 &&
+                item.quantity > 0,
+            )
+            .map((item) => ({
               id: createId(),
               name: item.name,
               unitPrice: item.unitPrice,
               quantity: item.quantity,
               participantIds: [],
-            })) ?? []
+            }))
+          const droppedItemsCount = rawItems.length - nextItems.length
           setItems(nextItems)
           const warningMap: Array<[string, string]> = [
             [
               'Subtotal + tip does not match total.',
               'La propina no cuadra con el total. Revisa los valores.',
+            ],
+            [
+              'Subtotal + tax does not match total.',
+              'El subtotal e impuestos no cuadran con el total. Revisa los valores.',
+            ],
+            [
+              'Total adjusted to exclude tip amount.',
+              'El total se ajusto para excluir la propina.',
             ],
             [
               'Currency missing, using event currency.',
@@ -457,6 +470,11 @@ export function InvoiceSection({
             const match = warningMap.find(([key]) => warning === key)
             return match ? match[1] : warning
           })
+          if (droppedItemsCount > 0) {
+            mappedWarnings.push(
+              `Se omitieron ${droppedItemsCount} items incompletos. Completa manualmente si es necesario.`,
+            )
+          }
           setScanWarnings(mappedWarnings)
           setScanFromOcr(true)
           setScanStatus('idle')
