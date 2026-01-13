@@ -7,7 +7,7 @@ import {
   Save,
   SlidersHorizontal,
   Trash2,
-  X,
+  X
 } from 'lucide-react'
 import { Badge } from '../../shared/components/ui/badge'
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
@@ -23,14 +23,27 @@ import {
 } from '../../shared/components/ui/select'
 import { MemberChip } from './MemberChip'
 import { SectionCard } from './SectionCard'
+import { InvoiceList } from './invoice/InvoiceList'
+import { OcrDecisionModal } from './invoice/OcrDecisionModal'
+import { ScanProgressBanner } from './invoice/ScanProgressBanner'
 import type { InvoiceItem } from '../../domain/invoice/Invoice'
 import type { InvoiceForUI, PersonForUI } from '../../shared/state/fairsplitStore'
 import { createId } from '../../shared/utils/createId'
+import {
+  confirmScanApi,
+  getScanStatusApi,
+  rescanInvoiceApi,
+  retryScanApi,
+  scanInvoiceApi,
+} from '../../infra/persistence/http/invoiceApi'
+import { toast } from '../../shared/components/ui/sonner'
 
 interface InvoiceSectionProps {
+  eventId: string
   invoices: InvoiceForUI[]
   people: PersonForUI[]
   currency: string
+  onRefreshEvent?: () => Promise<void>
   onAdd: (invoice: {
     description: string
     amount: number
@@ -58,17 +71,22 @@ interface InvoiceSectionProps {
 }
 
 export function InvoiceSection({
+  eventId,
   invoices,
   people,
   currency,
   onAdd,
   onUpdate,
   onRemove,
+  onRefreshEvent,
 }: InvoiceSectionProps) {
   const { isOpen: isTourOpen, meta: tourMeta, steps, setCurrentStep } = useTour()
   const optionsMenuRef = useRef<HTMLDetailsElement | null>(null)
   const addMenuRef = useRef<HTMLDetailsElement | null>(null)
   const formRef = useRef<HTMLDivElement | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const scanPollRef = useRef<number | null>(null)
+  const scanStartRef = useRef<number | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
@@ -97,6 +115,16 @@ export function InvoiceSection({
   const [birthdayPersonId, setBirthdayPersonId] = useState<string>('')
   const [showParticipants, setShowParticipants] = useState(false)
   const [showConsumption, setShowConsumption] = useState(false)
+  const [scanStatus, setScanStatus] = useState<'idle' | 'uploading' | 'processing'>('idle')
+  const [scanProgress, setScanProgress] = useState<number | null>(null)
+  const [scanWarnings, setScanWarnings] = useState<string[]>([])
+  const [scanJobId, setScanJobId] = useState<string | null>(null)
+  const [scanFromOcr, setScanFromOcr] = useState(false)
+  const [scanError, setScanError] = useState<string | null>(null)
+  const [scanIsGuest, setScanIsGuest] = useState(false)
+  const [scanModalOpen, setScanModalOpen] = useState(false)
+  const [rescanConfirmOpen, setRescanConfirmOpen] = useState(false)
+  const [scanPreviewOpen, setScanPreviewOpen] = useState(false)
 
   const totalAmount = invoices.reduce((acc, inv) => acc + inv.amount, 0)
   const availablePersonIds = people.map((person) => person.id)
@@ -153,6 +181,15 @@ export function InvoiceSection({
     setShowConsumption(false)
     setEditingInvoiceId(null)
     setShowForm(false)
+    setScanWarnings([])
+    setScanJobId(null)
+    setScanFromOcr(false)
+    setScanProgress(null)
+    setScanError(null)
+    setScanModalOpen(false)
+    setRescanConfirmOpen(false)
+    setScanPreviewOpen(false)
+    setScanIsGuest(false)
   }
 
   const startEdit = (invoice: InvoiceForUI) => {
@@ -282,17 +319,59 @@ export function InvoiceSection({
         birthdayPersonId: birthdayEnabled ? birthdayPersonId : undefined,
       })
     } else {
-      await onAdd({
-        description: trimmedDescription,
-        amount: numericAmount,
-        payerId: effectivePayerId,
-        participantIds: effectiveParticipants,
-        divisionMethod,
-        consumptions: consumptionPayload,
-        items: itemsPayload,
-        tipAmount: includeTip ? numericTip : undefined,
-        birthdayPersonId: birthdayEnabled ? birthdayPersonId : undefined,
-      })
+      const hasAuthToken =
+        typeof window !== 'undefined' &&
+        Boolean(window.localStorage.getItem('fairsplit_auth_token'))
+      if (scanJobId && hasAuthToken) {
+        try {
+          await confirmScanApi(scanJobId, {
+            eventId,
+            description: trimmedDescription,
+            totalAmount: numericAmount,
+            payerId: effectivePayerId,
+            participantIds: effectiveParticipants,
+            divisionMethod,
+            consumptions: consumptionPayload,
+            items: itemsPayload?.map((item) => ({
+              name: item.name,
+              unitPrice: item.unitPrice,
+              quantity: item.quantity,
+              participantIds: item.participantIds,
+            })),
+            tipAmount: includeTip ? numericTip : undefined,
+            birthdayPersonId: birthdayEnabled ? birthdayPersonId : undefined,
+          })
+          if (onRefreshEvent) {
+            await onRefreshEvent()
+          }
+        } catch (error) {
+          const message = (error as Error).message || 'No se pudo confirmar el OCR.'
+          if (message.toLowerCase().includes('expired') || message.toLowerCase().includes('not found')) {
+            toast.error(
+              scanIsGuest
+                ? 'El escaneo expiro en modo local. Vuelve a subir la factura.'
+                : 'El escaneo expiro. Vuelve a escanear la factura.',
+            )
+          } else if (message.toLowerCase().includes('limit')) {
+            toast.error('Alcanzaste el limite de lecturas OCR. Intenta mas tarde.')
+          } else {
+            toast.error(message)
+          }
+          return
+        }
+      } else {
+        await onAdd({
+          description: trimmedDescription,
+          amount: numericAmount,
+          payerId: effectivePayerId,
+          participantIds: effectiveParticipants,
+          divisionMethod,
+          consumptions: consumptionPayload,
+          items: itemsPayload,
+          tipAmount: includeTip ? numericTip : undefined,
+          birthdayPersonId: birthdayEnabled ? birthdayPersonId : undefined,
+        })
+      }
     }
     if (typeof window !== 'undefined' && isTourOpen && tourMeta === 'guided') {
       window.dispatchEvent(new CustomEvent('tour:go-tab', { detail: { tabId: 'summary' } }))
@@ -303,8 +382,161 @@ export function InvoiceSection({
     resetForm()
   }
 
+
+  const startPolling = (jobId: string) => {
+    if (scanPollRef.current) {
+      window.clearInterval(scanPollRef.current)
+    }
+    const maxWaitMs = 120000
+    scanStartRef.current = Date.now()
+    scanPollRef.current = window.setInterval(async () => {
+      try {
+        if (scanStartRef.current && Date.now() - scanStartRef.current > maxWaitMs) {
+          window.clearInterval(scanPollRef.current!)
+          scanPollRef.current = null
+          setScanStatus('idle')
+          setScanJobId(null)
+          setScanProgress(null)
+          const message = scanIsGuest
+            ? 'El escaneo esta tardando demasiado en modo local. Vuelve a subir la factura.'
+            : 'El escaneo esta tardando demasiado. Intenta de nuevo.'
+          setScanError(message)
+          toast.error(message)
+          return
+        }
+        const status = await getScanStatusApi(jobId)
+        if (typeof status.progress === 'number') {
+          setScanProgress(status.progress)
+        }
+        if (status.status === 'completed' && status.result) {
+          window.clearInterval(scanPollRef.current!)
+          scanPollRef.current = null
+          const tipDetected = status.result.tipAmount ?? 0
+          const rawTotal = status.result.totalAmount ?? status.result.subtotal ?? 0
+          const baseTotal =
+            tipDetected > 0 && status.result.totalAmount
+              ? Math.max(0, status.result.totalAmount - tipDetected)
+              : rawTotal
+          setShowForm(true)
+          setEditingInvoiceId(null)
+          setDivisionMethod('equal')
+          setShowConsumption(false)
+          setShowParticipants(false)
+          setBirthdayEnabled(false)
+          setBirthdayPersonId('')
+          setExpandedItems({})
+          setItemError(null)
+          setDescription(status.result.description ?? '')
+          setAmount(rawTotal ? baseTotal.toFixed(2) : '')
+          if (status.result.tipAmount && status.result.tipAmount > 0) {
+            setIncludeTip(true)
+            setTipAmount(status.result.tipAmount.toFixed(2))
+          } else {
+            setIncludeTip(false)
+            setTipAmount('')
+          }
+          const nextItems =
+            status.result.items?.map((item) => ({
+              id: createId(),
+              name: item.name,
+              unitPrice: item.unitPrice,
+              quantity: item.quantity,
+              participantIds: [],
+            })) ?? []
+          setItems(nextItems)
+          const warningMap: Array<[string, string]> = [
+            [
+              'Subtotal + tip does not match total.',
+              'La propina no cuadra con el total. Revisa los valores.',
+            ],
+            [
+              'Currency missing, using event currency.',
+              'No se detecto moneda, usamos la del evento.',
+            ],
+            [
+              'Currency does not match event currency. Using event currency.',
+              'La moneda no coincide, usamos la del evento.',
+            ],
+          ]
+          const mappedWarnings = (status.result.warnings ?? []).map((warning) => {
+            const match = warningMap.find(([key]) => warning === key)
+            return match ? match[1] : warning
+          })
+          setScanWarnings(mappedWarnings)
+          setScanFromOcr(true)
+          setScanStatus('idle')
+          setScanProgress(null)
+          setScanError(null)
+          setScanModalOpen(true)
+          setRescanConfirmOpen(false)
+          setScanPreviewOpen(false)
+          scanStartRef.current = null
+          toast.success('Lectura lista. Revisa y ajusta los datos.')
+        } else if (status.status === 'failed') {
+          window.clearInterval(scanPollRef.current!)
+          scanPollRef.current = null
+          setScanStatus('idle')
+          setScanProgress(null)
+          setScanError(status.failedReason ?? 'No se pudo procesar la factura.')
+          scanStartRef.current = null
+          toast.error(status.failedReason ?? 'No se pudo procesar la factura.')
+        }
+      } catch {
+        window.clearInterval(scanPollRef.current!)
+        scanPollRef.current = null
+        setScanStatus('idle')
+        setScanJobId(null)
+        setScanProgress(null)
+        const message = scanIsGuest
+          ? 'El escaneo expiro en modo local. Vuelve a subir la factura.'
+          : 'El escaneo expiro o no se pudo consultar el estado.'
+        setScanError(message)
+        scanStartRef.current = null
+        toast.error(message)
+      }
+    }, 1500)
+  }
+
+  const startScan = async (file: File, useRescan: boolean) => {
+    setError(null)
+    setScanWarnings([])
+    setScanFromOcr(false)
+    setScanError(null)
+    setScanProgress(null)
+    setScanIsGuest(false)
+    try {
+      setScanStatus('uploading')
+      const hasAuthToken =
+        typeof window !== 'undefined' &&
+        Boolean(window.localStorage.getItem('fairsplit_auth_token'))
+      setScanIsGuest(!hasAuthToken)
+      const jobId = useRescan && scanJobId
+        ? (await rescanInvoiceApi(scanJobId, eventId, file)).jobId
+        : (await scanInvoiceApi(eventId, file)).jobId
+      setScanJobId(jobId)
+      setScanStatus('processing')
+      startPolling(jobId)
+    } catch (scanError) {
+      setScanStatus('idle')
+      setScanJobId(null)
+      setScanProgress(null)
+      const message = (scanError as Error).message || 'No se pudo escanear la factura.'
+      setScanError(message)
+      scanStartRef.current = null
+      if (message.toLowerCase().includes('limit')) {
+        toast.error('Alcanzaste el limite de lecturas OCR. Intenta mas tarde.')
+      } else {
+        toast.error(message)
+      }
+    }
+  }
+
   const detailInvoice = invoices.find((invoice) => invoice.id === detailInvoiceId) ?? null
   const participantShares = detailInvoice ? calculateShares(detailInvoice, people) : []
+  const hasAuthToken =
+    typeof window !== 'undefined' &&
+    Boolean(window.localStorage.getItem('fairsplit_auth_token'))
+  const isOcrConfirm = scanFromOcr && scanJobId && hasAuthToken && !editingInvoiceId
   const consumptionSum = useMemo(() => {
     if (divisionMethod !== 'consumption') return 0
     return items.reduce((acc, item) => acc + getItemTotal(item), 0)
@@ -322,6 +554,16 @@ export function InvoiceSection({
     document.addEventListener('click', handleClickOutside)
     return () => {
       document.removeEventListener('click', handleClickOutside)
+    }
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (scanPollRef.current) {
+        window.clearInterval(scanPollRef.current)
+        scanPollRef.current = null
+      }
+      scanStartRef.current = null
     }
   }, [])
 
@@ -506,13 +748,13 @@ export function InvoiceSection({
                       return
                     }
 
-                  const nextItem: InvoiceItem = {
-                    id: editingItemId ?? createId(),
-                    name: trimmedName,
-                    unitPrice,
-                    quantity,
-                    participantIds: itemParticipantIds,
-                  }
+                    const nextItem: InvoiceItem = {
+                      id: editingItemId ?? createId(),
+                      name: trimmedName,
+                      unitPrice,
+                      quantity,
+                      participantIds: itemParticipantIds,
+                    }
 
                     setItems((current) => {
                       if (editingItemId) {
@@ -522,15 +764,15 @@ export function InvoiceSection({
                       }
                       return [...current, nextItem]
                     })
-                  setItemModalOpen(false)
-                  setEditingItemId(null)
-                  setItemName('')
-                  setItemUnitPrice('')
-                  setItemQuantity('1')
-                  setItemParticipantIds([])
-                  setItemError(null)
-                }}
-              >
+                    setItemModalOpen(false)
+                    setEditingItemId(null)
+                    setItemName('')
+                    setItemUnitPrice('')
+                    setItemQuantity('1')
+                    setItemParticipantIds([])
+                    setItemError(null)
+                  }}
+                >
                   {editingItemId ? 'Guardar item' : 'Agregar item'}
                 </Button>
               </div>
@@ -540,17 +782,17 @@ export function InvoiceSection({
       ) : null}
 
       <SectionCard
-      title="Gastos"
-      description="Registra cada gasto con su pagador y participantes. Elige reparto equitativo o por consumo real, con propina y invitado especial opcional."
-      badge={`${invoices.length} gasto${invoices.length === 1 ? '' : 's'}`}
-      action={
-        invoices.length > 0 ? (
-          <Badge variant="count">
-            Total: {currency} {Math.round(totalAmount).toLocaleString('es-CO')}
-          </Badge>
-        ) : null
-      }
-    >
+        title="Gastos"
+        description="Registra cada gasto con su pagador y participantes. Elige reparto equitativo o por consumo real, con propina y invitado especial opcional."
+        badge={`${invoices.length} gasto${invoices.length === 1 ? '' : 's'}`}
+        action={
+          invoices.length > 0 ? (
+            <Badge variant="count">
+              Total: {currency} {Math.round(totalAmount).toLocaleString('es-CO')}
+            </Badge>
+          ) : null
+        }
+      >
       <div className="space-y-5">
         <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)]/80 px-4 py-3 text-sm text-[color:var(--color-text-muted)]">
           Registra cada gasto con pagador, participantes y tipo de reparto. Puedes
@@ -591,18 +833,99 @@ export function InvoiceSection({
                   <Plus className="h-4 w-4" />
                   Manual
                 </button>
+                
                 <button
                   type="button"
-                  disabled
-                  className="mt-1 flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-[color:var(--color-text-muted)] opacity-60"
+                  onClick={() => {
+                    closeAddMenu()
+                    fileInputRef.current?.click()
+                  }}
+                  className="mt-1 flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-[color:var(--color-text-main)] hover:bg-[color:var(--color-surface-muted)]"
                 >
                   <Receipt className="h-4 w-4" />
-                  Escanear factura (pronto)
+                  Escanear factura
                 </button>
               </div>
             </details>
           )}
         </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/png,image/jpeg,application/pdf"
+          className="hidden"
+          onChange={(event) => {
+            const file = event.target.files?.[0]
+            if (!file) return
+            event.target.value = ''
+            void startScan(file, Boolean(scanFromOcr))
+          }}
+        />
+        <ScanProgressBanner status={scanStatus} progress={scanProgress} />
+
+        {scanError && scanJobId ? (
+          <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-4 py-3 text-sm text-[color:var(--color-text-muted)]">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span>{scanError}</span>
+              <button
+                type="button"
+                className="text-xs font-semibold text-[color:var(--color-primary-main)] hover:text-[color:var(--color-primary-dark)]"
+                onClick={async () => {
+                  if (!scanJobId) return
+                  try {
+                    setScanError(null)
+                    setScanStatus('processing')
+                    const next = await retryScanApi(scanJobId)
+                    setScanJobId(next.jobId)
+                    startPolling(next.jobId)
+                  } catch (error) {
+                    setScanStatus('idle')
+                    setScanError((error as Error).message || 'No se pudo reintentar el OCR.')
+                  }
+                }}
+              >
+                Reintentar
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        <OcrDecisionModal
+          open={scanFromOcr && scanModalOpen}
+          warnings={scanWarnings}
+          description={description}
+          currency={currency}
+          amount={amount}
+          includeTip={includeTip}
+          tipAmount={tipAmount}
+          items={items}
+          divisionMethod={divisionMethod}
+          scanIsGuest={scanIsGuest}
+          scanPreviewOpen={scanPreviewOpen}
+          rescanConfirmOpen={rescanConfirmOpen}
+          onTogglePreview={() => setScanPreviewOpen((current) => !current)}
+          onSelectEqual={() => {
+            setDivisionMethod('equal')
+            setShowConsumption(false)
+            setScanModalOpen(false)
+            setRescanConfirmOpen(false)
+          }}
+          onSelectConsumption={() => {
+            setDivisionMethod('consumption')
+            setShowConsumption(true)
+            setShowParticipants(true)
+            setScanModalOpen(false)
+            setRescanConfirmOpen(false)
+          }}
+          onOpenRescanConfirm={() => setRescanConfirmOpen(true)}
+          onCancelRescan={() => setRescanConfirmOpen(false)}
+          onConfirmRescan={() => {
+            setRescanConfirmOpen(false)
+            setScanModalOpen(false)
+            fileInputRef.current?.click()
+          }}
+        />
 
         {showForm ? (
           <div
@@ -611,30 +934,56 @@ export function InvoiceSection({
             ref={formRef}
           >
             <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-4">
-            <Input
-              placeholder="Concepto del gasto"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="md:col-span-2"
-              data-tour="invoice-description"
-            />
-            <div className="flex items-center md:col-span-2">
-              <div className="flex w-full items-center rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-input)] focus-within:border-[color:var(--color-primary-main)] focus-within:ring-1 focus-within:ring-[color:var(--color-focus-ring)]">
-                <span className="flex h-10 items-center rounded-l-md border border-[color:var(--color-border-subtle)] border-r-0 bg-[color:var(--color-surface-muted)] px-3 text-xs font-semibold text-[color:var(--color-text-muted)]">
-                  {currency}
-                </span>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="Monto"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="w-full appearance-none rounded-r-md border-0 bg-transparent px-3 text-sm text-[color:var(--color-text-main)] outline-none focus:outline-none focus-visible:ring-0"
-                  data-tour="invoice-amount"
-                />
+              {scanFromOcr ? (
+                <div className="md:col-span-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                    onClick={() => {
+                      setScanModalOpen(true)
+                      setScanPreviewOpen(true)
+                    }}
+                  >
+                    Ver resumen de la lectura
+                  </Button>
+                </div>
+              ) : null}
+              {divisionMethod === 'consumption' ? (
+                <div className="md:col-span-4">
+                  {items.length === 0 ? (
+                    <p className="mt-2">No se detectaron items. Puedes agregarlos manualmente.</p>
+                  ) : (
+                    <p className="mt-2">
+                      Asigna participantes a cada item para repartir el consumo real.
+                    </p>
+                  )}
+                </div>
+              ) : null}
+              <Input
+                placeholder="Concepto del gasto"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="md:col-span-2"
+                data-tour="invoice-description"
+              />
+              <div className="flex items-center md:col-span-2">
+                <div className="flex w-full items-center rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-input)] focus-within:border-[color:var(--color-primary-main)] focus-within:ring-1 focus-within:ring-[color:var(--color-focus-ring)]">
+                  <span className="flex h-10 items-center rounded-l-md border border-[color:var(--color-border-subtle)] border-r-0 bg-[color:var(--color-surface-muted)] px-3 text-xs font-semibold text-[color:var(--color-text-muted)]">
+                    {currency}
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="Monto"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="w-full appearance-none rounded-r-md border-0 bg-transparent px-3 text-sm text-[color:var(--color-text-main)] outline-none focus:outline-none focus-visible:ring-0"
+                    data-tour="invoice-amount"
+                  />
+                </div>
               </div>
-            </div>
 
 
             <Select
@@ -767,22 +1116,27 @@ export function InvoiceSection({
                       const isExpanded = Boolean(expandedItems[item.id])
                       const itemTotal = getItemTotal(item)
                       const shares = buildItemShares(item)
+                      const participants = item.participantIds
+                        .map((id) => resolvePersonName(id, people))
+                        .join(', ')
+
                       return (
                         <div
                           key={item.id}
-                          className="card-interactive overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)]"
+                          className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)]"
                         >
-                          <div className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="space-y-1">
-                              <p className="font-semibold text-[color:var(--color-text-main)]">
+                          <div className="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                              <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
                                 {item.name}
                               </p>
-                              <p className="text-xs text-[color:var(--color-text-muted)]">
+                              <p className="text-[11px] text-[color:var(--color-text-muted)]">
                                 Cantidad: {item.quantity} - Unitario: {currency}{' '}
                                 {item.unitPrice.toFixed(2)}
                               </p>
-                              <p className="text-[10px] uppercase tracking-wide text-[color:var(--color-text-muted)]">
-                                Participantes: {item.participantIds.length}
+                              <p className="text-[11px] text-[color:var(--color-text-muted)]">
+                                Participantes:{' '}
+                                {participants.length > 0 ? participants : 'Sin participantes'}
                               </p>
                             </div>
                             <div className="flex items-center gap-2 text-xs">
@@ -983,6 +1337,11 @@ export function InvoiceSection({
                   Cancelar edicion
                 </button>
               ) : null}
+              {isOcrConfirm ? (
+                <span className="text-[11px] font-semibold text-[color:var(--color-text-muted)]">
+                  Confirma la lectura para guardar el gasto.
+                </span>
+              ) : null}
               <Button
                 type="submit"
                 disabled={people.length === 0}
@@ -990,7 +1349,11 @@ export function InvoiceSection({
                 className="w-full sm:w-44"
               >
                 <Save className="h-4 w-4" />
-                {editingInvoiceId ? 'Guardar cambios' : 'Guardar gasto'}
+                {editingInvoiceId
+                  ? 'Guardar cambios'
+                  : isOcrConfirm
+                  ? 'Confirmar lectura'
+                  : 'Guardar gasto'}
               </Button>
             </div>
           </form>
@@ -1002,210 +1365,22 @@ export function InvoiceSection({
             <span>Editando gasto seleccionado.</span>
           </div>
         ) : null}
-
-        <div className="space-y-3">
-          {invoices.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-6 text-center">
-              <p className="text-sm text-[color:var(--color-text-muted)]">
-                Aun no has registrado gastos. Usa "Agregar gasto" para crear el primero.
-              </p>
-            </div>
-          ) : (
-            invoices.map((invoice) => {
-              const isExpanded = detailInvoiceId === invoice.id
-              const shares = isExpanded && detailInvoice ? participantShares : []
-
-              return (
-                <div
-                  key={invoice.id}
-                  className="card-interactive overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)]"
-                >
-                  <div className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-[color:var(--color-text-main)]">
-                          {invoice.description}
-                        </p>
-                        <span className="ds-badge-soft">
-                          {currency} {invoice.amount.toFixed(2)}
-                        </span>
-                      </div>
-                      <p className="text-xs text-[color:var(--color-text-muted)]">
-                        Pago: {resolvePersonName(invoice.payerId, people)}
-                      </p>
-                      <p className="text-xs text-[color:var(--color-text-muted)]">
-                        Personas ({invoice.participantIds.length}):{' '}
-                        {invoice.participantIds
-                          .map((id) => resolvePersonName(id, people))
-                          .join(', ')}
-                      </p>
-                      <p className="text-[10px] uppercase tracking-wide text-[color:var(--color-text-muted)]">
-                        Reparto:{' '}
-                        {invoice.divisionMethod === 'consumption' ? 'Consumo real' : 'Equitativo'}
-                      </p>
-                      {invoice.divisionMethod === 'consumption' && invoice.items?.length ? (
-                        <p className="text-xs text-[color:var(--color-text-muted)]">
-                          Items:{' '}
-                          {invoice.items.slice(0, 2).map((item) => item.name).join(', ')}
-                          {invoice.items.length > 2
-                            ? ` · +${invoice.items.length - 2} más`
-                            : ''}
-                        </p>
-                      ) : null}
-                      {invoice.tipAmount ? (
-                        <p className="text-xs text-[color:var(--color-text-muted)]">
-                          Propina: {currency} {invoice.tipAmount.toFixed(2)}
-                        </p>
-                      ) : null}
-                    </div>
-                    <div className="flex items-center gap-2 text-xs">
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-1 text-[color:var(--color-primary-main)] hover:underline"
-                        onClick={() =>
-                          setDetailInvoiceId((current) => (current === invoice.id ? null : invoice.id))
-                        }
-                      >
-                        {isExpanded ? 'Ocultar detalle' : 'Ver detalle'}
-                        {isExpanded ? (
-                          <ChevronUp className="h-3.5 w-3.5" />
-                        ) : (
-                          <ChevronDown className="h-3.5 w-3.5" />
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        className="text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-main)]"
-                        onClick={() => startEdit(invoice)}
-                        aria-label="Editar gasto"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        className="text-[color:var(--color-accent-danger)] hover:text-[color:var(--color-accent-danger)]/80"
-                        onClick={() => onRemove(invoice.id)}
-                        aria-label="Eliminar gasto"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {isExpanded && detailInvoice ? (
-                    <div className="animate-fade-in border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] p-4 text-sm text-[color:var(--color-text-main)]">
-                      <div className="flex items-center justify-between gap-2">
-                        <div>
-                          <p className="font-semibold text-[color:var(--color-text-main)]">
-                            {detailInvoice.description}
-                          </p>
-                          <p className="text-xs text-[color:var(--color-text-muted)]">
-                            Pago: {resolvePersonName(detailInvoice.payerId, people)} - Monto:{' '}
-                            {currency} {detailInvoice.amount.toFixed(2)}
-                            {detailInvoice.tipAmount
-                              ? ` - Propina: ${currency} ${detailInvoice.tipAmount.toFixed(2)}`
-                              : ''}
-                          </p>
-                          <p className="text-[10px] uppercase tracking-wide text-[color:var(--color-text-muted)]">
-                            Reparto:{' '}
-                            {detailInvoice.divisionMethod === 'consumption'
-                              ? 'Consumo real'
-                              : 'Equitativo'}
-                          </p>
-                          {detailInvoice.birthdayPersonId ? (
-                            <p className="text-[11px] font-semibold text-[color:var(--color-primary-main)]">
-                              Invitado especial:{' '}
-                              {resolvePersonName(detailInvoice.birthdayPersonId, people)}
-                            </p>
-                          ) : null}
-                        </div>
-                        <button
-                          type="button"
-                          className="text-xs font-semibold text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-main)]"
-                          onClick={() => setDetailInvoiceId(null)}
-                        >
-                          Cerrar
-                        </button>
-                      </div>
-                      {detailInvoice.divisionMethod === 'consumption' &&
-                      detailInvoice.items?.length ? (
-                        <div className="mt-3 space-y-2">
-                          <p className="text-xs font-semibold text-[color:var(--color-text-main)]">
-                            Items del consumo
-                          </p>
-                          <div className="space-y-2">
-                            {detailInvoice.items.map((item) => {
-                              const participants = item.participantIds
-                                .map((id) => resolvePersonName(id, people))
-                                .join(', ')
-                              return (
-                                <div
-                                  key={item.id}
-                                  className="rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-2"
-                                >
-                                  <div className="flex items-center justify-between text-sm">
-                                    <span className="font-semibold text-[color:var(--color-text-main)]">
-                                      {item.name}
-                                    </span>
-                                    <span className="text-[color:var(--color-primary-main)] font-semibold">
-                                      {currency} {getItemTotal(item).toFixed(2)}
-                                    </span>
-                                  </div>
-                                  <p className="text-[11px] text-[color:var(--color-text-muted)]">
-                                    Cantidad: {item.quantity} · Unitario: {currency}{' '}
-                                    {item.unitPrice.toFixed(2)}
-                                  </p>
-                                  <p className="text-[11px] text-[color:var(--color-text-muted)]">
-                                    Participantes:{' '}
-                                    {participants.length > 0 ? participants : 'Sin participantes'}
-                                  </p>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      ) : null}
-                      <div className="mt-3 space-y-2">
-                        <p className="text-xs font-semibold text-[color:var(--color-text-main)]">
-                          Consumo por persona
-                        </p>
-                        {shares.map((share) => (
-                          <div
-                            key={share.personId}
-                            className={`flex items-center justify-between rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-2 ${
-                              share.isBirthday
-                                ? 'border-[color:var(--color-primary-light)]'
-                                : ''
-                            }`}
-                          >
-                            <span className="font-semibold text-[color:var(--color-text-main)]">
-                              {resolvePersonName(share.personId, people)}
-                              {share.isBirthday ? (
-                                <span className="ml-2 rounded-full accent-chip px-2 py-0.5 text-[10px] font-semibold text-accent">
-                                  Invitado especial
-                                </span>
-                              ) : null}
-                            </span>
-                            <div className="text-right">
-                              {share.tipPortion ? (
-                                <p className="text-[11px] text-[color:var(--color-text-muted)]">
-                                  Propina: {currency} {share.tipPortion.toFixed(2)}
-                                </p>
-                              ) : null}
-                              <p className="text-[color:var(--color-primary-main)] font-semibold">
-                                Total: {currency} {share.amount.toFixed(2)}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              )
-            })
-          )}
-        </div>
+        <InvoiceList
+          invoices={invoices}
+          currency={currency}
+          people={people}
+          detailInvoiceId={detailInvoiceId}
+          detailInvoice={detailInvoice}
+          participantShares={participantShares}
+          onToggleDetail={(invoiceId) =>
+            setDetailInvoiceId((current) => (current === invoiceId ? null : invoiceId))
+          }
+          onCloseDetail={() => setDetailInvoiceId(null)}
+          onEdit={startEdit}
+          onRemove={onRemove}
+          resolvePersonName={resolvePersonName}
+          getItemTotal={getItemTotal}
+        />
       </div>
       </SectionCard>
     </>

@@ -232,9 +232,9 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
   hydrate: async (options) => {
     // Fetch event headers only; load details lazily per event to reduce calls.
     const token = getAuthToken()
-    const localState = token ? null : readLocalState()
+    let localState = token ? null : readLocalState()
     const hasInMemoryEvents = get().events.length > 0
-    const shouldApplyLocalState = Boolean(localState) && !hasInMemoryEvents
+    let shouldApplyLocalState = Boolean(localState) && !hasInMemoryEvents
 
     if (token) {
       try {
@@ -263,6 +263,8 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
           } catch {
             // ignore
           }
+          localState = readLocalState()
+          shouldApplyLocalState = Boolean(localState)
         } else {
           console.warn('Falling back to local events; backend list failed', error)
         }
