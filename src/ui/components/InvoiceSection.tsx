@@ -458,6 +458,14 @@ export function InvoiceSection({
               'El subtotal se infirio con la suma de items.',
             ],
             [
+              'Tip inferred from items.',
+              'La propina se infirio desde un item.',
+            ],
+            [
+              'Tip inferred from total minus subtotal.',
+              'La propina se infirio restando subtotal al total.',
+            ],
+            [
               'Total adjusted to exclude tip amount.',
               'El total se ajusto para excluir la propina.',
             ],
