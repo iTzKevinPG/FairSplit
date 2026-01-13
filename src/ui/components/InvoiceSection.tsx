@@ -454,6 +454,10 @@ export function InvoiceSection({
               'El subtotal e impuestos no cuadran con el total. Revisa los valores.',
             ],
             [
+              'Subtotal inferred from items sum.',
+              'El subtotal se infirio con la suma de items.',
+            ],
+            [
               'Total adjusted to exclude tip amount.',
               'El total se ajusto para excluir la propina.',
             ],
