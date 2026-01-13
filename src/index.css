@@ -381,6 +381,15 @@
     }
   }
 
+  @keyframes scan-shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
   .animate-fade-in {
     animation: fade-in-up 220ms ease-out both;
   }

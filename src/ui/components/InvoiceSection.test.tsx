@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { InvoiceSection } from './InvoiceSection'
 
 const baseProps = {
+  eventId: 'evt-1',
   invoices: [],
   people: [
     { id: 'p1', name: 'Ana' },

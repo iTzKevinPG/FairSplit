@@ -212,25 +212,6 @@ function EventListPage() {
                 Todo queda listo para ver saldos y transferencias.
               </p>
             </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4 shadow-sm">
-                <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
-                  1. Crea el evento
-                </p>
-                <p className="mt-2 text-xs text-[color:var(--color-text-muted)]">
-                  Nombre + moneda para empezar.
-                </p>
-              </div>
-              <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4 shadow-sm">
-                <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
-                  2. Agrega integrantes
-                </p>
-                <p className="mt-2 text-xs text-[color:var(--color-text-muted)]">
-                  Lista de amigos y primer gasto.
-                </p>
-              </div>
-            </div>
           </div>
 
           <div className="space-y-4" id="event-create">

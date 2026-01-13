@@ -66,6 +66,7 @@ function EventDetailPage() {
     loadTransferStatuses,
     transferStatusesByEvent,
     setTransferStatus,
+    refreshEventDetails,
   } = useFairSplitStore()
 
   const [activeTab, setActiveTab] = useState<
@@ -344,9 +345,11 @@ function EventDetailPage() {
           aria-hidden={activeTab !== 'invoices'}
         >
           <InvoiceSection
+            eventId={eventId}
             invoices={selectedEvent.invoices}
             people={selectedEvent.people}
             currency={selectedEvent.currency}
+            onRefreshEvent={() => refreshEventDetails(eventId)}
             onAdd={async (invoice) => {
               await addInvoice(invoice)
             }}

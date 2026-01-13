@@ -209,6 +209,7 @@ interface FairSplitState {
   loadPublicOverview: (eventId: EventId) => Promise<void>
   loadTransferStatuses: (eventId: EventId) => Promise<void>
   loadEventDetailsForList: (eventIds: EventId[]) => Promise<void>
+  refreshEventDetails: (eventId: EventId) => Promise<void>
   setTransferStatus: (input: {
     eventId: EventId
     fromPersonId: string
@@ -805,6 +806,11 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
     const pending = eventIds.filter((id) => !loadedEventData.has(id))
     if (pending.length === 0) return
     await Promise.all(pending.map((id) => loadEventData(id, set)))
+  },
+  refreshEventDetails: async (eventId: EventId) => {
+    loadedEventData.delete(eventId)
+    loadingEventData.delete(eventId)
+    await loadEventData(eventId, set)
   },
   setTransferStatus: async (input) => {
     const { eventId, fromPersonId, toPersonId, isSettled } = input

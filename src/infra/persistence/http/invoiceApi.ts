@@ -52,6 +52,14 @@ function buildHeaders() {
   };
 }
 
+function buildOptionalAuthHeaders() {
+  const token =
+    typeof window !== 'undefined'
+      ? localStorage.getItem('fairsplit_auth_token')
+      : null;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export async function createInvoiceApi(
   eventId: string,
   payload: CreateInvoicePayload
@@ -196,5 +204,178 @@ export async function deleteInvoiceApi(eventId: string, invoiceId: string): Prom
     if (!response.ok) {
       throw new Error('Failed to delete invoice');
     }
+  });
+}
+
+export type ScanInvoiceResult = {
+  description: string;
+  subtotal: number | null;
+  tipAmount: number | null;
+  totalAmount: number | null;
+  currency: string | null;
+  date: string | null;
+  items: Array<{
+    name: string;
+    unitPrice: number;
+    quantity: number;
+  }>;
+  warnings?: string[];
+};
+
+export type ScanInvoiceStatus = {
+  jobId: string;
+  status: string;
+  progress?: number;
+  result?: ScanInvoiceResult;
+  failedReason?: string;
+};
+
+export async function scanInvoiceApi(
+  eventId: string,
+  file: File
+): Promise<{ jobId: string }> {
+  const body = new FormData();
+  body.append('file', file);
+
+  return withLoading(async () => {
+    const response = await fetch(`${API_BASE_URL}/events/${eventId}/invoices/scan`, {
+      method: 'POST',
+      headers: buildOptionalAuthHeaders(),
+      body
+    });
+
+    if (!response.ok) {
+      let details: unknown;
+      try {
+        details = await response.json();
+      } catch {
+        // ignore
+      }
+      const message =
+        details &&
+        typeof details === 'object' &&
+        details !== null &&
+        'message' in details &&
+        typeof (details as Record<string, unknown>).message === 'string'
+          ? (details as Record<string, string>).message
+          : 'Failed to scan invoice';
+      throw new Error(message);
+    }
+
+    return response.json();
+  });
+}
+
+export async function getScanStatusApi(jobId: string): Promise<ScanInvoiceStatus> {
+  const response = await fetch(`${API_BASE_URL}/invoices/scan/${jobId}`, {
+    method: 'GET',
+    headers: buildOptionalAuthHeaders()
+  });
+  if (response.status === 404) {
+    throw new Error('Scan not found');
+  }
+  if (!response.ok) {
+    throw new Error('Failed to fetch scan status');
+  }
+  return response.json();
+}
+
+export async function confirmScanApi(
+  jobId: string,
+  payload: CreateInvoicePayload & { eventId: string }
+): Promise<ApiInvoice> {
+  return withLoading(async () => {
+    const response = await fetch(`${API_BASE_URL}/invoices/scan/${jobId}/confirm`, {
+      method: 'POST',
+      headers: buildHeaders(),
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      let details: unknown;
+      try {
+        details = await response.json();
+      } catch {
+        // ignore
+      }
+      const message =
+        details &&
+        typeof details === 'object' &&
+        details !== null &&
+        'message' in details &&
+        typeof (details as Record<string, unknown>).message === 'string'
+          ? (details as Record<string, string>).message
+          : 'Failed to confirm scan';
+      throw new Error(message);
+    }
+
+    return response.json();
+  });
+}
+
+export async function retryScanApi(jobId: string): Promise<{ jobId: string }> {
+  return withLoading(async () => {
+    const response = await fetch(`${API_BASE_URL}/invoices/scan/${jobId}/retry`, {
+      method: 'POST',
+      headers: buildOptionalAuthHeaders()
+    });
+
+    if (!response.ok) {
+      let details: unknown;
+      try {
+        details = await response.json();
+      } catch {
+        // ignore
+      }
+      const message =
+        details &&
+        typeof details === 'object' &&
+        details !== null &&
+        'message' in details &&
+        typeof (details as Record<string, unknown>).message === 'string'
+          ? (details as Record<string, string>).message
+          : 'Failed to retry scan';
+      throw new Error(message);
+    }
+
+    return response.json();
+  });
+}
+
+export async function rescanInvoiceApi(
+  jobId: string,
+  eventId: string,
+  file: File
+): Promise<{ jobId: string }> {
+  const body = new FormData();
+  body.append('file', file);
+  body.append('eventId', eventId);
+
+  return withLoading(async () => {
+    const response = await fetch(`${API_BASE_URL}/invoices/scan/${jobId}/rescan`, {
+      method: 'POST',
+      headers: buildOptionalAuthHeaders(),
+      body
+    });
+
+    if (!response.ok) {
+      let details: unknown;
+      try {
+        details = await response.json();
+      } catch {
+        // ignore
+      }
+      const message =
+        details &&
+        typeof details === 'object' &&
+        details !== null &&
+        'message' in details &&
+        typeof (details as Record<string, unknown>).message === 'string'
+          ? (details as Record<string, string>).message
+          : 'Failed to rescan invoice';
+      throw new Error(message);
+    }
+
+    return response.json();
   });
 }
