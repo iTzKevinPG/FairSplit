@@ -1,15 +1,17 @@
-import { Share2, Wallet } from 'lucide-react'
+import { Share2 } from 'lucide-react'
 import { useEffect, useMemo, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { Badge } from '../../shared/components/ui/badge'
 import { Button } from '../../shared/components/ui/button'
 import { toast } from '../../shared/components/ui/sonner'
+import { useAuthStore } from '../../shared/state/authStore'
 import { useFairSplitStore } from '../../shared/state/fairsplitStore'
 import { BentoOverview } from '../components/BentoOverview'
 import { Footer } from '../components/Footer'
 import { useEvents } from '../hooks/useEvents'
 import NotFoundPage from './NotFoundPage'
 import { ThemeToggle } from '../components/ThemeToggle'
+import fairLogo from '../../assets/fair-logo.png'
 
 function EventOverviewPage() {
   const { eventId } = useParams<{ eventId: string }>()
@@ -31,6 +33,7 @@ function EventOverviewPage() {
     transferStatusesByEvent,
   } = useFairSplitStore()
   const hasLoadedRef = useRef(false)
+  const isAuthenticated = useAuthStore((state) => Boolean(state.token))
 
   useEffect(() => {
     if (hasLoadedRef.current || events.length > 0) return
@@ -92,7 +95,7 @@ function EventOverviewPage() {
     [selectedEvent],
   )
   const shareUrl =
-    typeof window !== 'undefined' && eventId
+    typeof window !== 'undefined' && eventId && isAuthenticated
       ? `${window.location.origin}/events/${eventId}/overview`
       : ''
   const handleShare = async () => {
@@ -177,12 +180,12 @@ function EventOverviewPage() {
   if (!selectedEvent) {
     if (!hasHydrated || isEventLoading(eventId) || hasEventInStore) {
       return (
-        <div className="min-h-screen bg-[color:var(--color-app-bg)]">
+        <div className="flex min-h-screen flex-col bg-[color:var(--color-app-bg)]">
           <header className="sticky top-0 z-40 border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-app-bg)]/95 backdrop-blur">
             <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[color:var(--color-primary-main)] text-[color:var(--color-text-on-primary)]">
-                  <Wallet className="h-5 w-5" />
+                <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg bg-[color:var(--color-surface-card)]">
+                  <img src={fairLogo} alt="FairSplit" className="h-8 w-8 object-contain" />
                 </div>
                 <span className="text-lg font-semibold text-[color:var(--color-text-main)]">
                   FairSplit
@@ -203,12 +206,12 @@ function EventOverviewPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[color:var(--color-app-bg)]">
+    <div className="flex min-h-screen flex-col bg-[color:var(--color-app-bg)]">
       <header className="sticky top-0 z-40 border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-app-bg)]/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[color:var(--color-primary-main)] text-[color:var(--color-text-on-primary)]">
-              <Wallet className="h-5 w-5" />
+            <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg bg-[color:var(--color-surface-card)]">
+              <img src={fairLogo} alt="FairSplit" className="h-8 w-8 object-contain" />
             </div>
             <span className="text-lg font-semibold text-[color:var(--color-text-main)]">
               FairSplit
@@ -227,10 +230,12 @@ function EventOverviewPage() {
             <h1 className="text-3xl font-semibold text-[color:var(--color-text-main)] sm:text-4xl">
               {selectedEvent.name}
             </h1>
-            <Button type="button" size="sm" variant="soft" onClick={handleShare}>
-              <Share2 className="h-4 w-4" />
-              Compartir
-            </Button>
+            {isAuthenticated ? (
+              <Button type="button" size="sm" variant="soft" onClick={handleShare}>
+                <Share2 className="h-4 w-4" />
+                Compartir
+              </Button>
+            ) : null}
           </div>
           <div className="flex flex-wrap gap-2 text-xs text-[color:var(--color-text-muted)]">
             <span className="rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-3 py-1">

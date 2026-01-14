@@ -57,14 +57,16 @@ export function InvoiceItemModal({
         aria-modal="true"
         aria-label="Item de consumo"
       >
-        <button
+        <Button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-full border border-transparent p-1 text-[color:var(--color-text-muted)] hover:border-[color:var(--color-border-subtle)] hover:text-[color:var(--color-text-main)]"
+          variant="ghost"
+          size="icon-sm"
+          className="absolute right-4 top-4 rounded-full text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-main)]"
           aria-label="Cerrar item"
         >
           <X className="h-4 w-4" />
-        </button>
+        </Button>
         <div className="space-y-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[color:var(--color-primary-main)]">
@@ -150,16 +152,17 @@ export function InvoiceItemModal({
           {itemError ? <p className="text-sm text-red-600">{itemError}</p> : null}
 
           <div className="flex flex-wrap items-center justify-end gap-3">
-            <button
+            <Button
               type="button"
-              className="text-xs font-semibold text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-main)]"
+              variant="ghost"
+              size="sm"
               onClick={() => {
                 onErrorChange(null)
                 onClose()
               }}
             >
               Cancelar
-            </button>
+            </Button>
             <Button
               type="button"
               onClick={() => {

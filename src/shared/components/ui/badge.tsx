@@ -12,14 +12,16 @@ const badgeVariants = cva(
         default: 'border-transparent bg-[color:var(--color-primary-main)] text-[color:var(--color-text-on-primary)]',
         secondary: 'border-transparent bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-main)]',
         destructive: 'border-transparent bg-[color:var(--color-accent-danger)] text-[color:var(--color-text-on-primary)]',
-        outline: 'text-[color:var(--color-text-main)] border-[color:var(--color-border-subtle)]',
+        outline:
+          'border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-main)]',
         success: 'border-[color:var(--color-accent-success)] bg-[color:var(--color-success-bg)] text-[color:var(--color-accent-success)]',
         warning: 'border-[color:var(--color-accent-warning)] bg-[color:var(--color-warning-bg)] text-[color:var(--color-accent-warning)]',
         danger: 'border-[color:var(--color-accent-danger)] bg-[color:var(--color-danger-bg)] text-[color:var(--color-accent-danger)]',
         info: 'border-[color:var(--color-accent-info)] bg-[color:var(--color-info-bg)] text-[color:var(--color-accent-info)]',
         guest: 'border-[color:var(--color-accent-warning)] bg-[color:var(--color-warning-bg)] text-[color:var(--color-accent-warning)]',
         active: 'border-[color:var(--color-accent-success)] bg-[color:var(--color-success-bg)] text-[color:var(--color-accent-success)]',
-        count: 'border-[color:var(--color-primary-light)] bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-light)] font-semibold',
+        count:
+          'border-[color:var(--color-primary-light)] bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-dark)] font-semibold',
       },
     },
     defaultVariants: {

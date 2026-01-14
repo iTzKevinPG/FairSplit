@@ -1,4 +1,6 @@
 import { ChevronDown, ChevronUp, Edit2, Plus, Trash2 } from 'lucide-react'
+import { ActionMenu } from '../../../shared/components/ActionMenu'
+import { Button } from '../../../shared/components/ui/button'
 import type { InvoiceItem } from '../../../domain/invoice/Invoice'
 import type { PersonForUI } from '../../../shared/state/fairsplitStore'
 
@@ -84,9 +86,11 @@ export function ConsumptionItemsSection({
                     <span className="ds-badge-soft">
                       {currency} {itemTotal.toFixed(2)}
                     </span>
-                    <button
+                    <Button
                       type="button"
-                      className="inline-flex items-center gap-1 text-[color:var(--color-primary-main)] hover:underline"
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1 text-[color:var(--color-primary-main)] hover:text-[color:var(--color-primary-dark)]"
                       onClick={() => onToggleExpanded(item.id)}
                     >
                       {isExpanded ? 'Ocultar detalle' : 'Ver detalle'}
@@ -95,23 +99,22 @@ export function ConsumptionItemsSection({
                       ) : (
                         <ChevronDown className="h-3.5 w-3.5" />
                       )}
-                    </button>
-                    <button
-                      type="button"
-                      className="text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-main)]"
-                      onClick={() => onEditItem(item)}
-                      aria-label="Editar item"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      className="text-[color:var(--color-accent-danger)] hover:text-[color:var(--color-accent-danger)]/80"
-                      onClick={() => onRemoveItem(item.id)}
-                      aria-label="Eliminar item"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    </Button>
+                    <ActionMenu
+                      items={[
+                        {
+                          label: 'Editar',
+                          icon: <Edit2 className="h-4 w-4" />,
+                          onClick: () => onEditItem(item),
+                        },
+                        {
+                          label: 'Eliminar',
+                          icon: <Trash2 className="h-4 w-4" />,
+                          tone: 'danger',
+                          onClick: () => onRemoveItem(item.id),
+                        },
+                      ]}
+                    />
                   </div>
                 </div>
 
@@ -146,14 +149,16 @@ export function ConsumptionItemsSection({
         </div>
       )}
 
-      <button
+      <Button
         type="button"
+        variant="outline"
+        size="lg"
         onClick={onAddItem}
-        className="flex w-full items-center justify-between rounded-lg border border-dashed border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-4 py-3 text-sm font-semibold text-[color:var(--color-text-muted)] transition hover:border-[color:var(--color-primary-light)] hover:text-[color:var(--color-text-main)]"
+        className="w-full justify-between border-dashed text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-main)]"
       >
         <span>Agregar item</span>
         <Plus className="h-4 w-4" />
-      </button>
+      </Button>
     </div>
   )
 }

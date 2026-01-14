@@ -6,13 +6,13 @@ import {
   Receipt,
   Share2,
   Users,
-  Wallet,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { buttonVariants } from '../../shared/components/ui/button'
 import { Button } from '../../shared/components/ui/button'
 import { toast } from '../../shared/components/ui/sonner'
+import { useAuthStore } from '../../shared/state/authStore'
 import { useFairSplitStore } from '../../shared/state/fairsplitStore'
 import { useEvents } from '../hooks/useEvents'
 import { BentoOverview } from '../components/BentoOverview'
@@ -30,6 +30,7 @@ import {
   SessionStatusPill,
 } from '../components/SessionMenu'
 import NotFoundPage from './NotFoundPage'
+import fairLogo from '../../assets/fair-logo.png'
 
 const tabs = [
   { id: 'people', label: 'Integrantes', icon: <Users className="h-4 w-4" /> },
@@ -75,6 +76,7 @@ function EventDetailPage() {
   const [showProfile, setShowProfile] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const hasLoadedRef = useRef(false)
+  const isAuthenticated = useAuthStore((state) => Boolean(state.token))
 
   useEffect(() => {
     if (hasLoadedRef.current || events.length > 0) return
@@ -160,7 +162,7 @@ function EventDetailPage() {
     [selectedEvent],
   )
   const shareUrl =
-    typeof window !== 'undefined' && eventId
+    typeof window !== 'undefined' && eventId && isAuthenticated
       ? `${window.location.origin}/events/${eventId}/overview`
       : ''
   const handleShare = async () => {
@@ -256,8 +258,8 @@ function EventDetailPage() {
       <header className="sticky top-0 z-40 border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-app-bg)]/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[color:var(--color-primary-main)] text-[color:var(--color-text-on-primary)]">
-              <Wallet className="h-5 w-5" />
+            <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg bg-[color:var(--color-surface-card)]">
+              <img src={fairLogo} alt="FairSplit" className="h-8 w-8 object-contain" />
             </div>
             <span className="text-lg font-semibold text-[color:var(--color-text-main)]">
               FairSplit
@@ -279,7 +281,7 @@ function EventDetailPage() {
       </header>
 
       <main
-        className="mx-auto flex max-w-5xl flex-1 flex-col gap-6 px-6 py-10"
+        className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-10 min-h-[calc(100vh-4rem-96px)]"
         data-tour-active-tab={activeTab}
       >
         <section className="space-y-2">
@@ -290,7 +292,7 @@ function EventDetailPage() {
             <h1 className="text-3xl font-semibold text-[color:var(--color-text-main)] sm:text-4xl">
               {selectedEvent.name}
             </h1>
-            {activeTab === 'overview' ? (
+            {activeTab === 'overview' && isAuthenticated ? (
               <Button type="button" size="sm" variant="soft" onClick={handleShare}>
                 <Share2 className="h-4 w-4" />
                 Compartir
@@ -339,11 +341,7 @@ function EventDetailPage() {
           />
         </div>
 
-        <div
-          data-tour="invoice-section"
-          className={activeTab === 'invoices' ? 'block' : 'hidden'}
-          aria-hidden={activeTab !== 'invoices'}
-        >
+        <div data-tour="invoice-section" hidden={activeTab !== 'invoices'}>
           <InvoiceSection
             eventId={eventId}
             invoices={selectedEvent.invoices}
@@ -362,11 +360,7 @@ function EventDetailPage() {
           />
         </div>
 
-        <div
-          data-tour="summary-section"
-          className={activeTab === 'summary' ? 'block' : 'hidden'}
-          aria-hidden={activeTab !== 'summary'}
-        >
+        <div data-tour="summary-section" hidden={activeTab !== 'summary'}>
           <SummarySection
             balances={balances}
             people={selectedEvent.people}
@@ -376,11 +370,7 @@ function EventDetailPage() {
           />
         </div>
 
-        <div
-          data-tour="transfers-section"
-          className={activeTab === 'transfers' ? 'block' : 'hidden'}
-          aria-hidden={activeTab !== 'transfers'}
-        >
+        <div data-tour="transfers-section" hidden={activeTab !== 'transfers'}>
           <TransfersSection
             transfers={transfers}
             people={selectedEvent.people}
@@ -398,11 +388,7 @@ function EventDetailPage() {
           />
         </div>
 
-        <div
-          data-tour="overview-section"
-          className={activeTab === 'overview' ? 'block' : 'hidden'}
-          aria-hidden={activeTab !== 'overview'}
-        >
+        <div data-tour="overview-section" hidden={activeTab !== 'overview'}>
           <BentoOverview
             people={selectedEvent.people}
             invoices={selectedEvent.invoices}

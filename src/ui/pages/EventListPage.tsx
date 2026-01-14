@@ -1,10 +1,10 @@
 import {
   CalendarPlus,
   Receipt,
+  ScanLine,
   Trash2,
   UserPlus,
   Users,
-  Wallet,
   X,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -21,6 +21,7 @@ import {
   SessionMenuButton,
   SessionStatusPill,
 } from '../components/SessionMenu'
+import fairLogo from '../../assets/fair-logo.png'
 
 function EventListPage() {
   const {
@@ -91,9 +92,17 @@ function EventListPage() {
     setShowIntro(false)
   }
 
+  const handleStartIntro = () => {
+    handleCloseIntro()
+    window.dispatchEvent(new CustomEvent('tour:go-tab', { detail: { tabId: 'people' } }))
+    window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('tour:open', { detail: { meta: 'guided' } }))
+    }, 120)
+  }
+
   return (
     <>
-      <div className="min-h-screen bg-[color:var(--color-app-bg)]">
+      <div className="flex min-h-screen flex-col bg-[color:var(--color-app-bg)]">
       <SessionMenu
         isOpen={menuOpen}
         onClose={() => setMenuOpen(false)}
@@ -103,19 +112,21 @@ function EventListPage() {
       {showIntro ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6 backdrop-blur-sm">
           <div
-            className="relative w-full max-w-2xl rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-6 shadow-lg"
+            className="relative w-full max-w-2xl rounded-3xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-6 shadow-2xl"
             role="dialog"
             aria-modal="true"
             aria-label="Bienvenida a FairSplit"
           >
-            <button
+            <Button
               type="button"
               onClick={handleCloseIntro}
-              className="absolute right-4 top-4 rounded-full border border-transparent p-1 text-[color:var(--color-text-muted)] hover:border-[color:var(--color-border-subtle)] hover:text-[color:var(--color-text-main)]"
+              variant="ghost"
+              size="icon-sm"
+              className="absolute right-4 top-4 rounded-full text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-main)]"
               aria-label="Cerrar bienvenida"
             >
               <X className="h-4 w-4" />
-            </button>
+            </Button>
 
             <div className="space-y-4">
               <div className="space-y-2">
@@ -127,48 +138,76 @@ function EventListPage() {
                 </h1>
                 <p className="text-sm text-[color:var(--color-text-muted)]">
                   Organiza tus planes, registra gastos y obten balances claros para saber
-                  quien paga a quien. Usa modo local o tu perfil en la nube.
+                  quien paga a quien. Elige modo local o tu perfil en la nube.
                 </p>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] p-4">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-[color:var(--color-text-main)]">
-                    <CalendarPlus className="h-4 w-4 text-[color:var(--color-primary-main)]" />
-                    Crea el evento
+              <div className="space-y-3">
+                <div className="rounded-xl border border-transparent bg-[color:var(--color-surface-muted)]/70 p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 text-[color:var(--color-primary-main)]">
+                      <CalendarPlus className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
+                        Crea el evento
+                      </p>
+                      <p className="text-xs text-[color:var(--color-text-muted)]">
+                        Define nombre y moneda en segundos.
+                      </p>
+                    </div>
                   </div>
-                  <p className="mt-2 text-xs text-[color:var(--color-text-muted)]">
-                    Define nombre y moneda en segundos.
-                  </p>
                 </div>
-                <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] p-4">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-[color:var(--color-text-main)]">
-                    <UserPlus className="h-4 w-4 text-[color:var(--color-primary-main)]" />
-                    Invita al grupo
+                <div className="rounded-xl border border-transparent bg-[color:var(--color-surface-muted)]/70 p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 text-[color:var(--color-primary-main)]">
+                      <UserPlus className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
+                        Invita al grupo
+                      </p>
+                      <p className="text-xs text-[color:var(--color-text-muted)]">
+                        Agrega personas y define el pagador.
+                      </p>
+                    </div>
                   </div>
-                  <p className="mt-2 text-xs text-[color:var(--color-text-muted)]">
-                    Agrega personas y define el pagador.
-                  </p>
                 </div>
-                <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] p-4">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-[color:var(--color-text-main)]">
-                    <Receipt className="h-4 w-4 text-[color:var(--color-primary-main)]" />
-                    Registra gastos
+                <div className="rounded-xl border border-transparent bg-[color:var(--color-surface-muted)]/70 p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 text-[color:var(--color-primary-main)]">
+                      <Receipt className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
+                        Registra gastos
+                      </p>
+                      <p className="text-xs text-[color:var(--color-text-muted)]">
+                        Agrega consumos manual o por consumo real.
+                      </p>
+                    </div>
                   </div>
-                  <p className="mt-2 text-xs text-[color:var(--color-text-muted)]">
-                    Ve saldos y transferencias claras.
-                  </p>
                 </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2 text-xs text-[color:var(--color-text-muted)]">
-                <span className="accent-chip">En minutos</span>
-                <span className="accent-chip">Modo local o nube</span>
-                <span className="accent-chip">Transferencias simples</span>
+                <div className="rounded-xl border border-transparent bg-[color:var(--color-surface-muted)]/70 p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 text-[color:var(--color-primary-main)]">
+                      <ScanLine className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
+                        Escanea facturas
+                      </p>
+                      <p className="text-xs text-[color:var(--color-text-muted)]">
+                        Usa OCR para pre-registrar items y totales.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="flex justify-end">
-                <Button type="button" size="sm" onClick={handleCloseIntro}>
+                <Button type="button" size="sm" onClick={handleStartIntro}>
+                  <Receipt className="h-4 w-4" />
                   Empezar
                 </Button>
               </div>
@@ -182,8 +221,8 @@ function EventListPage() {
       <header className="sticky top-0 z-40 border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-app-bg)]/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[color:var(--color-primary-main)] text-[color:var(--color-text-on-primary)]">
-              <Wallet className="h-5 w-5" />
+            <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg bg-[color:var(--color-surface-card)]">
+              <img src={fairLogo} alt="FairSplit" className="h-8 w-8 object-contain" />
             </div>
             <span className="text-lg font-semibold text-[color:var(--color-text-main)]">
               FairSplit
@@ -294,18 +333,20 @@ function EventListPage() {
                       <span className="text-sm font-semibold text-[color:var(--color-text-main)]">
                         {event.name}
                       </span>
-                      <button
+                      <Button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation()
                           setDeleteTarget({ id: event.id, name: event.name })
                         }}
-                        className="rounded-md p-1 text-[color:var(--color-text-muted)] hover:text-[color:var(--color-accent-danger)]"
+                        variant="ghost"
+                        size="icon-sm"
+                        className="rounded-full text-[color:var(--color-text-muted)] hover:text-[color:var(--color-accent-danger)]"
                         aria-label={`Eliminar evento ${event.name}`}
                         title="Eliminar evento"
                       >
                         <Trash2 className="h-4 w-4" />
-                      </button>
+                      </Button>
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-[color:var(--color-text-muted)]">
                       <Badge variant="outline" className="text-[10px] font-semibold">
@@ -342,17 +383,19 @@ function EventListPage() {
             aria-modal="true"
             aria-label="Eliminar evento"
           >
-            <button
+            <Button
               type="button"
               onClick={() => {
                 if (isDeleting) return
                 setDeleteTarget(null)
               }}
-              className="absolute right-4 top-4 rounded-full border border-transparent p-1 text-[color:var(--color-text-muted)] hover:border-[color:var(--color-border-subtle)] hover:text-[color:var(--color-text-main)]"
+              variant="ghost"
+              size="icon-sm"
+              className="absolute right-4 top-4 rounded-full text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-main)]"
               aria-label="Cerrar"
             >
               <X className="h-4 w-4" />
-            </button>
+            </Button>
             <div className="space-y-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[color:var(--color-accent-danger)]">

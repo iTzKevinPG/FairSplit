@@ -74,7 +74,7 @@ const eventSteps: GuideStepConfig[] = [
   {
     selector: '[data-tour="tab-nav"]',
     title: 'Navegacion',
-    description: 'Usa estas pestanas para moverte por el evento.',
+    description: 'Usa estas pestañas para moverte por el evento.',
     requirement: 'none',
   },
   {
@@ -137,7 +137,8 @@ const eventSteps: GuideStepConfig[] = [
   {
     selector: '[data-tour="invoice-advanced-toggle"]',
     title: 'Opciones avanzadas',
-    description: 'Elige propina, invitado especial, participantes o consumo.',
+    description:
+      'Vista rapida de propina, invitado especial, participantes o consumo. No requiere accion.',
     requirement: 'none',
     tabId: 'invoices',
     mutationObservables: ['[data-tour-active-tab]'],
@@ -169,7 +170,6 @@ const eventSteps: GuideStepConfig[] = [
     description: 'Revisa los saldos netos por persona.',
     requirement: 'tab-summary',
     tabId: 'summary',
-    hint: 'Cambia a la pestana Resumen para continuar.',
     mutationObservables: ['[data-tour-active-tab]'],
     resizeObservables: ['[data-tour-active-tab]'],
   },
@@ -179,7 +179,6 @@ const eventSteps: GuideStepConfig[] = [
     description: 'Aqui ves quien paga a quien para saldar cuentas.',
     requirement: 'tab-transfers',
     tabId: 'transfers',
-    hint: 'Cambia a la pestana Transferencias para continuar.',
     mutationObservables: ['[data-tour-active-tab]'],
     resizeObservables: ['[data-tour-active-tab]'],
   },
@@ -189,7 +188,6 @@ const eventSteps: GuideStepConfig[] = [
     description: 'Resumen rapido de todo el evento.',
     requirement: 'tab-overview',
     tabId: 'overview',
-    hint: 'Cambia a la pestana Vista general para continuar.',
     mutationObservables: ['[data-tour-active-tab]'],
     resizeObservables: ['[data-tour-active-tab]'],
   },
@@ -389,7 +387,8 @@ function GuideStepContent({
     [],
   )
 
-  const isLastStep = steps && currentStep === steps.length - 1
+  const totalSteps = steps?.length ?? getConfigsForPath(pathname).length
+  const isLastStep = totalSteps > 0 ? currentStep === totalSteps - 1 : false
   const disablePrev =
     config.selector === '[data-tour-tab="summary"]' ||
     config.selector === '[data-tour-tab="transfers"]' ||
@@ -397,7 +396,15 @@ function GuideStepContent({
   const autoAdvance = config.requirement === 'event-created'
   const handleStepChange = useCallback(
     (nextIndex: number) => {
-      const target = steps?.[nextIndex] as (StepType & { tabId?: string }) | undefined
+      const fallbackSteps =
+        steps && steps.length > 0
+          ? steps
+          : getConfigsForPath(pathname).map((cfg) => ({
+              selector: cfg.selector,
+              tabId: cfg.tabId,
+            }))
+      const target = fallbackSteps[nextIndex] as (StepType & { tabId?: string }) | undefined
+      if (!target) return
       const selector = target?.selector as string | undefined
       const resolvedActiveTab =
         activeTab ??
@@ -405,25 +412,27 @@ function GuideStepContent({
           .querySelector('[data-tour-active-tab]')
           ?.getAttribute('data-tour-active-tab') ??
         null
-      if (target?.tabId && selector && resolvedActiveTab && resolvedActiveTab !== target.tabId) {
-        clearPendingStep()
-        pendingStepRef.current = nextIndex
-        pendingSelectorRef.current = selector
-        pendingTabRef.current = target.tabId
-        window.dispatchEvent(
-          new CustomEvent('tour:go-tab', { detail: { tabId: target.tabId } }),
-        )
-        pendingTimeoutRef.current = window.setTimeout(() => {
-          if (pendingStepRef.current !== nextIndex) return
-          setCurrentStep(nextIndex)
-          clearPendingStep()
-        }, 1200)
-        return
-      }
       if (target?.tabId) {
         window.dispatchEvent(
           new CustomEvent('tour:go-tab', { detail: { tabId: target.tabId } }),
         )
+        if (selector && resolvedActiveTab !== target.tabId) {
+          clearPendingStep()
+          pendingStepRef.current = nextIndex
+          pendingSelectorRef.current = selector
+          pendingTabRef.current = target.tabId
+          pendingTimeoutRef.current = window.setTimeout(() => {
+            if (pendingStepRef.current !== nextIndex) return
+            setCurrentStep(nextIndex)
+            clearPendingStep()
+          }, 100)
+          return
+        }
+        window.dispatchEvent(
+          new CustomEvent('tour:go-tab', { detail: { tabId: target.tabId } }),
+        )
+        setCurrentStep(nextIndex)
+        return
       }
       setCurrentStep(nextIndex)
     },
@@ -483,9 +492,9 @@ function GuideStepContent({
   return (
     <div className="space-y-3">
       <div className="space-y-1">
-        {steps ? (
+        {totalSteps ? (
           <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[color:var(--color-text-muted)]">
-            Paso {currentStep + 1} de {steps.length}
+            Paso {currentStep + 1} de {totalSteps}
           </p>
         ) : null}
         <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
@@ -624,12 +633,22 @@ export function QuickGuideButton() {
     }
   }
 
+  useEffect(() => {
+    const handler = () => {
+      handleOpen()
+    }
+    window.addEventListener('tour:open', handler)
+    return () => {
+      window.removeEventListener('tour:open', handler)
+    }
+  }, [handleOpen])
+
   return (
     <Button
       type="button"
       size="sm"
       variant="soft"
-      className="ring-1 ring-[color:var(--color-primary-light)]"
+      className="ring-1 ring-[color:var(--color-primary-light)] text-[color:var(--color-primary-light)]"
       onClick={handleOpen}
       disabled={steps.length === 0}
       data-tour="guide-button"

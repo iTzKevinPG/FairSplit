@@ -21,6 +21,7 @@ import { ScanProgressBanner } from './invoice/ScanProgressBanner'
 import type { InvoiceItem } from '../../domain/invoice/Invoice'
 import type { InvoiceForUI, PersonForUI } from '../../shared/state/fairsplitStore'
 import { createId } from '../../shared/utils/createId'
+import { ActionMenu } from '../../shared/components/ActionMenu'
 import {
   confirmScanApi,
   getScanStatusApi,
@@ -74,7 +75,6 @@ export function InvoiceSection({
 }: InvoiceSectionProps) {
   const { isOpen: isTourOpen, meta: tourMeta, steps, setCurrentStep } = useTour()
   const optionsMenuRef = useRef<HTMLDetailsElement | null>(null)
-  const addMenuRef = useRef<HTMLDetailsElement | null>(null)
   const formRef = useRef<HTMLDivElement | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const scanPollRef = useRef<number | null>(null)
@@ -606,10 +606,6 @@ export function InvoiceSection({
     optionsMenuRef.current?.removeAttribute('open')
   }
 
-  const closeAddMenu = () => {
-    addMenuRef.current?.removeAttribute('open')
-  }
-
   const advanceTourStep = () => {
     if (!isTourOpen || tourMeta !== 'guided') return
     if (!steps || !setCurrentStep) return
@@ -713,64 +709,60 @@ export function InvoiceSection({
             </Button>
             )
           ) : (
-            <details
-              className="relative"
-              ref={addMenuRef}
-              data-tour="invoice-add-menu"
-              onToggle={(event) => {
-                const target = event.currentTarget
-                if (target.open) {
-                  advanceTourStep()
-                }
-              }}
-            >
-              <summary
-                className={`flex list-none items-center gap-2 rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-2 text-sm font-semibold text-[color:var(--color-text-muted)] ${
-                  isScanning
-                    ? 'cursor-not-allowed opacity-60'
-                    : 'cursor-pointer hover:border-[color:var(--color-primary-light)] hover:text-[color:var(--color-text-main)]'
-                }`}
-                data-tour="invoice-add"
-                aria-disabled={isScanning}
-                onClick={(event) => {
-                  if (isScanning) {
-                    event.preventDefault()
-                  }
-                }}
-              >
-                Agregar gasto
-                <ChevronDown className="h-4 w-4" />
-              </summary>
-              <div className="absolute right-0 z-10 mt-2 w-56 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-2 shadow-md">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForm(true)
-                    closeAddMenu()
-                    setTimeout(() => {
-                      advanceTourStep()
-                    }, 100);
-                  }}
-                  data-tour="invoice-add-manual"
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-[color:var(--color-text-main)] hover:bg-[color:var(--color-surface-muted)]"
-                >
-                  <Plus className="h-4 w-4" />
-                  Manual
-                </button>
-                
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeAddMenu()
-                    fileInputRef.current?.click()
-                  }}
-                  className="mt-1 flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-[color:var(--color-text-main)] hover:bg-[color:var(--color-surface-muted)]"
-                >
-                  <Receipt className="h-4 w-4" />
-                  Escanear factura
-                </button>
-              </div>
-            </details>
+            <div data-tour="invoice-add-menu">
+              <ActionMenu
+                label="Agregar gasto"
+                align="right"
+                items={[
+                  {
+                    label: 'Manual',
+                    dataTour: 'invoice-add-manual',
+                    icon: <Plus className="h-4 w-4" />,
+                    onClick: () => {
+                      setShowForm(true)
+                      setTimeout(() => {
+                        advanceTourStep()
+                      }, 100);
+                    },
+                  },
+                  {
+                    label: 'Escanear factura',
+                    dataTour: 'invoice-add-scan',
+                    icon: <Receipt className="h-4 w-4" />,
+                    onClick: () => {
+                      fileInputRef.current?.click()
+                    },
+                  },
+                ]}
+                renderTrigger={({ onClick, isOpen, ariaLabel, onKeyDown }) => (
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={(event) => {
+                      if (isScanning) {
+                        event.preventDefault()
+                        return
+                      }
+                      onClick(event)
+                      if (!isOpen) {
+                        setTimeout(() => {
+                          advanceTourStep()
+                        }, 100)
+                      }
+                    }}
+                    onKeyDown={onKeyDown}
+                    aria-label={ariaLabel}
+                    aria-disabled={isScanning}
+                    data-tour="invoice-add"
+                    className={`gap-2 ${isScanning ? 'cursor-not-allowed opacity-60' : ''}`}
+                    disabled={isScanning}
+                  >
+                    Agregar gasto
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                )}
+              />
+            </div>
           )}
         </div>
 
@@ -792,9 +784,11 @@ export function InvoiceSection({
           <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-4 py-3 text-sm text-[color:var(--color-text-muted)]">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span>{scanError}</span>
-              <button
+              <Button
                 type="button"
-                className="text-xs font-semibold text-[color:var(--color-primary-main)] hover:text-[color:var(--color-primary-dark)]"
+                variant="ghost"
+                size="sm"
+                className="text-[color:var(--color-primary-main)] hover:text-[color:var(--color-primary-dark)]"
                 onClick={async () => {
                   if (!scanJobId) return
                   try {
@@ -810,7 +804,7 @@ export function InvoiceSection({
                 }}
               >
                 Reintentar
-              </button>
+              </Button>
             </div>
           </div>
         ) : null}
@@ -1061,8 +1055,10 @@ export function InvoiceSection({
                   Opciones
                 </summary>
                 <div className="absolute left-0 right-0 z-10 mt-2 w-full rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-2 shadow-md sm:left-auto sm:right-0 sm:w-52">
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={() =>
                       setIncludeTip((current) => {
                         const next = !current
@@ -1072,16 +1068,18 @@ export function InvoiceSection({
                         return next
                       })
                     }
-                    className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-xs font-semibold ${
+                    className={`w-full justify-between text-xs font-semibold ${
                       includeTip
                         ? 'bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-main)]'
                         : 'text-[color:var(--color-text-muted)] hover:bg-[color:var(--color-surface-muted)]'
                     }`}
                   >
                     Propina
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={() =>
                       setBirthdayEnabled((current) => {
                         const next = !current
@@ -1091,16 +1089,18 @@ export function InvoiceSection({
                         return next
                       })
                     }
-                    className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-xs font-semibold ${
+                    className={`w-full justify-between text-xs font-semibold ${
                       birthdayEnabled
                         ? 'bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-main)]'
                         : 'text-[color:var(--color-text-muted)] hover:bg-[color:var(--color-surface-muted)]'
                     }`}
                   >
                     Invitado especial
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => {
                       setShowParticipants((current) => {
                         const next = !current
@@ -1109,38 +1109,42 @@ export function InvoiceSection({
                       })
                       closeOptionsMenu()
                     }}
-                    className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-xs font-semibold ${
+                    className={`w-full justify-between text-xs font-semibold ${
                       showParticipants
                         ? 'bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-main)]'
                         : 'text-[color:var(--color-text-muted)] hover:bg-[color:var(--color-surface-muted)]'
                     }`}
                   >
                     Participantes
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => {
                       toggleConsumption()
                       closeOptionsMenu()
                     }}
-                    className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-xs font-semibold ${
+                    className={`w-full justify-between text-xs font-semibold ${
                       showConsumption
                         ? 'bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-main)]'
                         : 'text-[color:var(--color-text-muted)] hover:bg-[color:var(--color-surface-muted)]'
                     }`}
                   >
                     Consumo
-                  </button>
+                  </Button>
                 </div>
               </details>
               {editingInvoiceId ? (
-                <button
+                <Button
                   type="button"
-                  className="text-xs font-semibold text-[color:var(--color-primary-main)] hover:text-[color:var(--color-primary-dark)]"
+                  variant="ghost"
+                  size="sm"
+                  className="text-[color:var(--color-primary-main)] hover:text-[color:var(--color-primary-dark)]"
                   onClick={resetForm}
                 >
                   Cancelar edicion
-                </button>
+                </Button>
               ) : null}
               {isOcrConfirm ? (
                 <span className="text-[11px] font-semibold text-[color:var(--color-text-muted)]">

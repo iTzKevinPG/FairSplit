@@ -18,7 +18,7 @@ const buttonVariants = cva(
           "border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] text-[color:var(--color-text-main)] hover:border-[color:var(--color-primary-light)]",
         secondary:
           "bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-main)] hover:bg-[color:var(--color-surface-muted)]/80",
-        ghost: "hover:bg-[color:var(--color-primary-soft)] hover:text-[color:var(--color-primary-main)]",
+        ghost: "btn-ghost",
         link: "text-[color:var(--color-primary-main)] underline-offset-4 hover:underline",
         success:
           "bg-[color:var(--color-accent-success)] text-[color:var(--color-text-on-primary)] hover:bg-[color:var(--color-accent-success)]/90 active:scale-[0.98]",

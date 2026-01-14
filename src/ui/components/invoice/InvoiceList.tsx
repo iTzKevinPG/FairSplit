@@ -1,4 +1,6 @@
 import { ChevronDown, ChevronUp, Edit2, Trash2 } from 'lucide-react'
+import { ActionMenu } from '../../../shared/components/ActionMenu'
+import { Button } from '../../../shared/components/ui/button'
 import type { InvoiceItem } from '../../../domain/invoice/Invoice'
 import type { InvoiceForUI, PersonForUI } from '../../../shared/state/fairsplitStore'
 
@@ -93,9 +95,11 @@ export function InvoiceList({
                 ) : null}
               </div>
               <div className="flex items-center gap-2 text-xs">
-                <button
+                <Button
                   type="button"
-                  className="inline-flex items-center gap-1 text-[color:var(--color-primary-main)] hover:underline"
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1 text-[color:var(--color-primary-main)] hover:text-[color:var(--color-primary-dark)]"
                   onClick={() => onToggleDetail(invoice.id)}
                 >
                   {isExpanded ? 'Ocultar detalle' : 'Ver detalle'}
@@ -104,23 +108,22 @@ export function InvoiceList({
                   ) : (
                     <ChevronDown className="h-3.5 w-3.5" />
                   )}
-                </button>
-                <button
-                  type="button"
-                  className="text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-main)]"
-                  onClick={() => onEdit(invoice)}
-                  aria-label="Editar gasto"
-                >
-                  <Edit2 className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  className="text-[color:var(--color-accent-danger)] hover:text-[color:var(--color-accent-danger)]/80"
-                  onClick={() => onRemove(invoice.id)}
-                  aria-label="Eliminar gasto"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                </Button>
+                <ActionMenu
+                  items={[
+                    {
+                      label: 'Editar',
+                      icon: <Edit2 className="h-4 w-4" />,
+                      onClick: () => onEdit(invoice),
+                    },
+                    {
+                      label: 'Eliminar',
+                      icon: <Trash2 className="h-4 w-4" />,
+                      tone: 'danger',
+                      onClick: () => onRemove(invoice.id),
+                    },
+                  ]}
+                />
               </div>
             </div>
 
@@ -151,13 +154,15 @@ export function InvoiceList({
                       </p>
                     ) : null}
                   </div>
-                  <button
+                  <Button
                     type="button"
-                    className="text-xs font-semibold text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-main)]"
+                    variant="ghost"
+                    size="sm"
+                    className="text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-main)]"
                     onClick={onCloseDetail}
                   >
                     Cerrar
-                  </button>
+                  </Button>
                 </div>
                 {detailInvoice.divisionMethod === 'consumption' &&
                 detailInvoice.items?.length ? (

@@ -1,5 +1,7 @@
 import { UserPlus } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
+import { Pencil, Trash2 } from 'lucide-react'
+import { ActionMenu } from '../../shared/components/ActionMenu'
 import { Button } from '../../shared/components/ui/button'
 import { Input } from '../../shared/components/ui/input'
 import { SectionCard } from './SectionCard'
@@ -90,7 +92,7 @@ export function PeopleSection({
           onChange={(e) => setName(e.target.value)}
           className="sm:flex-1"
         />
-        <Button type="submit" variant="outline" size="sm" disabled={!name.trim()}>
+        <Button type="submit" size="sm" disabled={!name.trim()}>
           <UserPlus className="h-4 w-4" />
           Agregar
         </Button>
@@ -109,7 +111,7 @@ export function PeopleSection({
           people.map((person) => (
             <div
               key={person.id}
-              className="card-interactive flex min-h-[84px] items-center justify-between gap-3 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-3 text-sm text-[color:var(--color-text-main)]"
+              className="card-interactive flex min-h-[84px] flex-wrap items-center justify-between gap-3 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-3 text-sm text-[color:var(--color-text-main)]"
             >
               {editingId === person.id ? (
                 <div
@@ -126,45 +128,43 @@ export function PeopleSection({
                     onChange={(e) => setEditingName(e.target.value)}
                   />
                   <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      className="text-xs font-semibold text-[color:var(--color-primary-main)] hover:text-[color:var(--color-primary-dark)]"
-                      onClick={handleEditSave}
-                    >
+                    <Button type="button" size="sm" onClick={handleEditSave}>
                       Guardar
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
-                      className="text-xs font-semibold text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-main)]"
+                      variant="ghost"
+                      size="sm"
                       onClick={() => {
                         setEditingId(null)
                         setEditingName('')
                       }}
                     >
                       Cancelar
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ) : (
                 <>
-                  <span className="truncate font-semibold text-[color:var(--color-text-main)]">
+                  <span className="min-w-0 flex-1 truncate font-semibold text-[color:var(--color-text-main)]">
                     {person.name}
                   </span>
-                  <div className="flex items-center gap-2 text-xs">
-                    <button
-                      type="button"
-                      className="font-semibold text-[color:var(--color-primary-main)] hover:underline"
-                      onClick={() => startEditing(person)}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      type="button"
-                      className="font-semibold text-[color:var(--color-accent-danger)] hover:underline"
-                      onClick={() => handleRemove(person.id)}
-                    >
-                      Eliminar
-                    </button>
+                  <div className="shrink-0">
+                    <ActionMenu
+                      items={[
+                        {
+                          label: 'Editar',
+                          icon: <Pencil className="h-4 w-4" />,
+                          onClick: () => startEditing(person),
+                        },
+                        {
+                          label: 'Eliminar',
+                          icon: <Trash2 className="h-4 w-4" />,
+                          tone: 'danger',
+                          onClick: () => handleRemove(person.id),
+                        },
+                      ]}
+                    />
                   </div>
                 </>
               )}

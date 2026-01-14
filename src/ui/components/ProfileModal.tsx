@@ -1,4 +1,5 @@
 import { X } from 'lucide-react'
+import { Button } from '../../shared/components/ui/button'
 import { AuthCard } from './AuthCard'
 
 type ProfileModalProps = {
@@ -17,14 +18,16 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         aria-modal="true"
         aria-label="Perfil"
       >
-        <button
+        <Button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-full border border-transparent p-1 text-[color:var(--color-text-muted)] hover:border-[color:var(--color-border-subtle)] hover:text-[color:var(--color-text-main)]"
+          variant="ghost"
+          size="icon-sm"
+          className="absolute right-4 top-4 rounded-full text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-main)]"
           aria-label="Cerrar perfil"
         >
           <X className="h-4 w-4" />
-        </button>
+        </Button>
         <div className="space-y-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[color:var(--color-primary-main)]">

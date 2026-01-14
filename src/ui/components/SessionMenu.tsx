@@ -60,15 +60,17 @@ export function SessionStatusPill() {
 export function SessionMenuButton({ onClick }: { onClick: () => void }) {
   const { statusBorder, menuIconClass } = useSessionStatus()
   return (
-    <button
+    <Button
       type="button"
-      className={`flex h-9 w-9 items-center justify-center rounded-full border text-[color:var(--color-text-main)] ${statusBorder}`}
+      variant="ghost"
+      size="icon-sm"
+      className={`rounded-full border ${statusBorder} ${menuIconClass}`}
       onClick={onClick}
       aria-label="Abrir menu"
       data-tour="menu-button"
     >
-      <Menu className={`h-4 w-4 ${menuIconClass}`} />
-    </button>
+      <Menu className="h-4 w-4" />
+    </Button>
   )
 }
 
@@ -94,14 +96,16 @@ export function SessionMenu({ isOpen, onClose, onOpenProfile, backLink }: Sessio
           <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
             Menu
           </p>
-          <button
+          <Button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-transparent p-1 text-[color:var(--color-text-muted)] hover:border-[color:var(--color-border-subtle)] hover:text-[color:var(--color-text-main)]"
+            variant="ghost"
+            size="icon-sm"
+            className="rounded-full text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-main)]"
             aria-label="Cerrar menu"
           >
             <X className="h-4 w-4" />
-          </button>
+          </Button>
         </div>
 
         <div className={`rounded-xl border ${statusBorder} ${statusBg} p-4`}>
