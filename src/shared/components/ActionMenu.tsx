@@ -5,7 +5,6 @@ import {
   type ReactNode,
   type MouseEvent,
   type KeyboardEvent,
-  type RefObject,
 } from 'react'
 import { MoreVertical } from 'lucide-react'
 import { Button } from './ui/button'
@@ -27,7 +26,6 @@ type ActionMenuProps = {
     onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void
     isOpen: boolean
     ariaLabel: string
-    ref: RefObject<HTMLButtonElement>
   }) => ReactNode
 }
 
@@ -39,14 +37,18 @@ export function ActionMenu({
 }: ActionMenuProps) {
   const [open, setOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement | null>(null)
-  const triggerRef = useRef<HTMLButtonElement | null>(null)
+  const triggerRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     if (!open) return
-    const handleOutside = (event: MouseEvent | TouchEvent) => {
+    const handleOutside = (event: Event) => {
       if (!menuRef.current || !triggerRef.current) return
-      const target = event.target as Node
-      if (!menuRef.current.contains(target) && !triggerRef.current.contains(target)) {
+      const target = event.target as Node | null
+      if (
+        target &&
+        !menuRef.current.contains(target) &&
+        !triggerRef.current.contains(target)
+      ) {
         setOpen(false)
       }
     }
@@ -73,29 +75,29 @@ export function ActionMenu({
     }
   }
 
+  const triggerNode = renderTrigger ? (
+    renderTrigger({
+      onClick: handleClick,
+      onKeyDown: handleKeyDown,
+      isOpen: open,
+      ariaLabel: label,
+    })
+  ) : (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-sm"
+      aria-label={label}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+    >
+      <MoreVertical className="h-4 w-4" />
+    </Button>
+  )
+
   return (
     <div className="relative" ref={menuRef}>
-      {renderTrigger ? (
-        renderTrigger({
-          onClick: handleClick,
-          onKeyDown: handleKeyDown,
-          isOpen: open,
-          ariaLabel: label,
-          ref: triggerRef,
-        })
-      ) : (
-        <Button
-          ref={triggerRef}
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          aria-label={label}
-          onClick={handleClick}
-          onKeyDown={handleKeyDown}
-        >
-          <MoreVertical className="h-4 w-4" />
-        </Button>
-      )}
+      <div ref={triggerRef}>{triggerNode}</div>
       {open ? (
         <div
           ref={menuRef}

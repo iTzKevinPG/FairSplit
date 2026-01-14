@@ -735,9 +735,8 @@ export function InvoiceSection({
                     },
                   },
                 ]}
-                renderTrigger={({ onClick, isOpen, ariaLabel, onKeyDown, ref }) => (
+                renderTrigger={({ onClick, isOpen, ariaLabel, onKeyDown }) => (
                   <Button
-                    ref={ref}
                     type="button"
                     size="sm"
                     onClick={(event) => {
@@ -1169,22 +1168,21 @@ export function InvoiceSection({
             <span>Editando gasto seleccionado.</span>
           </div>
         ) : null}
-        <InvoiceList
-          invoices={invoices}
-          currency={currency}
-          people={people}
-          detailInvoiceId={detailInvoiceId}
-          detailInvoice={detailInvoice}
-          participantShares={participantShares}
-          onToggleDetail={(invoiceId) =>
-            setDetailInvoiceId((current) => (current === invoiceId ? null : invoiceId))
-          }
-          onCloseDetail={() => setDetailInvoiceId(null)}
-          onEdit={startEdit}
-          onRemove={onRemove}
-          resolvePersonName={resolvePersonName}
-          getItemTotal={getItemTotal}
-        />
+          <InvoiceList
+            invoices={invoices}
+            currency={currency}
+            people={people}
+            detailInvoiceId={detailInvoiceId}
+            detailInvoice={detailInvoice}
+            participantShares={participantShares}
+            onToggleDetail={(invoiceId) =>
+              setDetailInvoiceId((current) => (current === invoiceId ? null : invoiceId))
+            }
+            onEdit={startEdit}
+            onRemove={onRemove}
+            resolvePersonName={resolvePersonName}
+            getItemTotal={getItemTotal}
+          />
       </div>
       </SectionCard>
     </>

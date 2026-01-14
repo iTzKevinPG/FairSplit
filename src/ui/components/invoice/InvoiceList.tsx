@@ -17,7 +17,6 @@ interface InvoiceListProps {
     isBirthday?: boolean
   }>
   onToggleDetail: (invoiceId: string) => void
-  onCloseDetail: () => void
   onEdit: (invoice: InvoiceForUI) => void
   onRemove: (invoiceId: string) => void
   resolvePersonName: (id: string, people: PersonForUI[]) => string
@@ -32,7 +31,6 @@ export function InvoiceList({
   detailInvoice,
   participantShares,
   onToggleDetail,
-  onCloseDetail,
   onEdit,
   onRemove,
   resolvePersonName,

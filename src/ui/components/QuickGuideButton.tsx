@@ -436,7 +436,7 @@ function GuideStepContent({
       }
       setCurrentStep(nextIndex)
     },
-    [activeTab, clearPendingStep, setCurrentStep, steps],
+    [activeTab, clearPendingStep, pathname, setCurrentStep, steps],
   )
 
   useEffect(() => {
@@ -620,7 +620,7 @@ export function QuickGuideButton() {
     lastPathRef.current = location.pathname
   }, [isOpen, location.pathname, meta, setCurrentStep, setIsOpen, setSteps, steps])
 
-  const handleOpen = () => {
+  const handleOpen = useCallback(() => {
     if (steps.length === 0 || !setSteps) return
     setMeta?.('guided')
     setSteps(steps)
@@ -631,7 +631,7 @@ export function QuickGuideButton() {
         new CustomEvent('tour:go-tab', { detail: { tabId: 'people' } }),
       )
     }
-  }
+  }, [location.pathname, setCurrentStep, setIsOpen, setMeta, setSteps, steps])
 
   useEffect(() => {
     const handler = () => {
