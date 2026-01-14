@@ -690,7 +690,7 @@ export function InvoiceSection({
         }
       >
       <div className="space-y-5">
-        <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)]/80 px-4 py-3 text-sm text-[color:var(--color-text-muted)]">
+        <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-panel)] px-4 py-3 text-sm text-[color:var(--color-text-muted)] shadow-sm">
           Registra cada gasto con pagador, participantes y tipo de reparto. Puedes
           incluir propina o invitado especial.
         </div>
@@ -700,8 +700,9 @@ export function InvoiceSection({
             editingInvoiceId ? null : (
             <Button
               type="button"
+              variant="destructive"
               size="sm"
-              onClick={() => setShowForm(false)}
+              onClick={() => resetForm()}
               data-tour="invoice-close"
             >
               <X className="h-4 w-4" />
@@ -734,8 +735,9 @@ export function InvoiceSection({
                     },
                   },
                 ]}
-                renderTrigger={({ onClick, isOpen, ariaLabel, onKeyDown }) => (
+                renderTrigger={({ onClick, isOpen, ariaLabel, onKeyDown, ref }) => (
                   <Button
+                    ref={ref}
                     type="button"
                     size="sm"
                     onClick={(event) => {
@@ -781,7 +783,7 @@ export function InvoiceSection({
         <ScanProgressBanner status={scanStatus} progress={scanProgress} />
 
         {scanError && scanJobId ? (
-          <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-4 py-3 text-sm text-[color:var(--color-text-muted)]">
+          <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-panel)] px-4 py-3 text-sm text-[color:var(--color-text-muted)] shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span>{scanError}</span>
               <Button
@@ -845,18 +847,11 @@ export function InvoiceSection({
 
         {showForm ? (
           <div
-            className="animate-fade-in rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] p-4"
+            className="animate-fade-in rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-panel)] p-4 shadow-sm"
             data-tour="invoice-form"
             ref={formRef}
           >
             <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-4">
-              {divisionMethod === 'consumption' ? (
-                <div className="md:col-span-4">
-                  {items.length === 0 ? (
-                    <p className="mt-2">No se detectaron items. Puedes agregarlos manualmente.</p>
-                  ) : null}
-                </div>
-              ) : null}
               <Input
                 placeholder="Concepto del gasto"
                 value={description}

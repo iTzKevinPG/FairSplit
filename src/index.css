@@ -35,6 +35,7 @@
     --color-app-bg: #f3f4f6;
     --color-surface-card: #ffffff;
     --color-surface-muted: #f9fafb;
+    --color-surface-panel: #e9f2f5;
     --color-surface-input: #ffffff;
     --color-border-subtle: #e5e7eb;
     --color-border-strong: var(--color-neutral-700);
@@ -111,6 +112,7 @@
     --color-app-bg: #111827;
     --color-surface-card: #1f2937;
     --color-surface-muted: #374151;
+    --color-surface-panel: #182430;
     --color-surface-input: #111827;
     --color-border-subtle: #374151;
     --color-border-strong: var(--color-border-subtle);

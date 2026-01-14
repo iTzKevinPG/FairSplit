@@ -5,6 +5,7 @@ import {
   type ReactNode,
   type MouseEvent,
   type KeyboardEvent,
+  type RefObject,
 } from 'react'
 import { MoreVertical } from 'lucide-react'
 import { Button } from './ui/button'
@@ -26,6 +27,7 @@ type ActionMenuProps = {
     onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void
     isOpen: boolean
     ariaLabel: string
+    ref: RefObject<HTMLButtonElement>
   }) => ReactNode
 }
 
@@ -37,12 +39,14 @@ export function ActionMenu({
 }: ActionMenuProps) {
   const [open, setOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement | null>(null)
+  const triggerRef = useRef<HTMLButtonElement | null>(null)
 
   useEffect(() => {
     if (!open) return
     const handleOutside = (event: MouseEvent | TouchEvent) => {
-      if (!menuRef.current) return
-      if (!menuRef.current.contains(event.target as Node)) {
+      if (!menuRef.current || !triggerRef.current) return
+      const target = event.target as Node
+      if (!menuRef.current.contains(target) && !triggerRef.current.contains(target)) {
         setOpen(false)
       }
     }
@@ -77,9 +81,11 @@ export function ActionMenu({
           onKeyDown: handleKeyDown,
           isOpen: open,
           ariaLabel: label,
+          ref: triggerRef,
         })
       ) : (
         <Button
+          ref={triggerRef}
           type="button"
           variant="ghost"
           size="icon-sm"
@@ -92,7 +98,8 @@ export function ActionMenu({
       )}
       {open ? (
         <div
-          className={`absolute z-10 mt-2 w-44 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-1 shadow-md ${
+          ref={menuRef}
+          className={`absolute z-[60] mt-2 w-44 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-1 shadow-md ${
             align === 'left' ? 'left-0' : 'right-0'
           }`}
         >

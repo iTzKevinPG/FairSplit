@@ -82,7 +82,7 @@ export function ConsumptionItemsSection({
                       Participantes: {participants.length > 0 ? participants : 'Sin participantes'}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 text-xs">
+                  <div className="ml-auto flex items-center gap-2 text-xs justify-end">
                     <span className="ds-badge-soft">
                       {currency} {itemTotal.toFixed(2)}
                     </span>
@@ -93,19 +93,20 @@ export function ConsumptionItemsSection({
                       className="gap-1 text-[color:var(--color-primary-main)] hover:text-[color:var(--color-primary-dark)]"
                       onClick={() => onToggleExpanded(item.id)}
                     >
-                      {isExpanded ? 'Ocultar detalle' : 'Ver detalle'}
+                      {isExpanded ? 'Ocultar' : 'Detalle'}
                       {isExpanded ? (
                         <ChevronUp className="h-3.5 w-3.5" />
                       ) : (
                         <ChevronDown className="h-3.5 w-3.5" />
                       )}
                     </Button>
-                    <ActionMenu
-                      items={[
-                        {
-                          label: 'Editar',
-                          icon: <Edit2 className="h-4 w-4" />,
-                          onClick: () => onEditItem(item),
+                  <ActionMenu
+                    align="right"
+                    items={[
+                      {
+                        label: 'Editar',
+                        icon: <Edit2 className="h-4 w-4" />,
+                        onClick: () => onEditItem(item),
                         },
                         {
                           label: 'Eliminar',

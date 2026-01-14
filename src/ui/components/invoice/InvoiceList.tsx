@@ -57,7 +57,7 @@ export function InvoiceList({
         return (
           <div
             key={invoice.id}
-            className="card-interactive overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)]"
+            className="card-interactive rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)]"
           >
             <div className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1">
@@ -94,7 +94,7 @@ export function InvoiceList({
                   </p>
                 ) : null}
               </div>
-              <div className="flex items-center gap-2 text-xs">
+              <div className="ml-auto flex items-center gap-2 text-xs justify-end">
                 <Button
                   type="button"
                   variant="ghost"
@@ -102,7 +102,7 @@ export function InvoiceList({
                   className="gap-1 text-[color:var(--color-primary-main)] hover:text-[color:var(--color-primary-dark)]"
                   onClick={() => onToggleDetail(invoice.id)}
                 >
-                  {isExpanded ? 'Ocultar detalle' : 'Ver detalle'}
+                  {isExpanded ? 'Ocultar' : 'Detalle'}
                   {isExpanded ? (
                     <ChevronUp className="h-3.5 w-3.5" />
                   ) : (
@@ -128,9 +128,9 @@ export function InvoiceList({
             </div>
 
             {isExpanded && detailInvoice ? (
-              <div className="animate-fade-in border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] p-4 text-sm text-[color:var(--color-text-main)]">
-                <div className="flex items-center justify-between gap-2">
-                  <div>
+              <div className="animate-fade-in border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-panel)] p-4 text-sm text-[color:var(--color-text-main)] shadow-sm">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="space-y-1">
                     <p className="font-semibold text-[color:var(--color-text-main)]">
                       {detailInvoice.description}
                     </p>
@@ -154,15 +154,6 @@ export function InvoiceList({
                       </p>
                     ) : null}
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-main)]"
-                    onClick={onCloseDetail}
-                  >
-                    Cerrar
-                  </Button>
                 </div>
                 {detailInvoice.divisionMethod === 'consumption' &&
                 detailInvoice.items?.length ? (
@@ -178,7 +169,7 @@ export function InvoiceList({
                         return (
                           <div
                             key={item.id}
-                            className="rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-2"
+                            className="rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-2 shadow-xs"
                           >
                             <div className="flex items-center justify-between text-sm">
                               <span className="font-semibold text-[color:var(--color-text-main)]">
@@ -209,7 +200,7 @@ export function InvoiceList({
                   {shares.map((share) => (
                     <div
                       key={share.personId}
-                      className={`flex items-center justify-between rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-2 ${
+                      className={`flex items-center justify-between rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-2 shadow-xs ${
                         share.isBirthday ? 'border-[color:var(--color-primary-light)]' : ''
                       }`}
                     >

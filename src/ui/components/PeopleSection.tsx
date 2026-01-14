@@ -146,10 +146,15 @@ export function PeopleSection({
                 </div>
               ) : (
                 <>
-                  <span className="min-w-0 flex-1 truncate font-semibold text-[color:var(--color-text-main)]">
-                    {person.name}
-                  </span>
-                  <div className="shrink-0">
+                  <div className="flex min-w-0 flex-1 items-center gap-2">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[color:var(--color-surface-panel)] text-sm font-bold uppercase text-[color:var(--color-primary-dark)]">
+                      {person.name.trim().charAt(0) || '?'}
+                    </div>
+                    <span className="truncate font-semibold text-[color:var(--color-text-main)]">
+                      {person.name}
+                    </span>
+                  </div>
+                  <div className="ml-auto flex items-center">
                     <ActionMenu
                       items={[
                         {
