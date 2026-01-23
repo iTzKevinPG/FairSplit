@@ -134,11 +134,11 @@ function EventListPage() {
                   FairSplit
                 </p>
                 <h1 className="text-2xl font-semibold text-[color:var(--color-text-main)] sm:text-3xl">
-                  Divide y cierra cuentas sin friccion.
+                  Divide gastos en grupo sin friccion.
                 </h1>
                 <p className="text-sm text-[color:var(--color-text-muted)]">
-                  Organiza tus planes, registra gastos y obten balances claros para saber
-                  quien paga a quien. Elige modo local o tu perfil en la nube.
+                  Organiza planes con amigos, registra consumos por persona y obten saldos
+                  claros para saber quien paga a quien. Elige modo local o tu perfil en la nube.
                 </p>
               </div>
 
@@ -244,11 +244,11 @@ function EventListPage() {
                 FairSplit
               </p>
               <h1 className="text-3xl font-semibold text-[color:var(--color-text-main)] sm:text-4xl">
-                Empieza tu evento en minutos.
+                Empieza tu evento y divide gastos en minutos.
               </h1>
               <p className="max-w-2xl text-base text-[color:var(--color-text-muted)]">
-                Configura un evento, agrega tu grupo y registra gastos sin friccion.
-                Todo queda listo para ver saldos y transferencias.
+                Configura un evento, agrega tu grupo y registra gastos compartidos sin friccion.
+                Todo queda listo para ver saldos, balance de cuentas y transferencias.
               </p>
             </div>
           </div>
