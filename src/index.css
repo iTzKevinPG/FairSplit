@@ -349,6 +349,11 @@
     color: var(--color-text-main);
   }
 
+  [data-theme='dark'] .ds-alert-warning {
+    background: color-mix(in srgb, var(--color-warning-bg) 60%, var(--color-surface-card));
+    border-color: color-mix(in srgb, var(--color-accent-warning) 70%, transparent);
+  }
+
   .ds-alert-info {
     background: color-mix(in srgb, var(--color-info-bg) 16%, #fff);
     border-color: var(--color-accent-info);

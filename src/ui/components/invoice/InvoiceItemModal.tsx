@@ -1,4 +1,4 @@
-import { X } from 'lucide-react'
+import { X, ShoppingBag, Hash, DollarSign, Users } from 'lucide-react'
 import { Button } from '../../../shared/components/ui/button'
 import { Input } from '../../../shared/components/ui/input'
 import { MemberChip } from '../MemberChip'
@@ -53,22 +53,59 @@ export function InvoiceItemModal({
   const quantity = Number(itemQuantity) || 0
   const subtotal = unitPrice * quantity
 
+  const handleSave = () => {
+    const trimmedName = itemName.trim()
+    const parsedUnitPrice = Number(itemUnitPrice)
+    const parsedQuantity = Math.max(1, Math.floor(Number(itemQuantity)))
+
+    if (!trimmedName) {
+      onErrorChange('El nombre del item es obligatorio.')
+      return
+    }
+    if (!Number.isFinite(parsedUnitPrice) || parsedUnitPrice <= 0) {
+      onErrorChange('El precio unitario debe ser mayor que 0.')
+      return
+    }
+    if (!Number.isFinite(parsedQuantity) || parsedQuantity <= 0) {
+      onErrorChange('La cantidad debe ser mayor que 0.')
+      return
+    }
+    if (itemParticipantIds.length === 0) {
+      onErrorChange('Selecciona al menos un participante.')
+      return
+    }
+
+    onSave({
+      id: editingItemId ?? createId(),
+      name: trimmedName,
+      unitPrice: parsedUnitPrice,
+      quantity: parsedQuantity,
+      participantIds: itemParticipantIds,
+    })
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 px-0 backdrop-blur-sm sm:items-center sm:px-4 sm:py-6">
       <div
-        className="animate-fade-in relative w-full max-w-lg rounded-t-3xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-5 shadow-[var(--shadow-lg)] sm:rounded-2xl"
+        className="ds-card-glow animate-fade-in relative w-full max-w-lg rounded-t-3xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-5 shadow-[var(--shadow-lg)] sm:rounded-[var(--radius-lg)]"
         role="dialog"
         aria-modal="true"
         aria-label="Item de consumo"
       >
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[color:var(--color-primary-main)]">
-              Item
-            </p>
-            <h2 className="text-lg font-semibold text-[color:var(--color-text-main)]">
-              {editingItemId ? 'Editar item' : 'Nuevo item'}
-            </h2>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-md)] bg-[color:var(--color-primary-soft)]">
+              <ShoppingBag className="h-5 w-5 text-[color:var(--color-primary-main)]" />
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[color:var(--color-primary-main)]">
+                Item
+              </p>
+              <h2 className="text-lg font-bold text-[color:var(--color-text-main)]">
+                {editingItemId ? 'Editar item' : 'Nuevo item'}
+              </h2>
+            </div>
           </div>
           <Button
             type="button"
@@ -83,20 +120,29 @@ export function InvoiceItemModal({
         </div>
 
         <div className="space-y-4">
-          <Input
-            placeholder="¿Qué pidieron?"
-            value={itemName}
-            onChange={(e) => onItemNameChange(e.target.value)}
-            autoFocus
-          />
+          {/* Name */}
+          <div>
+            <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-[color:var(--color-text-muted)]">
+              <ShoppingBag className="h-3 w-3" />
+              Nombre
+            </label>
+            <Input
+              placeholder="¿Qué pidieron?"
+              value={itemName}
+              onChange={(e) => onItemNameChange(e.target.value)}
+              autoFocus
+            />
+          </div>
 
+          {/* Price & Quantity */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-[11px] font-semibold text-[color:var(--color-text-muted)]">
+              <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-[color:var(--color-text-muted)]">
+                <DollarSign className="h-3 w-3" />
                 Precio unitario
               </label>
-              <div className="flex items-center rounded-[var(--radius-md)] border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-input)] focus-within:border-[color:var(--color-primary-main)] focus-within:ring-1 focus-within:ring-[color:var(--color-focus-ring)]">
-                <span className="flex h-10 items-center border-r border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-2.5 text-[11px] font-semibold text-[color:var(--color-text-muted)]">
+              <div className="flex items-center rounded-[var(--radius-md)] border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-input)] shadow-[var(--shadow-sm)] transition-all duration-200 focus-within:border-[color:var(--color-primary-main)] focus-within:ring-2 focus-within:ring-[color:var(--color-focus-ring)] focus-within:ring-offset-2 focus-within:ring-offset-[color:var(--color-app-bg)]">
+                <span className="flex h-10 items-center rounded-l-[var(--radius-md)] border-r border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-2.5 text-[11px] font-bold text-[color:var(--color-text-muted)]">
                   {currency}
                 </span>
                 <input
@@ -106,12 +152,13 @@ export function InvoiceItemModal({
                   placeholder="0.00"
                   value={itemUnitPrice}
                   onChange={(e) => onItemUnitPriceChange(e.target.value)}
-                  className="w-full appearance-none bg-transparent px-3 py-2 text-sm text-[color:var(--color-text-main)] outline-none"
+                  className="w-full appearance-none bg-transparent px-3 py-2 text-sm text-[color:var(--color-text-main)] outline-none placeholder:text-[color:var(--color-text-muted)]"
                 />
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-[11px] font-semibold text-[color:var(--color-text-muted)]">
+              <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-[color:var(--color-text-muted)]">
+                <Hash className="h-3 w-3" />
                 Cantidad
               </label>
               <Input
@@ -125,17 +172,20 @@ export function InvoiceItemModal({
             </div>
           </div>
 
+          {/* Subtotal */}
           {subtotal > 0 && (
-            <div className="flex items-center justify-between rounded-xl bg-[color:var(--color-primary-soft)] px-4 py-2.5">
-              <span className="text-xs font-medium text-[color:var(--color-text-muted)]">Subtotal</span>
-              <span className="text-sm font-bold text-[color:var(--color-primary-main)]">
+            <div className="flex items-center justify-between rounded-[var(--radius-md)] bg-[color:var(--color-primary-soft)] px-4 py-3 border border-[color:var(--color-primary-main)]/15">
+              <span className="text-xs font-semibold text-[color:var(--color-text-muted)]">Subtotal</span>
+              <span className="text-base font-bold text-[color:var(--color-primary-main)] tabular-nums">
                 {currency} {subtotal.toFixed(2)}
               </span>
             </div>
           )}
 
+          {/* Participants */}
           <div className="space-y-2">
-            <p className="text-[11px] font-semibold text-[color:var(--color-text-muted)]">
+            <p className="flex items-center gap-1.5 text-[11px] font-semibold text-[color:var(--color-text-muted)]">
+              <Users className="h-3 w-3" />
               ¿Quiénes lo pidieron?
             </p>
             <div className="flex flex-wrap gap-2">
@@ -170,11 +220,15 @@ export function InvoiceItemModal({
             </div>
           </div>
 
+          {/* Error */}
           {itemError ? (
-            <p className="text-xs font-medium text-[color:var(--color-accent-danger)]">{itemError}</p>
+            <div className="ds-alert ds-alert-danger text-xs font-medium">
+              {itemError}
+            </div>
           ) : null}
 
-          <div className="flex items-center justify-end gap-2 pt-1">
+          {/* Actions */}
+          <div className="flex items-center justify-end gap-2 pt-2">
             <Button
               type="button"
               variant="ghost"
@@ -189,36 +243,7 @@ export function InvoiceItemModal({
             <Button
               type="button"
               size="sm"
-              onClick={() => {
-                const trimmedName = itemName.trim()
-                const parsedUnitPrice = Number(itemUnitPrice)
-                const parsedQuantity = Math.max(1, Math.floor(Number(itemQuantity)))
-
-                if (!trimmedName) {
-                  onErrorChange('El nombre del item es obligatorio.')
-                  return
-                }
-                if (!Number.isFinite(parsedUnitPrice) || parsedUnitPrice <= 0) {
-                  onErrorChange('El precio unitario debe ser mayor que 0.')
-                  return
-                }
-                if (!Number.isFinite(parsedQuantity) || parsedQuantity <= 0) {
-                  onErrorChange('La cantidad debe ser mayor que 0.')
-                  return
-                }
-                if (itemParticipantIds.length === 0) {
-                  onErrorChange('Selecciona al menos un participante.')
-                  return
-                }
-
-                onSave({
-                  id: editingItemId ?? createId(),
-                  name: trimmedName,
-                  unitPrice: parsedUnitPrice,
-                  quantity: parsedQuantity,
-                  participantIds: itemParticipantIds,
-                })
-              }}
+              onClick={handleSave}
             >
               {editingItemId ? 'Guardar' : 'Agregar'}
             </Button>
