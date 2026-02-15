@@ -51,7 +51,6 @@ function EventDetailPage() {
     events,
     selectedEventId,
     selectEvent,
-    loadEventDetailsForList,
     loadEvents,
   } = useEvents()
   const {
@@ -86,8 +85,8 @@ function EventDetailPage() {
 
   useEffect(() => {
     if (!eventId) return
-    void loadEventDetailsForList([eventId])
-  }, [eventId, loadEventDetailsForList])
+    void refreshEventDetails(eventId)
+  }, [eventId, refreshEventDetails])
 
   useEffect(() => {
     const handler = (event: Event) => {

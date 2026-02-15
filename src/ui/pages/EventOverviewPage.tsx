@@ -19,7 +19,6 @@ function EventOverviewPage() {
     events,
     selectedEventId,
     selectEvent,
-    loadEventDetailsForList,
     loadEvents,
   } = useEvents()
   const {
@@ -29,6 +28,7 @@ function EventOverviewPage() {
     hasHydrated,
     isEventLoading,
     loadPublicOverview,
+    refreshEventDetails,
     loadTransferStatuses,
     transferStatusesByEvent,
   } = useFairSplitStore()
@@ -47,14 +47,11 @@ function EventOverviewPage() {
       typeof window !== 'undefined' &&
       Boolean(window.localStorage.getItem('fairsplit_auth_token'))
     if (hasAuthToken) {
-      void loadEventDetailsForList([eventId])
+      void refreshEventDetails(eventId)
       return
     }
-    const hasEventInList = events.some((event) => event.id === eventId)
-    if (!hasEventInList) {
-      void loadPublicOverview(eventId)
-    }
-  }, [eventId, events, loadEventDetailsForList, loadPublicOverview])
+    void loadPublicOverview(eventId, { force: true })
+  }, [eventId, loadPublicOverview, refreshEventDetails])
 
   useEffect(() => {
     if (!eventId) return

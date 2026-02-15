@@ -206,7 +206,7 @@ interface FairSplitState {
   getTransferStatusMap: (eventId: EventId) => Record<string, TransferStatus>
   isEventLoaded: (eventId: EventId) => boolean
   isEventLoading: (eventId: EventId) => boolean
-  loadPublicOverview: (eventId: EventId) => Promise<void>
+  loadPublicOverview: (eventId: EventId, options?: { force?: boolean }) => Promise<void>
   loadTransferStatuses: (eventId: EventId) => Promise<void>
   loadEventDetailsForList: (eventIds: EventId[]) => Promise<void>
   refreshEventDetails: (eventId: EventId) => Promise<void>
@@ -694,9 +694,16 @@ export const useFairSplitStore = create<FairSplitState>((set, get) => ({
   },
   isEventLoaded: (eventId: EventId) => loadedEventData.has(eventId),
   isEventLoading: (eventId: EventId) => loadingEventData.has(eventId),
-  loadPublicOverview: async (eventId: EventId) => {
-    if (loadedEventData.has(eventId) || loadingEventData.has(eventId)) {
+  loadPublicOverview: async (
+    eventId: EventId,
+    options?: { force?: boolean },
+  ) => {
+    const force = options?.force ?? false
+    if (!force && (loadedEventData.has(eventId) || loadingEventData.has(eventId))) {
       return
+    }
+    if (force) {
+      loadedEventData.delete(eventId)
     }
     loadingEventData.add(eventId)
     try {

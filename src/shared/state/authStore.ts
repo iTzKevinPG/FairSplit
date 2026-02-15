@@ -81,12 +81,9 @@ export const useAuthStore = create<AuthState>((set, get) => {
           localStorage.removeItem(STORAGE_EXPIRED_FLAG)
         }
         set({ status: 'idle', token: result.token, email: result.user.email })
-        // Rehidratar eventos desde backend al iniciar sesion
-        try {
-          const { useFairSplitStore } = await import('./fairsplitStore')
-          await useFairSplitStore.getState().hydrate()
-        } catch {
-          // si falla, se mantiene el estado actual
+        // Always return to home after login to avoid stale route/state re-fetches.
+        if (typeof window !== 'undefined') {
+          window.location.assign('/')
         }
         return true
       } catch (error) {
