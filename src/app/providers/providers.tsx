@@ -9,8 +9,9 @@ function TourScrollLock() {
   const isOpenRef = useRef(false)
   const lockedRef = useRef(false)
 
-  // Keep ref in sync
-  isOpenRef.current = isOpen
+  useEffect(() => {
+    isOpenRef.current = isOpen
+  }, [isOpen])
 
   useEffect(() => {
     if (!isOpen) {

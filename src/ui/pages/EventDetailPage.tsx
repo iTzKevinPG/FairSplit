@@ -7,7 +7,7 @@ import {
   Share2,
   Users,
 } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../../shared/components/ui/button'
 import { toast } from '../../shared/components/ui/sonner'
@@ -81,10 +81,10 @@ function EventDetailPage() {
   const hasLoadedRef = useRef(false)
   const isAuthenticated = useAuthStore((state) => Boolean(state.token))
 
-  const handleTabChange = (tabId: string) => {
+  const handleTabChange = useCallback((tabId: string) => {
     setActiveTab(tabId as typeof activeTab)
     setTabKey((k) => k + 1)
-  }
+  }, [])
 
   useEffect(() => {
     if (hasLoadedRef.current || events.length > 0) return
@@ -114,7 +114,7 @@ function EventDetailPage() {
     return () => {
       window.removeEventListener('tour:go-tab', handler)
     }
-  }, [])
+  }, [handleTabChange])
 
   useEffect(() => {
     window.dispatchEvent(
