@@ -1,10 +1,8 @@
 import {
-  CalendarPlus,
   Handshake,
   Receipt,
   ScanLine,
   Trash2,
-  UserPlus,
   Users,
   X,
 } from 'lucide-react'
@@ -36,10 +34,6 @@ function EventListPage() {
     isEventLoaded,
   } = useEvents()
   const navigate = useNavigate()
-  const [showIntro, setShowIntro] = useState(() => {
-    const seen = window.localStorage.getItem('fairsplit-intro-seen')
-    return !seen
-  })
   const [showProfile, setShowProfile] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -89,19 +83,6 @@ function EventListPage() {
     setDeleteTarget(null)
   }
 
-  const handleCloseIntro = () => {
-    window.localStorage.setItem('fairsplit-intro-seen', 'true')
-    setShowIntro(false)
-  }
-
-  const handleStartIntro = () => {
-    handleCloseIntro()
-    window.dispatchEvent(new CustomEvent('tour:go-tab', { detail: { tabId: 'people' } }))
-    window.setTimeout(() => {
-      window.dispatchEvent(new CustomEvent('tour:open', { detail: { meta: 'guided' } }))
-    }, 120)
-  }
-
   return (
     <>
       <div className="flex min-h-screen flex-col bg-[color:var(--color-app-bg)]">
@@ -110,113 +91,6 @@ function EventListPage() {
         onClose={() => setMenuOpen(false)}
         onOpenProfile={() => setShowProfile(true)}
       />
-
-      {showIntro ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6 backdrop-blur-sm">
-          <div
-            className="relative w-full max-w-2xl rounded-3xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-6 shadow-2xl"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Bienvenida a FairSplit"
-          >
-            <Button
-              type="button"
-              onClick={handleCloseIntro}
-              variant="ghost"
-              size="icon-sm"
-              className="absolute right-4 top-4 rounded-full text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-main)]"
-              aria-label="Cerrar bienvenida"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[color:var(--color-primary-main)]">
-                  FairSplit
-                </p>
-                <h1 className="text-2xl font-semibold text-[color:var(--color-text-main)] sm:text-3xl">
-138:                   Divide gastos entre amigos, sin dramas.
-                </h1>
-                <p className="text-sm text-[color:var(--color-text-muted)]">
-                  Crea un evento, agrega a tu grupo y registra los gastos. Nosotros calculamos quién paga a quién.
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <div className="rounded-xl border border-transparent bg-[color:var(--color-surface-muted)]/70 p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 text-[color:var(--color-primary-main)]">
-                      <CalendarPlus className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
-                        Crea el evento
-                      </p>
-                      <p className="text-xs text-[color:var(--color-text-muted)]">
-                        Ponle nombre y moneda, listo.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="rounded-xl border border-transparent bg-[color:var(--color-surface-muted)]/70 p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 text-[color:var(--color-primary-main)]">
-                      <UserPlus className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
-                        Agrega a tu grupo
-                      </p>
-                      <p className="text-xs text-[color:var(--color-text-muted)]">
-                        Escribe el nombre de cada persona.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="rounded-xl border border-transparent bg-[color:var(--color-surface-muted)]/70 p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 text-[color:var(--color-primary-main)]">
-                      <Receipt className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
-                        Registra gastos
-                      </p>
-                      <p className="text-xs text-[color:var(--color-text-muted)]">
-                        Anota quién pagó y cuánto.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="rounded-xl border border-transparent bg-[color:var(--color-surface-muted)]/70 p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 text-[color:var(--color-primary-main)]">
-                      <ScanLine className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
-                        Escanea tickets
-                      </p>
-                      <p className="text-xs text-[color:var(--color-text-muted)]">
-                        Sube una foto del ticket y lo leemos por ti.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end">
-                <Button type="button" size="sm" onClick={handleStartIntro}>
-                  <Receipt className="h-4 w-4" />
-                  Empezar
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
       <ProfileModal isOpen={showProfile} onClose={() => setShowProfile(false)} />
 
       <header className="sticky top-0 z-40 border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)]/90 backdrop-blur-md">
