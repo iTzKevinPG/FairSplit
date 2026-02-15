@@ -1,8 +1,44 @@
-import { type PropsWithChildren } from 'react'
-import { TourProvider } from '@reactour/tour'
+import { type PropsWithChildren, useEffect, useRef } from 'react'
+import { TourProvider, useTour } from '@reactour/tour'
 import { Toaster as Sonner } from '../../shared/components/ui/sonner'
 import { LoadingOverlay } from '../../ui/components/LoadingOverlay'
 import { WelcomeModal } from '../../ui/components/WelcomeModal'
+
+function TourScrollLock() {
+  const { isOpen, currentStep } = useTour()
+  const isOpenRef = useRef(false)
+  const lockedRef = useRef(false)
+
+  // Keep ref in sync
+  isOpenRef.current = isOpen
+
+  useEffect(() => {
+    if (!isOpen) {
+      lockedRef.current = false
+      return
+    }
+    // Unlock briefly so reactour's scrollSmooth can scroll to the element
+    lockedRef.current = false
+    const timer = window.setTimeout(() => {
+      if (isOpenRef.current) lockedRef.current = true
+    }, 600)
+    return () => window.clearTimeout(timer)
+  }, [isOpen, currentStep])
+
+  useEffect(() => {
+    const prevent = (e: Event) => {
+      if (isOpenRef.current && lockedRef.current) e.preventDefault()
+    }
+    window.addEventListener('wheel', prevent, { passive: false })
+    window.addEventListener('touchmove', prevent, { passive: false })
+    return () => {
+      window.removeEventListener('wheel', prevent)
+      window.removeEventListener('touchmove', prevent)
+    }
+  }, []) // Mount once, check refs inside
+
+  return null
+}
 
 export function AppProviders({ children }: PropsWithChildren) {
   return (
@@ -13,6 +49,8 @@ export function AppProviders({ children }: PropsWithChildren) {
       showDots={false}
       disableDotsNavigation
       showCloseButton={false}
+      scrollSmooth
+      padding={{ popover: [16, 12], mask: [6, 6] }}
       onClickMask={() => {
         // No-op to prevent closing when clicking outside the tour.
       }}
@@ -28,6 +66,7 @@ export function AppProviders({ children }: PropsWithChildren) {
           borderRadius: '12px',
           boxShadow: 'var(--shadow-md)',
           overflow: 'visible',
+          maxWidth: 'min(90vw, 360px)',
         }),
         badge: (base) => ({
           ...base,
@@ -48,6 +87,7 @@ export function AppProviders({ children }: PropsWithChildren) {
       }}
     >
       {children}
+      <TourScrollLock />
       <LoadingOverlay />
       <Sonner />
       <WelcomeModal />

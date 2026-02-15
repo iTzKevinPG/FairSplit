@@ -97,11 +97,10 @@ export function ActionMenu({
   )
 
   return (
-    <div className="relative" ref={menuRef}>
+    <div className={`relative ${open ? 'z-[60]' : ''}`} ref={menuRef}>
       <div ref={triggerRef}>{triggerNode}</div>
       {open ? (
         <div
-          ref={menuRef}
           className={`
             absolute z-[60] mt-1.5 w-40 animate-fade-in rounded-xl
             border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)]

@@ -52,7 +52,7 @@ export function InvoiceList({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="relative z-0 space-y-3">
       {invoices.map((invoice, index) => {
         const isExpanded = detailInvoiceId === invoice.id
         const shares = isExpanded && detailInvoice ? participantShares : []

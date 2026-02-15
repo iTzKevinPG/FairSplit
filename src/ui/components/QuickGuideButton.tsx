@@ -36,8 +36,21 @@ type GuideStepConfig = {
   hint?: string
 }
 
-const mobileDockPosition: StepType['position'] = ({ windowWidth }) => {
-  if (windowWidth <= 640) {
+const smartPosition: StepType['position'] = (posProps) => {
+  const { windowHeight, top, height, bottom } = posProps
+  const isMobile = (posProps.windowWidth ?? window.innerWidth) <= 640
+  if (!isMobile) return 'bottom'
+
+  const elementCenter = top + height / 2
+  const spaceBelow = windowHeight - (bottom ?? top + height)
+  const spaceAbove = top
+
+  // If element is in the bottom third or not enough space below, show on top
+  if (elementCenter > windowHeight * 0.55 || spaceBelow < 180) {
+    return 'top'
+  }
+  // If element is in the top third or not enough space above, show on bottom
+  if (elementCenter < windowHeight * 0.35 || spaceAbove < 180) {
     return 'bottom'
   }
   return 'bottom'
@@ -78,7 +91,7 @@ const eventSteps: GuideStepConfig[] = [
     title: 'Navegacion',
     description: 'Usa estas pestañas para moverte por el evento.',
     requirement: 'none',
-    position: mobileDockPosition,
+    position: smartPosition,
   },
   {
     selector: '[data-tour="people-section"]',
@@ -629,7 +642,7 @@ export function QuickGuideButton() {
         content: getStepContent(config),
         stepInteraction: interactive,
         bypassElem: config.bypassElem,
-        position: config.position ?? mobileDockPosition,
+        position: config.position ?? smartPosition,
         highlightedSelectors: highlightedSelectors.length ? highlightedSelectors : undefined,
         mutationObservables: mutationObservables.length ? mutationObservables : undefined,
         resizeObservables: resizeObservables.length ? resizeObservables : undefined,

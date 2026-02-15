@@ -692,9 +692,10 @@ export function InvoiceSection({
         }
       >
       <div className="space-y-5">
-        <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-panel)] px-4 py-3 text-sm text-[color:var(--color-text-muted)] shadow-sm">
-          💡 Puedes agregar propina, elegir quién participó o dividir por lo que cada uno consumió.
-        </div>
+        <p className="flex items-start gap-2 text-xs text-[color:var(--color-text-muted)]">
+          <span className="shrink-0 text-sm">💡</span>
+          <span>Puedes agregar propina, elegir quién participó o dividir por lo que cada uno consumió.</span>
+        </p>
 
         <div className="flex items-center justify-end">
           {showForm ? (
@@ -847,7 +848,7 @@ export function InvoiceSection({
 
         {showForm ? (
           <div
-            className="animate-fade-in rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-panel)] p-4 shadow-sm"
+            className="relative z-10 animate-fade-in rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-panel)] p-4 shadow-sm"
             data-tour="invoice-form"
             ref={formRef}
           >
@@ -1041,7 +1042,7 @@ export function InvoiceSection({
                   Ver resumen de la lectura
                 </Button>
               ) : null}
-              <details className="relative w-full sm:w-auto" ref={optionsMenuRef}>
+              <details className="relative z-50 w-full sm:w-auto" ref={optionsMenuRef}>
                 <summary
                   className="flex w-full cursor-pointer list-none items-center justify-center gap-2 rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-2 text-xs font-semibold text-[color:var(--color-text-muted)] hover:border-[color:var(--color-primary-light)] hover:text-[color:var(--color-text-main)] sm:ml-auto sm:w-32 sm:inline-flex"
                   data-tour="invoice-advanced-toggle"
@@ -1049,7 +1050,7 @@ export function InvoiceSection({
                   <SlidersHorizontal className="h-4 w-4" />
                   Opciones
                 </summary>
-                <div className="absolute left-0 right-0 z-10 mt-2 w-full rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-2 shadow-md sm:left-auto sm:right-0 sm:w-52">
+                <div className="absolute left-0 right-0 z-50 mt-2 w-full rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-2 shadow-lg sm:left-auto sm:right-0 sm:w-52">
                   <Button
                     type="button"
                     variant="ghost"

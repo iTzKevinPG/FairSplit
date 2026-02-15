@@ -14,10 +14,10 @@ type SessionMenuProps = {
 function useSessionStatus() {
   const { token, email } = useAuthStore()
   const isAuthenticated = Boolean(token)
-  const statusLabel = isAuthenticated ? 'En la nube ☁️' : 'Modo local'
+  const statusLabel = isAuthenticated ? 'En la nube ☁️' : 'Modo invitado'
   const statusMessage = isAuthenticated
     ? `Guardando para ${email || 'tu cuenta'}.`
-    : 'Tus datos viven en este dispositivo.'
+    : 'Los datos se guardan solo en esta sesión.'
   const statusBorder = isAuthenticated
     ? 'border-[color:var(--color-accent-success)]'
     : 'border-[color:var(--color-accent-warning)]'
@@ -52,7 +52,7 @@ export function SessionStatusPill() {
       data-tour="session-status"
     >
       {statusIcon}
-      <span className="hidden sm:inline">{isAuthenticated ? 'Nube' : 'Local'}</span>
+      <span className="hidden sm:inline">{isAuthenticated ? 'Nube' : 'Invitado'}</span>
     </div>
   )
 }
