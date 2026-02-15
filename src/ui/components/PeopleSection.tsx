@@ -1,4 +1,5 @@
 import { UserPlus } from 'lucide-react'
+import { EmptyStateIllustration } from './EmptyStateIllustration'
 import { type FormEvent, useState } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import { ActionMenu } from '../../shared/components/ActionMenu'
@@ -13,6 +14,25 @@ interface PeopleSectionProps {
   onAdd: (name: string) => Promise<void>
   onRemove: (personId: string) => Promise<void>
   onEdit: (personId: string, name: string) => Promise<void>
+}
+
+const avatarColors = [
+  { bg: 'bg-[color:var(--color-primary-soft)]', text: 'text-[color:var(--color-primary-dark)]' },
+  { bg: 'bg-[color:var(--color-accent-coral-soft)]', text: 'text-[color:var(--color-accent-coral)]' },
+  { bg: 'bg-[color:var(--color-accent-lila-soft)]', text: 'text-[color:var(--color-accent-lila)]' },
+  { bg: 'bg-[color:var(--color-success-bg)]', text: 'text-[color:var(--color-accent-success)]' },
+  { bg: 'bg-[color:var(--color-info-bg)]', text: 'text-[color:var(--color-accent-info)]' },
+  { bg: 'bg-[color:var(--color-warning-bg)]', text: 'text-[color:var(--color-accent-warning)]' },
+]
+
+const emojis = ['😎', '🤙', '🔥', '✨', '🎉', '💪', '🌟', '🚀', '🎯', '💜']
+
+function getAvatarColor(index: number) {
+  return avatarColors[index % avatarColors.length]
+}
+
+function getEmoji(index: number) {
+  return emojis[index % emojis.length]
 }
 
 export function PeopleSection({
@@ -78,9 +98,9 @@ export function PeopleSection({
 
   return (
     <SectionCard
-      title="Integrantes"
-      description="Invita a las personas del grupo para asignar pagos y consumos."
-      badge={people.length > 0 ? `${people.length} integrantes` : undefined}
+      title="El grupo"
+      description="¿Quiénes van? Agrega a todos para repartir los gastos."
+      badge={people.length > 0 ? `${people.length}` : undefined}
     >
       <form
         onSubmit={handleSubmit}
@@ -98,83 +118,97 @@ export function PeopleSection({
         </Button>
       </form>
 
-      {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
+      {error ? <p className="mt-2 text-sm text-[color:var(--color-accent-danger)]">{error}</p> : null}
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
         {people.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-6 text-center">
-            <p className="text-sm text-[color:var(--color-text-muted)]">
-              Aun no tienes integrantes. Agrega al menos uno para registrar gastos.
+          <div className="sm:col-span-2 md:col-span-3 rounded-[var(--radius-lg)] border border-dashed border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-8 text-center">
+            <EmptyStateIllustration variant="people" />
+            <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
+              ¡Agrega a la banda!
+            </p>
+            <p className="mt-1 text-xs text-[color:var(--color-text-muted)]">
+              Escribe el nombre de cada persona para empezar a dividir.
             </p>
           </div>
         ) : (
-          people.map((person) => (
-            <div
-              key={person.id}
-              className="card-interactive flex min-h-[84px] flex-wrap items-center justify-between gap-3 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-3 text-sm text-[color:var(--color-text-main)]"
-            >
-              {editingId === person.id ? (
-                <div
-                  className="flex w-full flex-col gap-2"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      void handleEditSave()
-                    }
-                  }}
-                >
-                  <Input
-                    value={editingName}
-                    onChange={(e) => setEditingName(e.target.value)}
-                  />
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button type="button" size="sm" onClick={handleEditSave}>
-                      Guardar
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setEditingId(null)
-                        setEditingName('')
-                      }}
-                    >
-                      Cancelar
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="flex min-w-0 flex-1 items-center gap-2">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[color:var(--color-surface-panel)] text-sm font-bold uppercase text-[color:var(--color-primary-dark)]">
-                      {person.name.trim().charAt(0) || '?'}
-                    </div>
-                    <span className="truncate font-semibold text-[color:var(--color-text-main)]">
-                      {person.name}
-                    </span>
-                  </div>
-                  <div className="ml-auto flex items-center">
-                    <ActionMenu
-                      items={[
-                        {
-                          label: 'Editar',
-                          icon: <Pencil className="h-4 w-4" />,
-                          onClick: () => startEditing(person),
-                        },
-                        {
-                          label: 'Eliminar',
-                          icon: <Trash2 className="h-4 w-4" />,
-                          tone: 'danger',
-                          onClick: () => handleRemove(person.id),
-                        },
-                      ]}
+          people.map((person, index) => {
+            const color = getAvatarColor(index)
+            const emoji = getEmoji(index)
+
+            return (
+              <div
+                key={person.id}
+                className="animate-stagger-fade-in group relative flex items-center gap-3 rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3 py-3 transition-all duration-200 hover:z-10 hover:border-[color:var(--color-primary-light)] hover:shadow-[var(--shadow-md)]"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                {editingId === person.id ? (
+                  <div
+                    className="flex w-full flex-col gap-2"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        void handleEditSave()
+                      }
+                    }}
+                  >
+                    <Input
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      autoFocus
                     />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button type="button" size="sm" onClick={handleEditSave}>
+                        Guardar
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setEditingId(null)
+                          setEditingName('')
+                        }}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
                   </div>
-                </>
-              )}
-            </div>
-          ))
+                ) : (
+                  <>
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${color.bg} text-lg transition-transform duration-200 group-hover:scale-110`}>
+                      {emoji}
+                    </div>
+                    <div className="flex min-w-0 flex-1 flex-col">
+                      <span className="truncate text-sm font-semibold text-[color:var(--color-text-main)]">
+                        {person.name}
+                      </span>
+                      <span className={`text-[10px] font-medium ${color.text}`}>
+                        #{index + 1} del grupo
+                      </span>
+                    </div>
+                    <div className="ml-auto opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+                      <ActionMenu
+                        items={[
+                          {
+                            label: 'Editar',
+                            icon: <Pencil className="h-4 w-4" />,
+                            onClick: () => startEditing(person),
+                          },
+                          {
+                            label: 'Eliminar',
+                            icon: <Trash2 className="h-4 w-4" />,
+                            tone: 'danger',
+                            onClick: () => handleRemove(person.id),
+                          },
+                        ]}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )
+          })
         )}
       </div>
     </SectionCard>

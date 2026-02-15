@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run --environment jsdom"
+    "test": "vitest run --environment jsdom",
+    "build:dev": "vite build --mode development"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",
@@ -19,9 +20,12 @@
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-toggle": "^1.1.10",
     "@reactour/tour": "^3.8.0",
+    "@types/canvas-confetti": "^1.9.0",
+    "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "embla-carousel-react": "^8.6.0",
+    "lovable-tagger": "^1.1.13",
     "lucide-react": "^0.562.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

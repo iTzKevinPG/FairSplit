@@ -1,6 +1,6 @@
-import { ArrowLeft, Cloud, Menu, User, X } from 'lucide-react'
+import { ArrowLeft, Cloud, LogIn, Menu, Settings, User, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { Button, buttonVariants } from '../../shared/components/ui/button'
+import { Button } from '../../shared/components/ui/button'
 import { useAuthStore } from '../../shared/state/authStore'
 import { ThemeToggle } from './ThemeToggle'
 
@@ -14,10 +14,10 @@ type SessionMenuProps = {
 function useSessionStatus() {
   const { token, email } = useAuthStore()
   const isAuthenticated = Boolean(token)
-  const statusLabel = isAuthenticated ? 'Sesion activa' : 'Modo local'
+  const statusLabel = isAuthenticated ? 'En la nube ☁️' : 'Modo local'
   const statusMessage = isAuthenticated
-    ? `Guardando en la nube para ${email || 'tu cuenta'}.`
-    : 'Los datos se guardan en este dispositivo y se pierden solo si limpias el almacenamiento.'
+    ? `Guardando para ${email || 'tu cuenta'}.`
+    : 'Tus datos viven en este dispositivo.'
   const statusBorder = isAuthenticated
     ? 'border-[color:var(--color-accent-success)]'
     : 'border-[color:var(--color-accent-warning)]'
@@ -48,53 +48,62 @@ export function SessionStatusPill() {
   const { isAuthenticated, statusBorder, statusBg, statusIcon } = useSessionStatus()
   return (
     <div
-      className={`flex items-center gap-2 rounded-full border px-2 py-1 text-xs font-semibold text-[color:var(--color-text-main)] sm:px-3 ${statusBorder} ${statusBg}`}
+      className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold text-[color:var(--color-text-main)] ${statusBorder} ${statusBg}`}
       data-tour="session-status"
     >
       {statusIcon}
-      <span className="hidden md:inline">{isAuthenticated ? 'Nube' : 'Local'}</span>
+      <span className="hidden sm:inline">{isAuthenticated ? 'Nube' : 'Local'}</span>
     </div>
   )
 }
 
 export function SessionMenuButton({ onClick }: { onClick: () => void }) {
-  const { statusBorder, menuIconClass } = useSessionStatus()
+  const { menuIconClass } = useSessionStatus()
   return (
     <Button
       type="button"
       variant="ghost"
       size="icon-sm"
-      className={`rounded-full border ${statusBorder} ${menuIconClass}`}
+      className={`rounded-full ${menuIconClass} hover:bg-[color:var(--color-surface-muted)]`}
       onClick={onClick}
-      aria-label="Abrir menu"
+      aria-label="Abrir menú"
       data-tour="menu-button"
     >
-      <Menu className="h-4 w-4" />
+      <Menu className="h-5 w-5" />
     </Button>
   )
 }
 
 export function SessionMenu({ isOpen, onClose, onOpenProfile, backLink }: SessionMenuProps) {
-  const { statusLabel, statusMessage, statusBorder, statusBg, statusIcon } =
+  const { isAuthenticated, statusLabel, statusMessage, statusBorder, statusBg, statusIcon } =
     useSessionStatus()
 
   return (
     <div
-      className={`fixed inset-0 z-40 ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}
+      className={`fixed inset-0 z-50 ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}
     >
+      {/* Backdrop */}
       <div
-        className={`absolute inset-x-0 bottom-0 top-16 bg-black/40 transition-opacity ${isOpen ? 'opacity-100' : 'opacity-0'}`}
+        className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0'}`}
         onClick={onClose}
       />
+
+      {/* Panel */}
       <div
-        className={`absolute right-0 top-16 flex h-[calc(100%-4rem)] w-[85%] max-w-xs flex-col gap-6 border-l border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-6 shadow-lg transition-transform ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`
+          absolute right-0 top-0 flex h-full w-[88%] max-w-sm flex-col
+          border-l border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)]
+          shadow-lg transition-transform duration-300 ease-out
+          ${isOpen ? 'translate-x-0' : 'translate-x-full'}
+        `}
         role="dialog"
         aria-modal="true"
-        aria-label="Menu"
+        aria-label="Menú"
       >
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
-            Menu
+        {/* Menu header */}
+        <div className="flex items-center justify-between border-b border-[color:var(--color-border-subtle)] px-5 py-4">
+          <p className="text-base font-semibold text-[color:var(--color-text-main)]">
+            Menú
           </p>
           <Button
             type="button"
@@ -102,37 +111,77 @@ export function SessionMenu({ isOpen, onClose, onOpenProfile, backLink }: Sessio
             variant="ghost"
             size="icon-sm"
             className="rounded-full text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-main)]"
-            aria-label="Cerrar menu"
+            aria-label="Cerrar menú"
           >
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
           </Button>
         </div>
 
-        <div className={`rounded-xl border ${statusBorder} ${statusBg} p-4`}>
-          <div className="flex items-center gap-2 text-sm font-semibold text-[color:var(--color-text-main)]">
-            {statusIcon}
-            {statusLabel}
+        {/* Content */}
+        <div className="flex flex-1 flex-col gap-5 overflow-y-auto p-5">
+          {/* Status card */}
+          <div className={`rounded-2xl border ${statusBorder} ${statusBg} p-4`}>
+            <div className="flex items-center gap-2.5">
+              <div className={`flex h-9 w-9 items-center justify-center rounded-full ${statusBg} border ${statusBorder}`}>
+                {statusIcon}
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
+                  {statusLabel}
+                </p>
+                <p className="text-[11px] text-[color:var(--color-text-muted)]">
+                  {statusMessage}
+                </p>
+              </div>
+            </div>
           </div>
-          <p className="mt-2 text-xs text-[color:var(--color-text-muted)]">
-            {statusMessage}
-          </p>
+
+          {/* Actions */}
+          <div className="space-y-2">
+            <p className="px-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[color:var(--color-text-muted)]">
+              Opciones
+            </p>
+            <button
+              type="button"
+              onClick={onOpenProfile}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[color:var(--color-text-main)] transition-colors hover:bg-[color:var(--color-surface-muted)]"
+            >
+              {isAuthenticated ? (
+                <Settings className="h-4 w-4 text-[color:var(--color-text-muted)]" />
+              ) : (
+                <LogIn className="h-4 w-4 text-[color:var(--color-text-muted)]" />
+              )}
+              {isAuthenticated ? 'Mi cuenta' : 'Iniciar sesión'}
+            </button>
+
+            {backLink ? (
+              <Link
+                to={backLink.href}
+                onClick={onClose}
+                className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[color:var(--color-text-main)] transition-colors hover:bg-[color:var(--color-surface-muted)]"
+              >
+                <ArrowLeft className="h-4 w-4 text-[color:var(--color-text-muted)]" />
+                {backLink.label}
+              </Link>
+            ) : null}
+          </div>
+
+          {/* Theme */}
+          <div className="space-y-2">
+            <p className="px-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[color:var(--color-text-muted)]">
+              Apariencia
+            </p>
+            <div className="rounded-xl bg-[color:var(--color-surface-muted)] p-3">
+              <ThemeToggle showLabelOnMobile />
+            </div>
+          </div>
         </div>
 
-        <div className="space-y-3">
-          <Button type="button" variant="outline" onClick={onOpenProfile}>
-            {statusIcon}
-            Gestionar perfil
-          </Button>
-          {backLink ? (
-            <Link
-              to={backLink.href}
-              className={buttonVariants({ variant: 'outline', size: 'sm' })}
-            >
-              <ArrowLeft className="h-4 w-4" />
-              {backLink.label}
-            </Link>
-          ) : null}
-          <ThemeToggle showLabelOnMobile />
+        {/* Menu footer */}
+        <div className="border-t border-[color:var(--color-border-subtle)] px-5 py-3">
+          <p className="text-center text-[10px] text-[color:var(--color-text-muted)]">
+            FairSplit · Divide gastos sin dramas ✌️
+          </p>
         </div>
       </div>
     </div>

@@ -22,6 +22,10 @@ const badgeVariants = cva(
         active: 'border-[color:var(--color-accent-success)] bg-[color:var(--color-success-bg)] text-[color:var(--color-accent-success)]',
         count:
           'border-[color:var(--color-primary-light)] bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-dark)] font-semibold',
+        coral:
+          'border-[color:var(--color-accent-coral)] bg-[color:var(--color-accent-coral-soft)] text-[color:var(--color-accent-coral)] font-semibold',
+        lila:
+          'border-[color:var(--color-accent-lila)] bg-[color:var(--color-accent-lila-soft)] text-[color:var(--color-accent-lila)] font-semibold',
       },
     },
     defaultVariants: {

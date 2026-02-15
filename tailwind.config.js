@@ -70,11 +70,13 @@ export default {
         ],
       },
       boxShadow: {
-        ds: '0 1px 3px rgba(15, 23, 42, 0.08)',
-        'ds-md': '0 4px 10px rgba(15, 23, 42, 0.12)',
+        ds: '0 1px 3px rgba(15, 118, 110, 0.08)',
+        'ds-md': '0 4px 12px rgba(15, 118, 110, 0.12)',
+        'ds-lg': '0 8px 24px rgba(15, 118, 110, 0.15)',
       },
       borderRadius: {
         pill: '9999px',
+        card: '20px',
       },
     },
   },

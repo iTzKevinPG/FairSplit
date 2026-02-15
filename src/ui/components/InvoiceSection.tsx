@@ -118,6 +118,8 @@ export function InvoiceSection({
   const [rescanConfirmOpen, setRescanConfirmOpen] = useState(false)
 
   const totalAmount = invoices.reduce((acc, inv) => acc + inv.amount, 0)
+  const totalTips = invoices.reduce((acc, inv) => acc + (inv.tipAmount ?? 0), 0)
+  const grandTotal = Math.round((totalAmount + totalTips + Number.EPSILON) * 100) / 100
   const availablePersonIds = people.map((person) => person.id)
   const resolvedPayerId =
     payerId && availablePersonIds.includes(payerId) ? payerId : availablePersonIds[0]
@@ -679,20 +681,19 @@ export function InvoiceSection({
 
       <SectionCard
         title="Gastos"
-        description="Registra cada gasto con su pagador y participantes. Elige reparto equitativo o por consumo real, con propina y invitado especial opcional."
-        badge={`${invoices.length} gasto${invoices.length === 1 ? '' : 's'}`}
+        description="Anota cada gasto: quién pagó, cuánto y quiénes participaron."
+        badge={`${invoices.length}`}
         action={
           invoices.length > 0 ? (
             <Badge variant="count">
-              Total: {currency} {Math.round(totalAmount).toLocaleString('es-CO')}
+              Total: {currency} {grandTotal.toLocaleString('es-CO', { minimumFractionDigits: 2 })}
             </Badge>
           ) : null
         }
       >
       <div className="space-y-5">
         <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-panel)] px-4 py-3 text-sm text-[color:var(--color-text-muted)] shadow-sm">
-          Registra cada gasto con pagador, participantes y tipo de reparto. Puedes
-          incluir propina o invitado especial.
+          💡 Puedes agregar propina, elegir quién participó o dividir por lo que cada uno consumió.
         </div>
 
         <div className="flex items-center justify-end">

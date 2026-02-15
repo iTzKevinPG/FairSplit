@@ -11,7 +11,7 @@ const Checkbox = React.forwardRef<
   <CheckboxPrimitive.Root
     ref={ref}
     className={cn(
-      "peer h-4 w-4 shrink-0 rounded-sm border transition-colors",
+      "peer h-4 w-4 shrink-0 rounded-[var(--radius-sm)] border transition-colors",
       "border-[color:var(--color-primary-light)]",
       "ring-offset-[color:var(--color-app-bg)]",
       "data-[state=checked]:border-[color:var(--color-primary-main)] data-[state=checked]:bg-[color:var(--color-primary-main)] data-[state=checked]:text-[color:var(--color-text-on-primary)]",

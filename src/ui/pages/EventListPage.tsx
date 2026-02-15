@@ -1,5 +1,6 @@
 import {
   CalendarPlus,
+  Handshake,
   Receipt,
   ScanLine,
   Trash2,
@@ -22,6 +23,7 @@ import {
   SessionStatusPill,
 } from '../components/SessionMenu'
 import fairLogo from '../../assets/fair-logo.png'
+import { EmptyStateIllustration } from '../components/EmptyStateIllustration'
 
 function EventListPage() {
   const {
@@ -134,11 +136,10 @@ function EventListPage() {
                   FairSplit
                 </p>
                 <h1 className="text-2xl font-semibold text-[color:var(--color-text-main)] sm:text-3xl">
-                  Divide gastos en grupo sin friccion.
+138:                   Divide gastos entre amigos, sin dramas.
                 </h1>
                 <p className="text-sm text-[color:var(--color-text-muted)]">
-                  Organiza planes con amigos, registra consumos por persona y obten saldos
-                  claros para saber quien paga a quien. Elige modo local o tu perfil en la nube.
+                  Crea un evento, agrega a tu grupo y registra los gastos. Nosotros calculamos quién paga a quién.
                 </p>
               </div>
 
@@ -153,7 +154,7 @@ function EventListPage() {
                         Crea el evento
                       </p>
                       <p className="text-xs text-[color:var(--color-text-muted)]">
-                        Define nombre y moneda en segundos.
+                        Ponle nombre y moneda, listo.
                       </p>
                     </div>
                   </div>
@@ -165,10 +166,10 @@ function EventListPage() {
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
-                        Invita al grupo
+                        Agrega a tu grupo
                       </p>
                       <p className="text-xs text-[color:var(--color-text-muted)]">
-                        Agrega personas y define el pagador.
+                        Escribe el nombre de cada persona.
                       </p>
                     </div>
                   </div>
@@ -183,7 +184,7 @@ function EventListPage() {
                         Registra gastos
                       </p>
                       <p className="text-xs text-[color:var(--color-text-muted)]">
-                        Agrega consumos manual o por consumo real.
+                        Anota quién pagó y cuánto.
                       </p>
                     </div>
                   </div>
@@ -195,10 +196,10 @@ function EventListPage() {
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
-                        Escanea facturas
+                        Escanea tickets
                       </p>
                       <p className="text-xs text-[color:var(--color-text-muted)]">
-                        Usa OCR para pre-registrar items y totales.
+                        Sube una foto del ticket y lo leemos por ti.
                       </p>
                     </div>
                   </div>
@@ -218,17 +219,15 @@ function EventListPage() {
 
       <ProfileModal isOpen={showProfile} onClose={() => setShowProfile(false)} />
 
-      <header className="sticky top-0 z-40 border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-app-bg)]/95 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg bg-[color:var(--color-surface-card)]">
-              <img src={fairLogo} alt="FairSplit" className="h-8 w-8 object-contain" />
-            </div>
-            <span className="text-lg font-semibold text-[color:var(--color-text-main)]">
+      <header className="sticky top-0 z-40 border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)]/90 backdrop-blur-md">
+        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:h-16 sm:px-6">
+          <div className="flex items-center gap-2.5">
+            <img src={fairLogo} alt="FairSplit" className="h-7 w-7 object-contain sm:h-8 sm:w-8" />
+            <span className="text-base font-semibold text-[color:var(--color-text-main)] sm:text-lg">
               FairSplit
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <QuickGuideButton />
             <SessionStatusPill />
             <SessionMenuButton onClick={() => setMenuOpen((prev) => !prev)} />
@@ -244,12 +243,37 @@ function EventListPage() {
                 FairSplit
               </p>
               <h1 className="text-3xl font-semibold text-[color:var(--color-text-main)] sm:text-4xl">
-                Empieza tu evento y divide gastos en minutos.
+                Crea un evento y empieza a dividir.
               </h1>
               <p className="max-w-2xl text-base text-[color:var(--color-text-muted)]">
-                Configura un evento, agrega tu grupo y registra gastos compartidos sin friccion.
-                Todo queda listo para ver saldos, balance de cuentas y transferencias.
+                Una cena, un viaje, una fiesta... lo que sea. Nosotros hacemos las cuentas por ti.
               </p>
+              <div className="flex items-center justify-center gap-6 pt-4">
+                <div className="flex flex-col items-center gap-1.5">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[color:var(--color-primary-soft)]">
+                    <Users className="h-7 w-7 text-[color:var(--color-primary-main)]" />
+                  </div>
+                  <span className="text-[11px] font-medium text-[color:var(--color-text-muted)]">Grupo</span>
+                </div>
+                <div className="flex flex-col items-center gap-1.5">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[color:var(--color-accent-coral-soft)]">
+                    <Receipt className="h-7 w-7 text-[color:var(--color-accent-coral)]" />
+                  </div>
+                  <span className="text-[11px] font-medium text-[color:var(--color-text-muted)]">Gastos</span>
+                </div>
+                <div className="flex flex-col items-center gap-1.5">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[color:var(--color-accent-lila-soft)]">
+                    <ScanLine className="h-7 w-7 text-[color:var(--color-accent-lila)]" />
+                  </div>
+                  <span className="text-[11px] font-medium text-[color:var(--color-text-muted)]">Escaneo</span>
+                </div>
+                <div className="flex flex-col items-center gap-1.5">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[color:var(--color-success-bg)]">
+                    <Handshake className="h-7 w-7 text-[color:var(--color-accent-success)]" />
+                  </div>
+                  <span className="text-[11px] font-medium text-[color:var(--color-text-muted)]">Pagos</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -258,10 +282,10 @@ function EventListPage() {
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <h2 className="text-lg font-semibold text-[color:var(--color-text-main)]">
-                    Empieza aqui
+                    Nuevo evento
                   </h2>
                   <p className="text-sm text-[color:var(--color-text-muted)]">
-                    Crea tu primer evento y luego agrega a tu grupo.
+                    Dale un nombre y elige la moneda.
                   </p>
                 </div>
                 <Badge variant="outline" className="text-[10px] font-semibold">
@@ -281,7 +305,7 @@ function EventListPage() {
                 </div>
 
                 <p className="text-xs text-[color:var(--color-text-muted)]">
-                  Gestiona tu perfil desde el menu para activar la nube.
+                  Abre el menú para activar tu perfil en la nube. ☁️
                 </p>
               </div>
             </div>
@@ -296,11 +320,15 @@ function EventListPage() {
           </h2>
           {visibleEvents.length === 0 ? (
             <div
-              className="rounded-lg border border-dashed border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-6 text-center"
+              className="rounded-[var(--radius-lg)] border border-dashed border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-8 text-center"
               data-testid="empty-events"
             >
-              <p className="text-sm text-[color:var(--color-text-muted)]">
-                Aun no tienes eventos. Crea el primero para empezar.
+              <EmptyStateIllustration variant="events" />
+              <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
+                Aún no tienes eventos
+              </p>
+              <p className="mt-1 text-xs text-[color:var(--color-text-muted)]">
+                Crea uno arriba: una salida, un viaje, una cena... lo que sea. 🤝
               </p>
             </div>
           ) : (
@@ -327,7 +355,8 @@ function EventListPage() {
                         handleSelect(event.id)
                       }
                     }}
-                    className="ds-card card-interactive flex flex-col items-start text-left"
+                    className="ds-card card-interactive animate-stagger-fade-in flex flex-col items-start text-left"
+                    style={{ animationDelay: `${visibleEvents.indexOf(event) * 60}ms` }}
                   >
                     <div className="flex w-full items-start justify-between gap-2">
                       <span className="text-sm font-semibold text-[color:var(--color-text-main)]">
@@ -405,7 +434,7 @@ function EventListPage() {
                   {deleteTarget.name}
                 </h2>
                 <p className="text-sm text-[color:var(--color-text-muted)]">
-                  Esta accion elimina el evento, integrantes y gastos asociados.
+                  Se borrará el evento con todas sus personas y gastos. No se puede deshacer.
                 </p>
               </div>
               <div className="flex flex-wrap items-center justify-end gap-2">

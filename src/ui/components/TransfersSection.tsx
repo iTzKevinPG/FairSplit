@@ -4,6 +4,7 @@ import type { PersonForUI } from '../../shared/state/fairsplitStore'
 import { AmountDisplay } from './AmountDisplay'
 import { SectionCard } from './SectionCard'
 import { Checkbox } from '../../shared/components/ui/checkbox'
+import { EmptyStateIllustration } from './EmptyStateIllustration'
 
 type TransferStatusMap = Record<string, { isSettled: boolean }>
 
@@ -35,8 +36,8 @@ export function TransfersSection({
 
   return (
     <SectionCard
-      title="Transferencias sugeridas"
-      description="Objetivo: completar los pagos minimos para saldar el grupo."
+      title="¿Quién paga a quién?"
+      description="Los pagos mínimos para que todos queden a mano."
       action={
         tipTotal && tipTotal > 0 ? (
           <span className="ds-badge-soft whitespace-normal break-words text-left">
@@ -53,18 +54,19 @@ export function TransfersSection({
                 Pendientes
               </p>
               <p className="mt-1 text-sm text-[color:var(--color-text-muted)]">
-                Marca como pagadas a medida que se completen.
+                Marca cada pago cuando se haga.
               </p>
               <div className="mt-3 space-y-2">
                 {pendingTransfers.length === 0 ? (
                   <p className="text-sm text-[color:var(--color-text-muted)]">
-                    No quedan transferencias pendientes.
+                    ¡No queda nada pendiente! 🎉
                   </p>
                 ) : (
                   pendingTransfers.map((transfer, index) => (
-                    <div
+                     <div
                       key={`${transfer.fromPersonId}-${transfer.toPersonId}-${index}`}
-                      className="flex items-center justify-between gap-3 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-3 py-2"
+                      className="animate-stagger-fade-in flex items-center justify-between gap-3 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-3 py-2"
+                      style={{ animationDelay: `${index * 60}ms` }}
                     >
                       <div className="flex items-center gap-3">
                         <Checkbox
@@ -95,19 +97,20 @@ export function TransfersSection({
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[color:var(--color-text-muted)]">
                 Completadas
               </p>
-              <p className="mt-1 text-sm text-[color:var(--color-text-muted)]">
-                Historial rapido de pagos realizados.
+               <p className="mt-1 text-sm text-[color:var(--color-text-muted)]">
+                Pagos ya realizados.
               </p>
               <div className="mt-3 space-y-2">
                 {settledTransfers.length === 0 ? (
                   <p className="text-sm text-[color:var(--color-text-muted)]">
-                    Aun no marcas transferencias como completadas.
+                    Aún no hay pagos completados.
                   </p>
                 ) : (
                   settledTransfers.map((transfer, index) => (
-                    <div
+                     <div
                       key={`${transfer.fromPersonId}-${transfer.toPersonId}-${index}`}
-                      className="flex items-center justify-between gap-3 rounded-lg border border-dashed border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)]/60 px-3 py-2"
+                      className="animate-stagger-fade-in flex items-center justify-between gap-3 rounded-lg border border-dashed border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)]/60 px-3 py-2"
+                      style={{ animationDelay: `${index * 60}ms` }}
                     >
                       <div className="flex items-center gap-3">
                         <Checkbox
@@ -136,9 +139,13 @@ export function TransfersSection({
           </div>
         </div>
       ) : (
-        <div className="rounded-lg border border-dashed border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-6 text-center">
-          <p className="text-sm text-[color:var(--color-text-muted)]">
-            No hay transferencias pendientes. Todos los saldos estan cubiertos.
+        <div className="rounded-[var(--radius-lg)] border border-dashed border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-8 text-center">
+          <EmptyStateIllustration variant="transfers" />
+           <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
+            ¡Nadie debe nada!
+          </p>
+          <p className="mt-1 text-xs text-[color:var(--color-text-muted)]">
+            Todos están a mano. ¡Bien hecho! 💪
           </p>
         </div>
       )}

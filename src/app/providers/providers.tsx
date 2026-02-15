@@ -2,6 +2,7 @@ import { type PropsWithChildren } from 'react'
 import { TourProvider } from '@reactour/tour'
 import { Toaster as Sonner } from '../../shared/components/ui/sonner'
 import { LoadingOverlay } from '../../ui/components/LoadingOverlay'
+import { WelcomeModal } from '../../ui/components/WelcomeModal'
 
 export function AppProviders({ children }: PropsWithChildren) {
   return (
@@ -49,6 +50,7 @@ export function AppProviders({ children }: PropsWithChildren) {
       {children}
       <LoadingOverlay />
       <Sonner />
+      <WelcomeModal />
     </TourProvider>
   )
 }

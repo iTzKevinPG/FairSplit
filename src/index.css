@@ -19,6 +19,12 @@
     --color-primary-light: #14b8a6;
     --color-primary-soft: #ccfbf1;
 
+    /* Accent colors — brand identity */
+    --color-accent-coral: #FF6B6B;
+    --color-accent-coral-soft: #fff1f1;
+    --color-accent-lila: #A78BFA;
+    --color-accent-lila-soft: #f3f0ff;
+
     --color-neutral-50: #f9fafb;
     --color-neutral-100: #f3f4f6;
     --color-neutral-200: #e5e7eb;
@@ -57,15 +63,17 @@
     --space-xl: 24px;
     --space-2xl: 32px;
 
-    /* Radius */
-    --radius-sm: 4px;
-    --radius-md: 8px;
-    --radius-lg: 12px;
+    /* Radius — mixto: cards suaves, botones moderados */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 20px;
+    --radius-xl: 24px;
     --radius-pill: 9999px;
 
-    /* Shadows */
-    --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08);
-    --shadow-md: 0 4px 10px rgba(15, 23, 42, 0.12);
+    /* Shadows — teal tinted */
+    --shadow-sm: 0 1px 3px rgba(15, 118, 110, 0.08);
+    --shadow-md: 0 4px 12px rgba(15, 118, 110, 0.12);
+    --shadow-lg: 0 8px 24px rgba(15, 118, 110, 0.15);
   }
 
   body {
@@ -109,6 +117,12 @@
     --color-primary-light: #14b8a6;
     --color-primary-soft: #12353f;
 
+    /* Accent colors — dark mode */
+    --color-accent-coral: #FF8A8A;
+    --color-accent-coral-soft: #2f1a1a;
+    --color-accent-lila: #C4B5FD;
+    --color-accent-lila-soft: #1e1a2e;
+
     --color-app-bg: #111827;
     --color-surface-card: #1f2937;
     --color-surface-muted: #374151;
@@ -125,6 +139,11 @@
     --color-info-bg: #0b2c3b;
     --color-focus-ring: var(--color-primary-light);
     --color-tour-mask: rgba(45, 212, 191, 0.28);
+
+    /* Shadows — teal tinted dark */
+    --shadow-sm: 0 1px 3px rgba(20, 184, 166, 0.1);
+    --shadow-md: 0 4px 12px rgba(20, 184, 166, 0.14);
+    --shadow-lg: 0 8px 24px rgba(20, 184, 166, 0.18);
   }
 
   [data-theme='dark'] .reactour__mask,
@@ -147,11 +166,36 @@
 
 @layer components {
   .ds-card {
-    background: var(--color-surface-card);
+    background:
+      radial-gradient(circle at 10% 15%, rgba(45, 212, 191, 0.06), transparent 50%),
+      radial-gradient(circle at 90% 85%, rgba(14, 165, 233, 0.04), transparent 50%),
+      var(--color-surface-card);
     border: 1px solid var(--color-border-subtle);
     border-radius: var(--radius-lg);
     padding: var(--space-xl);
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-md);
+    transition: box-shadow 200ms ease, border-color 200ms ease;
+  }
+
+  .ds-card-glow {
+    background:
+      radial-gradient(circle at 10% 15%, rgba(45, 212, 191, 0.06), transparent 50%),
+      radial-gradient(circle at 90% 85%, rgba(14, 165, 233, 0.04), transparent 50%),
+      var(--color-surface-card);
+  }
+
+  [data-theme='dark'] .ds-card {
+    background:
+      radial-gradient(circle at 10% 15%, rgba(45, 212, 191, 0.08), transparent 50%),
+      radial-gradient(circle at 90% 85%, rgba(14, 165, 233, 0.06), transparent 50%),
+      var(--color-surface-card);
+  }
+
+  [data-theme='dark'] .ds-card-glow {
+    background:
+      radial-gradient(circle at 10% 15%, rgba(45, 212, 191, 0.08), transparent 50%),
+      radial-gradient(circle at 90% 85%, rgba(14, 165, 233, 0.06), transparent 50%),
+      var(--color-surface-card);
   }
 
   .ds-card__title {
@@ -317,8 +361,8 @@
   }
 
   .card-interactive:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
     border-color: color-mix(in srgb, var(--color-primary-main) 40%, var(--color-border-subtle));
     background: color-mix(in srgb, var(--color-primary-soft) 12%, var(--color-surface-card));
   }
@@ -421,6 +465,46 @@
 
   .animate-accordion-up {
     animation: accordion-up 200ms ease-out;
+  }
+
+  @keyframes stagger-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-stagger-fade-in {
+    animation: stagger-fade-in 280ms ease-out both;
+  }
+
+  @keyframes tab-enter {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-tab-enter {
+    animation: tab-enter 250ms ease-out both;
+  }
+
+  @keyframes settle-pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+
+  .animate-settle-pop {
+    animation: settle-pop 300ms ease-out;
   }
 
 .no-scrollbar::-webkit-scrollbar {

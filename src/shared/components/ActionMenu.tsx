@@ -90,6 +90,7 @@ export function ActionMenu({
       aria-label={label}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
+      className="rounded-full hover:bg-[color:var(--color-surface-muted)]"
     >
       <MoreVertical className="h-4 w-4" />
     </Button>
@@ -101,21 +102,26 @@ export function ActionMenu({
       {open ? (
         <div
           ref={menuRef}
-          className={`absolute z-[60] mt-2 w-44 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-1 shadow-md ${
-            align === 'left' ? 'left-0' : 'right-0'
-          }`}
+          className={`
+            absolute z-[60] mt-1.5 w-40 animate-fade-in rounded-xl
+            border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)]
+            p-1.5 shadow-[var(--shadow-lg)]
+            ${align === 'left' ? 'left-0' : 'right-0'}
+          `}
         >
           {items.map((item) => (
-            <Button
+            <button
               key={item.label}
               type="button"
-              variant="ghost"
-              size="sm"
-              className={`w-full justify-start gap-2 text-sm ${
-                item.tone === 'danger'
-                  ? 'text-[color:var(--color-accent-danger)] hover:text-[color:var(--color-accent-danger)]'
-                  : 'text-[color:var(--color-text-main)]'
-              }`}
+              className={`
+                flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium
+                transition-colors duration-100
+                ${
+                  item.tone === 'danger'
+                    ? 'text-[color:var(--color-accent-danger)] hover:bg-[color:var(--color-danger-bg)]'
+                    : 'text-[color:var(--color-text-main)] hover:bg-[color:var(--color-surface-muted)]'
+                }
+              `}
               data-tour={item.dataTour}
               onClick={() => {
                 setOpen(false)
@@ -124,7 +130,7 @@ export function ActionMenu({
             >
               {item.icon}
               {item.label}
-            </Button>
+            </button>
           ))}
         </div>
       ) : null}

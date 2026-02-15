@@ -2,6 +2,7 @@ import type { Balance } from '../../domain/settlement/Balance'
 import type { InvoiceForUI, PersonForUI } from '../../shared/state/fairsplitStore'
 import { AmountDisplay } from './AmountDisplay'
 import { SectionCard } from './SectionCard'
+import { EmptyStateIllustration } from './EmptyStateIllustration'
 
 interface SummarySectionProps {
   balances: Balance[]
@@ -37,27 +38,57 @@ export function SummarySection({
   const itemNames = items.map((item) => item.name)
   const itemPreview = itemNames.slice(0, 3).join(', ')
   const remainingItems = Math.max(0, itemNames.length - 3)
+  const subtotal = invoices.reduce((acc, inv) => acc + inv.amount, 0)
+  const tips = tipTotal ?? 0
+  const grandTotal = subtotal + tips
 
   return (
     <SectionCard
-      title="Resumen por persona"
-      description="Objetivo: entender quien queda a favor y quien debe, antes de ir a transferencias."
-      action={
-        tipTotal && tipTotal > 0 ? (
-          <span className="ds-badge-soft">
-            Propina total: {currency} {tipTotal.toFixed(2)}
-          </span>
-        ) : null
-      }
+      title="¿Quién debe qué?"
+      description="Acá ves quién puso de más y quién se quedó corto."
     >
       {balances.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-6 text-center">
-          <p className="text-sm text-[color:var(--color-text-muted)]">
-            Agrega facturas para ver el resumen.
+        <div className="rounded-[var(--radius-lg)] border border-dashed border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-8 text-center">
+          <EmptyStateIllustration variant="summary" />
+          <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
+            Nada que mostrar todavía
+          </p>
+          <p className="mt-1 text-xs text-[color:var(--color-text-muted)]">
+            Agrega un gasto y acá verás quién debe y quién cobra. ✨
           </p>
         </div>
       ) : (
         <div className="space-y-4">
+          {/* Totals summary card */}
+          <div className="rounded-xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] p-4">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 text-sm text-[color:var(--color-text-muted)]">
+                  <span>Gastos:</span>
+                  <span className="font-semibold text-[color:var(--color-text-main)]">
+                    {currency} {subtotal.toFixed(2)}
+                  </span>
+                </div>
+                {tips > 0 && (
+                  <div className="flex items-center gap-2 text-sm text-[color:var(--color-text-muted)]">
+                    <span>Propinas:</span>
+                    <span className="font-semibold text-[color:var(--color-accent-warning)]">
+                      + {currency} {tips.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[color:var(--color-text-muted)]">
+                  Total del evento
+                </p>
+                <p className="text-xl font-bold text-[color:var(--color-primary-main)]">
+                  {currency} {grandTotal.toFixed(2)}
+                </p>
+              </div>
+            </div>
+          </div>
+
           {itemNames.length > 0 ? (
             <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-4 py-3 text-sm text-[color:var(--color-text-muted)]">
               <span className="font-semibold text-[color:var(--color-text-main)]">
@@ -70,10 +101,10 @@ export function SummarySection({
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="rounded-xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[color:var(--color-text-muted)]">
-                Cobran
+                Les deben 💰
               </p>
               <p className="mt-1 text-sm text-[color:var(--color-text-muted)]">
-                Personas a quienes el grupo les debe.
+                Pusieron más de lo que les tocaba.
               </p>
               <div className="mt-3 space-y-2">
                 {receivers.length === 0 ? (
@@ -81,17 +112,18 @@ export function SummarySection({
                     Nadie a favor por ahora.
                   </p>
                 ) : (
-                  receivers.map((balance) => (
+                  receivers.map((balance, index) => (
                     <div
                       key={balance.personId}
-                      className="flex items-center justify-between rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-3 py-2"
+                      className="animate-stagger-fade-in flex items-center justify-between rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-3 py-2"
+                      style={{ animationDelay: `${index * 50}ms` }}
                     >
                       <div>
                         <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
                           {balance.name}
                         </p>
-                        <p className="text-xs text-[color:var(--color-text-muted)]">
-                          Pago {currency} {balance.totalPaid.toFixed(2)}
+                         <p className="text-xs text-[color:var(--color-text-muted)]">
+                           Pagó {currency} {balance.totalPaid.toFixed(2)}
                         </p>
                       </div>
                       <AmountDisplay amount={balance.net} currency={currency} showSign />
@@ -103,10 +135,10 @@ export function SummarySection({
 
             <div className="rounded-xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[color:var(--color-text-muted)]">
-                Deben
+                Deben poner 🙋
               </p>
               <p className="mt-1 text-sm text-[color:var(--color-text-muted)]">
-                Personas que deben pagar para equilibrar el grupo.
+                Gastaron más de lo que pagaron.
               </p>
               <div className="mt-3 space-y-2">
                 {payers.length === 0 ? (
@@ -114,17 +146,18 @@ export function SummarySection({
                     Nadie por debajo, todo esta equilibrado.
                   </p>
                 ) : (
-                  payers.map((balance) => (
+                  payers.map((balance, index) => (
                     <div
                       key={balance.personId}
-                      className="flex items-center justify-between rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-3 py-2"
+                      className="animate-stagger-fade-in flex items-center justify-between rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-3 py-2"
+                      style={{ animationDelay: `${index * 50}ms` }}
                     >
                       <div>
                         <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
                           {balance.name}
                         </p>
                         <p className="text-xs text-[color:var(--color-text-muted)]">
-                          Debia {currency} {balance.totalOwed.toFixed(2)}
+                          Debía {currency} {balance.totalOwed.toFixed(2)}
                         </p>
                       </div>
                       <AmountDisplay amount={balance.net} currency={currency} showSign />
@@ -138,7 +171,7 @@ export function SummarySection({
           {settled.length > 0 ? (
             <div className="rounded-xl border border-dashed border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[color:var(--color-text-muted)]">
-                En equilibrio
+                En paz ✅
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {settled.map((balance) => (

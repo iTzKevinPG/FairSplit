@@ -23,6 +23,7 @@ type RequirementKey =
 
 type GuideStepConfig = {
   selector: string
+  selectorMobile?: string
   title: string
   description: string
   requirement: RequirementKey
@@ -73,9 +74,11 @@ const homeSteps: GuideStepConfig[] = [
 const eventSteps: GuideStepConfig[] = [
   {
     selector: '[data-tour="tab-nav"]',
+    selectorMobile: '[data-tour="tab-nav-mobile"]',
     title: 'Navegacion',
     description: 'Usa estas pestañas para moverte por el evento.',
     requirement: 'none',
+    position: mobileDockPosition,
   },
   {
     selector: '[data-tour="people-section"]',
@@ -90,7 +93,7 @@ const eventSteps: GuideStepConfig[] = [
   {
     selector: '[data-tour="invoice-section"]',
     title: 'Gastos',
-    description: 'Aqui registras los gastos del grupo y quien pago cada uno.',
+    description: 'Registra los gastos del grupo. El total incluye propinas automaticamente.',
     requirement: 'none',
     tabId: 'invoices',
     mutationObservables: ['[data-tour-active-tab]'],
@@ -165,16 +168,16 @@ const eventSteps: GuideStepConfig[] = [
     resizeObservables: ['[data-tour-active-tab]', '[data-tour="invoice-section"]'],
   },
   {
-    selector: '[data-tour-tab="summary"]',
-    title: 'Resumen',
-    description: 'Revisa los saldos netos por persona.',
+    selector: '[data-tour="summary-section"]',
+    title: 'Balance',
+    description: 'Ve el subtotal, propinas y total del evento, mas los saldos por persona.',
     requirement: 'tab-summary',
     tabId: 'summary',
     mutationObservables: ['[data-tour-active-tab]'],
     resizeObservables: ['[data-tour-active-tab]'],
   },
   {
-    selector: '[data-tour-tab="transfers"]',
+    selector: '[data-tour="transfers-section"]',
     title: 'Transferencias',
     description: 'Aqui ves quien paga a quien para saldar cuentas.',
     requirement: 'tab-transfers',
@@ -183,9 +186,9 @@ const eventSteps: GuideStepConfig[] = [
     resizeObservables: ['[data-tour-active-tab]'],
   },
   {
-    selector: '[data-tour-tab="overview"]',
+    selector: '[data-tour="overview-section"]',
     title: 'Vista general',
-    description: 'Resumen rapido de todo el evento.',
+    description: 'Total del evento con desglose, estadisticas y estado de pagos en un solo lugar.',
     requirement: 'tab-overview',
     tabId: 'overview',
     mutationObservables: ['[data-tour-active-tab]'],
@@ -390,9 +393,9 @@ function GuideStepContent({
   const totalSteps = steps?.length ?? getConfigsForPath(pathname).length
   const isLastStep = totalSteps > 0 ? currentStep === totalSteps - 1 : false
   const disablePrev =
-    config.selector === '[data-tour-tab="summary"]' ||
-    config.selector === '[data-tour-tab="transfers"]' ||
-    config.selector === '[data-tour-tab="overview"]'
+    config.selector === '[data-tour="summary-section"]' ||
+    config.selector === '[data-tour="transfers-section"]' ||
+    config.selector === '[data-tour="overview-section"]'
   const autoAdvance = config.requirement === 'event-created'
   const handleStepChange = useCallback(
     (nextIndex: number) => {
@@ -491,19 +494,44 @@ function GuideStepContent({
 
   return (
     <div className="space-y-3">
-      <div className="space-y-1">
-        {totalSteps ? (
-          <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[color:var(--color-text-muted)]">
-            Paso {currentStep + 1} de {totalSteps}
+      {/* Step header with icon */}
+      <div className="flex items-start gap-3">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-primary-soft)]">
+          <Sparkles className="h-4 w-4 text-[color:var(--color-primary-main)]" />
+        </div>
+        <div className="space-y-0.5">
+          {totalSteps ? (
+            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[color:var(--color-text-muted)]">
+              Paso {currentStep + 1} de {totalSteps}
+            </p>
+          ) : null}
+          <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
+            {config.title}
           </p>
-        ) : null}
-        <p className="text-sm font-semibold text-[color:var(--color-text-main)]">
-          {config.title}
-        </p>
-        <p className="text-sm text-[color:var(--color-text-muted)]">
-          {config.description}
-        </p>
+          <p className="text-sm text-[color:var(--color-text-muted)]">
+            {config.description}
+          </p>
+        </div>
       </div>
+
+      {/* Progress bar */}
+      {totalSteps > 1 && (
+        <div className="flex gap-1">
+          {Array.from({ length: totalSteps }, (_, i) => (
+            <div
+              key={i}
+              className={`h-1 flex-1 rounded-full transition-colors duration-300 ${
+                i < currentStep
+                  ? 'bg-[color:var(--color-accent-success)]'
+                  : i === currentStep
+                    ? 'bg-[color:var(--color-primary-main)]'
+                    : 'bg-[color:var(--color-border-subtle)]'
+              }`}
+            />
+          ))}
+        </div>
+      )}
+
       {!requirementMet && config.hint ? (
         <div className="rounded-md border border-[color:var(--color-accent-warning)] bg-[color:var(--color-warning-bg)] px-3 py-2 text-xs font-semibold text-[color:var(--color-text-main)]">
           {config.hint}
@@ -593,9 +621,11 @@ export function QuickGuideButton() {
         ...(interactive ? ['[data-tour="active-select-popover"]'] : []),
         ...(config.resizeObservables ?? []),
       ]
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 640
+      const resolvedSelector = (isMobile && config.selectorMobile) ? config.selectorMobile : config.selector
 
       return {
-        selector: config.selector,
+        selector: resolvedSelector,
         content: getStepContent(config),
         stepInteraction: interactive,
         bypassElem: config.bypassElem,

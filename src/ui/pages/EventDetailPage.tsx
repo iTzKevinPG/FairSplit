@@ -9,18 +9,20 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { buttonVariants } from '../../shared/components/ui/button'
 import { Button } from '../../shared/components/ui/button'
 import { toast } from '../../shared/components/ui/sonner'
 import { useAuthStore } from '../../shared/state/authStore'
 import { useFairSplitStore } from '../../shared/state/fairsplitStore'
 import { useEvents } from '../hooks/useEvents'
+import { useConfetti } from '../hooks/useConfetti'
 import { BentoOverview } from '../components/BentoOverview'
 import { Footer } from '../components/Footer'
 import { InvoiceSection } from '../components/InvoiceSection'
 import { PeopleSection } from '../components/PeopleSection'
 import { SummarySection } from '../components/SummarySection'
-import { TabNav } from '../components/TabNav'
+
+import { BottomNav } from '../components/BottomNav'
+import { EventStepper } from '../components/EventStepper'
 import { TransfersSection } from '../components/TransfersSection'
 import { QuickGuideButton } from '../components/QuickGuideButton'
 import { ProfileModal } from '../components/ProfileModal'
@@ -33,15 +35,16 @@ import NotFoundPage from './NotFoundPage'
 import fairLogo from '../../assets/fair-logo.png'
 
 const tabs = [
-  { id: 'people', label: 'Integrantes', icon: <Users className="h-4 w-4" /> },
-  { id: 'invoices', label: 'Gastos', icon: <Receipt className="h-4 w-4" /> },
-  { id: 'summary', label: 'Resumen', icon: <BarChart3 className="h-4 w-4" /> },
+  { id: 'people', label: 'Grupo', shortLabel: 'Grupo', icon: <Users className="h-4 w-4" /> },
+  { id: 'invoices', label: 'Gastos', shortLabel: 'Gastos', icon: <Receipt className="h-4 w-4" /> },
+  { id: 'summary', label: 'Balance', shortLabel: 'Balance', icon: <BarChart3 className="h-4 w-4" /> },
   {
     id: 'transfers',
-    label: 'Transferencias',
+    label: 'Pagos',
+    shortLabel: 'Pagos',
     icon: <ArrowRightLeft className="h-4 w-4" />,
   },
-  { id: 'overview', label: 'Vista general', icon: <LayoutGrid className="h-4 w-4" /> },
+  { id: 'overview', label: 'General', shortLabel: 'General', icon: <LayoutGrid className="h-4 w-4" /> },
 ]
 
 function EventDetailPage() {
@@ -72,10 +75,16 @@ function EventDetailPage() {
   const [activeTab, setActiveTab] = useState<
     'people' | 'invoices' | 'summary' | 'transfers' | 'overview'
   >('people')
+  const [tabKey, setTabKey] = useState(0)
   const [showProfile, setShowProfile] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const hasLoadedRef = useRef(false)
   const isAuthenticated = useAuthStore((state) => Boolean(state.token))
+
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId as typeof activeTab)
+    setTabKey((k) => k + 1)
+  }
 
   useEffect(() => {
     if (hasLoadedRef.current || events.length > 0) return
@@ -99,7 +108,7 @@ function EventDetailPage() {
         | 'overview'
         | undefined
       if (!tabId) return
-      setActiveTab(tabId)
+      handleTabChange(tabId)
     }
     window.addEventListener('tour:go-tab', handler)
     return () => {
@@ -239,6 +248,17 @@ function EventDetailPage() {
     return result
   }, [balances, selectedEvent, transfers, transferStatusMap])
 
+  const allSettled = useMemo(() =>
+    transfers.length > 0 &&
+    transfers.every((t) => {
+      const key = `${t.fromPersonId}::${t.toPersonId}`
+      return Boolean(transferStatusMap[key]?.isSettled)
+    }),
+    [transfers, transferStatusMap],
+  )
+
+  useConfetti(allSettled)
+
   if (!eventId || !selectedEvent) {
     return <NotFoundPage />
   }
@@ -254,24 +274,21 @@ function EventDetailPage() {
 
       <ProfileModal isOpen={showProfile} onClose={() => setShowProfile(false)} />
 
-      <header className="sticky top-0 z-40 border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-app-bg)]/95 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg bg-[color:var(--color-surface-card)]">
-              <img src={fairLogo} alt="FairSplit" className="h-8 w-8 object-contain" />
-            </div>
-            <span className="text-lg font-semibold text-[color:var(--color-text-main)]">
-              FairSplit
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
+      <header className="sticky top-0 z-40 border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)]/90 backdrop-blur-md">
+        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:h-16 sm:px-6">
+          <div className="flex items-center gap-2.5">
             <Link
               to="/"
-              className={buttonVariants({ variant: 'outline', size: 'sm' })}
+              className="flex items-center gap-2 rounded-xl px-2 py-1.5 text-[color:var(--color-text-muted)] transition-colors hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-text-main)]"
             >
               <ArrowLeft className="h-4 w-4" />
-              <span className="hidden sm:inline">Volver a eventos</span>
+              <img src={fairLogo} alt="FairSplit" className="h-7 w-7 object-contain sm:h-8 sm:w-8" />
+              <span className="hidden text-base font-semibold text-[color:var(--color-text-main)] sm:inline sm:text-lg">
+                FairSplit
+              </span>
             </Link>
+          </div>
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <QuickGuideButton />
             <SessionStatusPill />
             <SessionMenuButton onClick={() => setMenuOpen((prev) => !prev)} />
@@ -280,50 +297,59 @@ function EventDetailPage() {
       </header>
 
       <main
-        className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-10 min-h-[calc(100vh-4rem-96px)]"
+        className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-10 pb-24 sm:pb-10 min-h-[calc(100vh-4rem-96px)]"
         data-tour-active-tab={activeTab}
       >
-        <section className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[color:var(--color-primary-main)]">
-            Evento
-          </p>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h1 className="text-3xl font-semibold text-[color:var(--color-text-main)] sm:text-4xl">
-              {selectedEvent.name}
-            </h1>
-            {activeTab === 'overview' && isAuthenticated ? (
-              <Button type="button" size="sm" variant="soft" onClick={handleShare}>
-                <Share2 className="h-4 w-4" />
-                Compartir
-              </Button>
-            ) : null}
+        <section className="ds-card space-y-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[color:var(--color-primary-main)]">
+                Evento
+              </p>
+              <h1 className="text-2xl font-semibold text-[color:var(--color-text-main)] sm:text-3xl">
+                {selectedEvent.name}
+              </h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex flex-wrap gap-1.5 text-[11px]">
+                <span className="inline-flex items-center gap-1 rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-2.5 py-0.5 font-semibold text-[color:var(--color-text-main)]">
+                  {selectedEvent.currency}
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-2.5 py-0.5 text-[color:var(--color-text-muted)]">
+                  <Users className="h-3 w-3" />
+                  {selectedEvent.people.length}
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-2.5 py-0.5 text-[color:var(--color-text-muted)]">
+                  <Receipt className="h-3 w-3" />
+                  {selectedEvent.invoices.length}
+                </span>
+              </div>
+              {activeTab === 'overview' && isAuthenticated ? (
+                <Button type="button" size="sm" variant="soft" onClick={handleShare}>
+                  <Share2 className="h-4 w-4" />
+                  Compartir
+                </Button>
+              ) : null}
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2 text-xs text-[color:var(--color-text-muted)]">
-            <span className="rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-3 py-1">
-              Moneda: <span className="font-semibold text-[color:var(--color-text-main)]">{selectedEvent.currency}</span>
-            </span>
-            <span className="rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-3 py-1">
-              Integrantes: <span className="font-semibold text-[color:var(--color-text-main)]">{selectedEvent.people.length}</span>
-            </span>
-            <span className="rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] px-3 py-1">
-              Gastos: <span className="font-semibold text-[color:var(--color-text-main)]">{selectedEvent.invoices.length}</span>
-            </span>
+
+          <div className="border-t border-[color:var(--color-border-subtle)] pt-4">
+            <EventStepper
+              peopleCount={selectedEvent.people.length}
+              invoiceCount={selectedEvent.invoices.length}
+              hasBalances={balances.length > 0}
+              allSettled={allSettled}
+              activeTab={activeTab}
+              onStepClick={(tabId) => handleTabChange(tabId)}
+            />
           </div>
         </section>
 
-        <div data-tour="tab-nav">
-          <TabNav
-            tabs={tabs}
-            activeTab={activeTab}
-            onTabChange={(tabId) => {
-              setActiveTab(tabId as typeof activeTab)
-            }}
-          />
-        </div>
 
         <div
+          key={`tab-${tabKey}`}
           data-tour="people-section"
-          className={activeTab === 'people' ? 'block' : 'hidden'}
+          className={`${activeTab === 'people' ? 'block animate-tab-enter' : 'hidden'}`}
           aria-hidden={activeTab !== 'people'}
         >
           <PeopleSection
@@ -340,7 +366,7 @@ function EventDetailPage() {
           />
         </div>
 
-        <div data-tour="invoice-section" hidden={activeTab !== 'invoices'}>
+        <div data-tour="invoice-section" className={activeTab === 'invoices' ? 'block animate-tab-enter' : 'hidden'}>
           <InvoiceSection
             eventId={eventId}
             invoices={selectedEvent.invoices}
@@ -359,7 +385,7 @@ function EventDetailPage() {
           />
         </div>
 
-        <div data-tour="summary-section" hidden={activeTab !== 'summary'}>
+        <div data-tour="summary-section" className={activeTab === 'summary' ? 'block animate-tab-enter' : 'hidden'}>
           <SummarySection
             balances={balances}
             people={selectedEvent.people}
@@ -369,7 +395,7 @@ function EventDetailPage() {
           />
         </div>
 
-        <div data-tour="transfers-section" hidden={activeTab !== 'transfers'}>
+        <div data-tour="transfers-section" className={activeTab === 'transfers' ? 'block animate-tab-enter' : 'hidden'}>
           <TransfersSection
             transfers={transfers}
             people={selectedEvent.people}
@@ -387,7 +413,7 @@ function EventDetailPage() {
           />
         </div>
 
-        <div data-tour="overview-section" hidden={activeTab !== 'overview'}>
+        <div data-tour="overview-section" className={activeTab === 'overview' ? 'block animate-tab-enter' : 'hidden'}>
           <BentoOverview
             people={selectedEvent.people}
             invoices={selectedEvent.invoices}
@@ -399,6 +425,12 @@ function EventDetailPage() {
           />
         </div>
       </main>
+
+      <BottomNav
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={(tabId) => handleTabChange(tabId)}
+      />
 
       <Footer />
     </div>

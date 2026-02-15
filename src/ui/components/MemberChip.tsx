@@ -11,6 +11,11 @@ interface MemberChipProps {
   className?: string
 }
 
+
+function getInitial(name: string) {
+  return name.trim().charAt(0).toUpperCase() || '?'
+}
+
 export function MemberChip({
   name,
   isPayer,
@@ -22,12 +27,22 @@ export function MemberChip({
 }: MemberChipProps) {
   const content = (
     <>
-      {isEditable && isSelected ? <Check className="h-3 w-3" /> : null}
+      {/* Mini avatar */}
+      <span className={cn(
+        'flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold',
+        isSelected
+          ? isPayer
+            ? 'bg-[color:var(--color-text-on-primary)]/20 text-[color:var(--color-text-on-primary)]'
+            : 'bg-[color:var(--color-primary-main)]/15 text-[color:var(--color-primary-main)]'
+          : 'bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-muted)]'
+      )}>
+        {isEditable && isSelected ? <Check className="h-3 w-3" /> : getInitial(name)}
+      </span>
       <span className="truncate">
         {name}
         {isPayer ? (
-          <span className="ml-1 rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-1.5 py-0.5 text-[10px] font-semibold text-[color:var(--color-text-main)]">
-            (Pagador)
+          <span className="ml-1 text-[9px] font-semibold opacity-75">
+            💳
           </span>
         ) : null}
       </span>
@@ -38,7 +53,7 @@ export function MemberChip({
             event.stopPropagation()
             onRemove()
           }}
-          className="ml-1 rounded-full p-0.5 transition-colors hover:bg-[color:var(--color-border-subtle)]"
+          className="ml-0.5 rounded-full p-0.5 transition-colors hover:bg-[color:var(--color-border-subtle)]"
         >
           <X className="h-3 w-3" />
         </button>
@@ -47,13 +62,13 @@ export function MemberChip({
   )
 
   const baseClasses = cn(
-    'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all',
+    'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-150',
     isSelected
       ? isPayer
-        ? 'bg-[color:var(--color-primary-main)] text-[color:var(--color-text-on-primary)]'
+        ? 'bg-[color:var(--color-primary-main)] text-[color:var(--color-text-on-primary)] shadow-[var(--shadow-sm)]'
         : 'border border-[color:var(--color-primary-light)] bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-main)]'
       : 'border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-muted)]',
-    isEditable ? 'cursor-pointer hover:border-[color:var(--color-primary-light)]' : '',
+    isEditable ? 'cursor-pointer hover:border-[color:var(--color-primary-light)] hover:shadow-[var(--shadow-sm)] active:scale-95' : '',
     className,
   )
 
