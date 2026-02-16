@@ -82,8 +82,12 @@ function EventDetailPage() {
   const isAuthenticated = useAuthStore((state) => Boolean(state.token))
 
   const handleTabChange = useCallback((tabId: string) => {
-    setActiveTab(tabId as typeof activeTab)
-    setTabKey((k) => k + 1)
+    const nextTab = tabId as 'people' | 'invoices' | 'summary' | 'transfers' | 'overview'
+    setActiveTab((currentTab) => {
+      if (currentTab === nextTab) return currentTab
+      setTabKey((k) => k + 1)
+      return nextTab
+    })
   }, [])
 
   useEffect(() => {

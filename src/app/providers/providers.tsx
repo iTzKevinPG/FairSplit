@@ -6,8 +6,35 @@ import { WelcomeModal } from '../../ui/components/WelcomeModal'
 
 function TourScrollLock() {
   const { isOpen, currentStep } = useTour()
-  const isOpenRef = useRef(false)
-  const lockedRef = useRef(false)
+  const isOpenRef = useRef(isOpen)
+  const isLockedRef = useRef(false)
+  const restoreScrollRef = useRef<null | (() => void)>(null)
+
+  const unlockScroll = () => {
+    isLockedRef.current = false
+    restoreScrollRef.current?.()
+    restoreScrollRef.current = null
+  }
+
+  const lockScroll = () => {
+    isLockedRef.current = true
+    if (restoreScrollRef.current || typeof document === 'undefined') return
+    const body = document.body
+    const html = document.documentElement
+    const prevBodyOverflow = body.style.overflow
+    const prevBodyOverscroll = body.style.overscrollBehavior
+    const prevHtmlOverscroll = html.style.overscrollBehavior
+    body.style.overflow = 'hidden'
+    body.style.overscrollBehavior = 'none'
+    html.style.overscrollBehavior = 'none'
+    html.setAttribute('data-tour-scroll-lock', 'true')
+    restoreScrollRef.current = () => {
+      body.style.overflow = prevBodyOverflow
+      body.style.overscrollBehavior = prevBodyOverscroll
+      html.style.overscrollBehavior = prevHtmlOverscroll
+      html.removeAttribute('data-tour-scroll-lock')
+    }
+  }
 
   useEffect(() => {
     isOpenRef.current = isOpen
@@ -15,28 +42,40 @@ function TourScrollLock() {
 
   useEffect(() => {
     if (!isOpen) {
-      lockedRef.current = false
+      unlockScroll()
       return
     }
     // Unlock briefly so reactour's scrollSmooth can scroll to the element
-    lockedRef.current = false
+    unlockScroll()
     const timer = window.setTimeout(() => {
-      if (isOpenRef.current) lockedRef.current = true
+      lockScroll()
     }, 600)
-    return () => window.clearTimeout(timer)
+    return () => {
+      window.clearTimeout(timer)
+      if (!isOpenRef.current) unlockScroll()
+    }
   }, [isOpen, currentStep])
 
   useEffect(() => {
     const prevent = (e: Event) => {
-      if (isOpenRef.current && lockedRef.current) e.preventDefault()
+      if (!isOpenRef.current || !isLockedRef.current) return
+      const target = e.target
+      if (
+        target instanceof Element &&
+        target.closest('.fair-tour-popover, [data-tour="active-select-popover"]')
+      ) {
+        return
+      }
+      e.preventDefault()
     }
-    window.addEventListener('wheel', prevent, { passive: false })
-    window.addEventListener('touchmove', prevent, { passive: false })
+    document.addEventListener('wheel', prevent, { passive: false, capture: true })
+    document.addEventListener('touchmove', prevent, { passive: false, capture: true })
     return () => {
-      window.removeEventListener('wheel', prevent)
-      window.removeEventListener('touchmove', prevent)
+      document.removeEventListener('wheel', prevent, { capture: true })
+      document.removeEventListener('touchmove', prevent, { capture: true })
+      unlockScroll()
     }
-  }, []) // Mount once, check refs inside
+  }, [])
 
   return null
 }
@@ -44,6 +83,7 @@ function TourScrollLock() {
 export function AppProviders({ children }: PropsWithChildren) {
   return (
     <TourProvider
+      className="fair-tour-popover"
       steps={[]}
       showNavigation={false}
       showPrevNextButtons={false}
@@ -60,15 +100,20 @@ export function AppProviders({ children }: PropsWithChildren) {
         clickProps.setMeta?.('')
       }}
       styles={{
-        popover: (base) => ({
-          ...base,
-          backgroundColor: 'var(--color-surface-card)',
-          color: 'var(--color-text-main)',
-          borderRadius: '12px',
-          boxShadow: 'var(--shadow-md)',
-          overflow: 'visible',
-          maxWidth: 'min(90vw, 360px)',
-        }),
+        popover: (base) => {
+          const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640
+          return {
+            ...base,
+            backgroundColor: 'var(--color-surface-card)',
+            color: 'var(--color-text-main)',
+            borderRadius: '12px',
+            boxShadow: 'var(--shadow-md)',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            maxWidth: 'min(90vw, 360px)',
+            maxHeight: isMobile ? '48vh' : 'min(70vh, 560px)',
+          }
+        },
         badge: (base) => ({
           ...base,
           backgroundColor: 'var(--color-primary-main)',

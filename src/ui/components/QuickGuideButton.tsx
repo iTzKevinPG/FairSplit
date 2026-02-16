@@ -41,19 +41,29 @@ const smartPosition: StepType['position'] = (posProps) => {
   const isMobile = (posProps.windowWidth ?? window.innerWidth) <= 640
   if (!isMobile) return 'bottom'
 
-  const elementCenter = top + height / 2
-  const spaceBelow = windowHeight - (bottom ?? top + height)
-  const spaceAbove = top
+  const targetBottom = bottom ?? top + height
+  const viewportPadding = 16
+  const estimatedPopoverHeight = 260
+  const spaceAbove = Math.max(top - viewportPadding, 0)
+  const spaceBelow = Math.max(windowHeight - targetBottom - viewportPadding, 0)
 
-  // If element is in the bottom third or not enough space below, show on top
-  if (elementCenter > windowHeight * 0.55 || spaceBelow < 180) {
-    return 'top'
+  const fitsAbove = spaceAbove >= estimatedPopoverHeight
+  const fitsBelow = spaceBelow >= estimatedPopoverHeight
+
+  if (fitsAbove && !fitsBelow) return 'top'
+  if (fitsBelow && !fitsAbove) return 'bottom'
+
+  // If both sides are tight, prefer the side with more available space.
+  if (!fitsAbove && !fitsBelow) {
+    return spaceAbove > spaceBelow ? 'top' : 'bottom'
   }
-  // If element is in the top third or not enough space above, show on bottom
-  if (elementCenter < windowHeight * 0.35 || spaceAbove < 180) {
-    return 'bottom'
-  }
-  return 'bottom'
+
+  // If both sides fit, bias with the target vertical position.
+  const elementCenter = top + height / 2
+  if (elementCenter > windowHeight * 0.55) return 'top'
+  if (elementCenter < windowHeight * 0.45) return 'bottom'
+
+  return spaceAbove > spaceBelow ? 'top' : 'bottom'
 }
 
 const autoAdvanceRequirements: RequirementKey[] = [
@@ -94,7 +104,7 @@ const eventSteps: GuideStepConfig[] = [
     position: smartPosition,
   },
   {
-    selector: '[data-tour="people-section"]',
+    selector: '[data-tour="people-add-form"]',
     title: 'Integrantes',
     description: 'Agrega personas para poder registrar gastos.',
     requirement: 'people-added',

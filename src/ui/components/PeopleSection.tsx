@@ -105,6 +105,7 @@ export function PeopleSection({
       <form
         onSubmit={handleSubmit}
         className="flex flex-col gap-2 sm:flex-row sm:items-center sm:max-w-md"
+        data-tour="people-add-form"
       >
         <Input
           placeholder="Nombre o alias"
