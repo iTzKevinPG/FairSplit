@@ -190,7 +190,7 @@ function EventOverviewPage() {
               </div>
             </div>
           </header>
-          <main className="mx-auto flex max-w-5xl flex-1 flex-col gap-6 px-6 py-10">
+          <main className="mx-auto flex min-h-[calc(100vh-4rem-96px)] max-w-5xl max-w-full flex-1 flex-col gap-6 overflow-x-hidden px-6 py-10 pb-24 sm:pb-10">
             <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] p-6 text-sm text-[color:var(--color-text-muted)]">
               Cargando vista general...
             </div>
@@ -218,7 +218,7 @@ function EventOverviewPage() {
         </div>
       </header>
 
-      <main className="mx-auto flex max-w-5xl flex-1 flex-col gap-6 px-6 py-10">
+      <main className="mx-auto flex min-h-[calc(100vh-4rem-96px)] max-w-5xl max-w-full flex-1 flex-col gap-6 overflow-x-hidden px-6 py-10 pb-24 sm:pb-10">
         <section className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[color:var(--color-primary-main)]">
             Vista general
