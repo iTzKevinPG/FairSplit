@@ -593,20 +593,22 @@ function InvoiceCard({
   const total = roundToCents(invoice.amount + (invoice.tipAmount ?? 0))
 
   return (
-    <div className="group flex min-w-0 flex-col gap-3 overflow-hidden rounded-xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] px-3.5 py-3 transition-all hover:border-[color:var(--color-primary-light)] hover:shadow-[var(--shadow-md)] sm:flex-row sm:items-center">
+    <div className="group overflow-hidden rounded-xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] transition-all hover:border-[color:var(--color-primary-light)] hover:shadow-[var(--shadow-md)]">
+      <div className="p-3 sm:p-4">
+        <div className="flex items-start gap-3">
       {/* Icon */}
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:var(--color-accent-coral-soft)]">
-        <Receipt className="h-4 w-4 text-[color:var(--color-accent-coral)]" />
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:var(--color-accent-coral-soft)] sm:h-10 sm:w-10">
+        <Receipt className="h-4 w-4 text-[color:var(--color-accent-coral)] sm:h-5 sm:w-5" />
       </div>
 
       {/* Info */}
-      <div className="flex min-w-0 w-full flex-1 flex-col gap-0.5">
-        <span className="truncate text-sm font-bold text-[color:var(--color-text-main)]">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <p className="truncate text-sm font-semibold text-[color:var(--color-text-main)]">
           {invoice.description}
-        </span>
-        <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-[color:var(--color-text-muted)]">
+        </p>
+        <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-[color:var(--color-text-muted)] [&>*:not(:first-child)]:hidden sm:[&>*:not(:first-child)]:inline">
           <span className="flex min-w-0 items-center gap-1">
-            <CreditCard className="h-2.5 w-2.5" />
+            <CreditCard className="h-2.5 w-2.5 shrink-0" />
             <span className="truncate">{resolvePersonName(invoice.payerId, people)}</span>
           </span>
           <span>·</span>
@@ -623,19 +625,36 @@ function InvoiceCard({
         </div>
       </div>
 
-      {/* Amount + CTA */}
-      <div className="flex w-full min-w-0 items-center justify-between gap-3 sm:w-auto sm:shrink-0 sm:flex-col sm:items-end sm:justify-center">
-        <span className="min-w-0 truncate text-sm font-bold text-[color:var(--color-primary-main)] tabular-nums">
-          {fmtAmount(total, currency)}
-        </span>
-        <button
-          type="button"
-          onClick={onViewDetail}
-          className="flex shrink-0 items-center gap-1 rounded-lg bg-[color:var(--color-primary-main)]/10 px-2 py-0.5 text-[10px] font-bold text-[color:var(--color-primary-light)] transition-all hover:bg-[color:var(--color-primary-main)] hover:text-white active:scale-95"
-        >
-          Detalle
-          <ArrowRight className="h-2.5 w-2.5" />
-        </button>
+        </div>
+        <div className="mt-2 flex min-w-0 flex-wrap items-center justify-between gap-2 pl-12 sm:pl-[52px]">
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+            <span className="rounded-full bg-[color:var(--color-surface-muted)] px-2 py-0.5 text-[10px] font-medium text-[color:var(--color-text-muted)]">
+              {invoice.participantIds.length} persona{invoice.participantIds.length !== 1 ? 's' : ''}
+            </span>
+            <span className="rounded-full bg-[color:var(--color-surface-muted)] px-2 py-0.5 text-[10px] font-medium text-[color:var(--color-text-muted)] sm:hidden">
+              {invoice.divisionMethod === 'consumption' ? 'Por consumo' : 'Iguales'}
+            </span>
+            {invoice.tipAmount ? (
+              <span className="rounded-full bg-[color:var(--color-warning-bg)] px-2 py-0.5 text-[10px] font-medium text-[color:var(--color-accent-warning)] sm:hidden">
+                + propina
+              </span>
+            ) : null}
+          </div>
+
+          <div className="flex shrink-0 items-center gap-2 self-end">
+            <span className="text-sm font-bold text-[color:var(--color-primary-main)] tabular-nums">
+              {fmtAmount(total, currency)}
+            </span>
+            <button
+              type="button"
+              onClick={onViewDetail}
+              className="flex shrink-0 items-center gap-1 rounded-lg bg-[color:var(--color-primary-main)]/10 px-2 py-0.5 text-[10px] font-bold text-[color:var(--color-primary-light)] transition-all hover:bg-[color:var(--color-primary-main)] hover:text-white active:scale-95"
+            >
+              Detalle
+              <ArrowRight className="h-2.5 w-2.5" />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )
