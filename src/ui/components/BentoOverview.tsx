@@ -126,7 +126,7 @@ export function BentoOverview({
 
   return (
     <>
-      <div className="bento-root space-y-4 pb-20 sm:pb-0">
+      <div className="bento-root max-w-full overflow-x-hidden space-y-4 pb-20 sm:pb-0">
 
         {/* ── Hero financiero ── */}
         <HeroCard
@@ -454,11 +454,11 @@ function FilterBar({
   onChange: (id: string) => void
 }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex min-w-0 max-w-full items-center gap-2">
       <SlidersHorizontal className="h-3.5 w-3.5 shrink-0 text-[color:var(--color-text-muted)]" />
       <span className="text-[11px] font-semibold text-[color:var(--color-text-muted)] shrink-0">Ver</span>
       <Select value={selectedPersonId} onValueChange={onChange}>
-        <SelectTrigger className="h-8 flex-1 text-xs font-semibold">
+        <SelectTrigger className="h-8 min-w-0 flex-1 text-xs font-semibold">
           <SelectValue placeholder="Todos los participantes" />
         </SelectTrigger>
         <SelectContent>
@@ -978,13 +978,13 @@ function CollapsibleSection({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`flex w-full items-center gap-2.5 px-4 py-3.5 text-left transition-colors ${ac.header}`}
+        className={`flex min-w-0 w-full items-center gap-2.5 px-4 py-3.5 text-left transition-colors ${ac.header}`}
       >
         {icon}
-        <span className="flex-1 text-sm font-bold text-[color:var(--color-text-main)]">{title}</span>
-        {extra}
+        <span className="min-w-0 flex-1 text-sm font-bold text-[color:var(--color-text-main)]">{title}</span>
+        {extra ? <div className="min-w-0 shrink">{extra}</div> : null}
         {badge && (
-          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${badgeClass}`}>
+          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${badgeClass}`}>
             {badge}
           </span>
         )}

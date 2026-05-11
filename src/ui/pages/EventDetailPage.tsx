@@ -268,7 +268,7 @@ function EventDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[color:var(--color-app-bg)]">
+    <div className="min-h-screen overflow-x-hidden bg-[color:var(--color-app-bg)]">
       <SessionMenu
         isOpen={menuOpen}
         onClose={() => setMenuOpen(false)}
@@ -301,7 +301,7 @@ function EventDetailPage() {
       </header>
 
       <main
-        className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-10 pb-24 sm:pb-10 min-h-[calc(100vh-4rem-96px)]"
+        className="mx-auto flex min-h-[calc(100vh-4rem-96px)] max-w-5xl max-w-full flex-col gap-6 overflow-x-hidden px-6 py-10 pb-24 sm:pb-10"
         data-tour-active-tab={activeTab}
       >
         <section className="ds-card space-y-5">
