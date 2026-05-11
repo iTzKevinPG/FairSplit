@@ -4,6 +4,8 @@ import { Check, ChevronDown, ChevronUp } from "lucide-react";
 
 import { cn } from "@/shared/utils/cn";
 
+const SELECT_CONTENT_Z_INDEX = 90;
+
 const Select = SelectPrimitive.Root;
 
 const SelectGroup = SelectPrimitive.Group;
@@ -67,35 +69,57 @@ SelectScrollDownButton.displayName = SelectPrimitive.ScrollDownButton.displayNam
 const SelectContent = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>
->(({ className, children, position = "popper", ...props }, ref) => (
-  <SelectPrimitive.Portal>
-    <SelectPrimitive.Content
-      ref={ref}
-      className={cn(
-        "relative z-[90] max-h-96 min-w-[8rem] overflow-hidden rounded-[var(--radius-md)] border shadow-[var(--shadow-md)]",
-        "border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] text-[color:var(--color-text-main)]",
-        "data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out",
-        position === "popper" &&
-          "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
-        className
-      )}
-      position={position}
-      {...props}
-    >
-      <SelectScrollUpButton />
-      <SelectPrimitive.Viewport
+>(({ className, children, position = "popper", ...props }, ref) => {
+  const contentRef = React.useRef<React.ElementRef<typeof SelectPrimitive.Content> | null>(null);
+
+  React.useImperativeHandle(ref, () => contentRef.current as React.ElementRef<typeof SelectPrimitive.Content>, []);
+
+  React.useLayoutEffect(() => {
+    const wrapper = contentRef.current?.closest("[data-radix-popper-content-wrapper]");
+    if (!(wrapper instanceof HTMLElement)) return;
+
+    const previousZIndex = wrapper.style.zIndex;
+    wrapper.style.zIndex = String(SELECT_CONTENT_Z_INDEX);
+
+    return () => {
+      if (previousZIndex) {
+        wrapper.style.zIndex = previousZIndex;
+        return;
+      }
+      wrapper.style.removeProperty("z-index");
+    };
+  }, []);
+
+  return (
+    <SelectPrimitive.Portal>
+      <SelectPrimitive.Content
+        ref={contentRef}
         className={cn(
-          "p-1",
+          "relative z-[90] max-h-96 min-w-[8rem] overflow-hidden rounded-[var(--radius-md)] border shadow-[var(--shadow-md)]",
+          "border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-card)] text-[color:var(--color-text-main)]",
+          "data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out",
           position === "popper" &&
-            "w-full min-w-[var(--radix-select-trigger-width)] max-h-[var(--radix-select-content-available-height)]"
+            "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
+          className
         )}
+        position={position}
+        {...props}
       >
-        {children}
-      </SelectPrimitive.Viewport>
-      <SelectScrollDownButton />
-    </SelectPrimitive.Content>
-  </SelectPrimitive.Portal>
-));
+        <SelectScrollUpButton />
+        <SelectPrimitive.Viewport
+          className={cn(
+            "p-1",
+            position === "popper" &&
+              "w-full min-w-[var(--radix-select-trigger-width)] max-h-[var(--radix-select-content-available-height)]"
+          )}
+        >
+          {children}
+        </SelectPrimitive.Viewport>
+        <SelectScrollDownButton />
+      </SelectPrimitive.Content>
+    </SelectPrimitive.Portal>
+  );
+});
 SelectContent.displayName = SelectPrimitive.Content.displayName;
 
 const SelectLabel = React.forwardRef<
